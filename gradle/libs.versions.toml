@@ -1,5 +1,7 @@
 [versions]
 agp = "8.8.0"
+firebaseAuthVersion = "21.0.3"
+googleServices = "4.4.2"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
@@ -10,8 +12,13 @@ lifecycleLivedataKtx = "2.6.1"
 lifecycleViewmodelKtx = "2.6.1"
 navigationFragment = "2.8.5"
 navigationUi = "2.8.5"
+firebaseDatabase = "21.0.0"
+firebaseAuth = "23.2.0"
+playServicesAuth = "21.3.0"
 
 [libraries]
+firebase-auth-v2103 = { module = "com.google.firebase:firebase-auth", version.ref = "firebaseAuthVersion" }
+google-services = { module = "com.google.gms:google-services", version.ref = "googleServices" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -22,6 +29,9 @@ lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-lived
 lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
 navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "navigationFragment" }
 navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "navigationUi" }
+firebase-database = { group = "com.google.firebase", name = "firebase-database", version.ref = "firebaseDatabase" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuth" }
+play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
