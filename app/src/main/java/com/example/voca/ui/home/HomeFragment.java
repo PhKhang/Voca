@@ -14,7 +14,9 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.voca.LoginActivity;
+import com.example.voca.MainActivity;
 import com.example.voca.R;
+import com.example.voca.RecordActivity;
 import com.example.voca.databinding.FragmentHomeBinding;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -61,6 +63,14 @@ public class HomeFragment extends Fragment {
             startActivity(intent);
             requireActivity().finish(); // Đóng MainActivity
         });
+
+
+        binding.openRecordingPage.setOnClickListener(v -> {
+            Intent intent = new Intent(requireContext(), RecordActivity.class);
+            startActivity(intent);
+        });
+
+
         View root = binding.getRoot();
         final TextView textView = binding.textHome;
         homeViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);

@@ -13,6 +13,14 @@
         android:gravity="center">
 
         <Button
+            android:id="@+id/openRecordingPage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mở trang ghi âm"
+            android:layout_marginTop="16dp"
+            tools:ignore="MissingConstraints" />
+
+        <Button
             android:id="@+id/btnSignout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

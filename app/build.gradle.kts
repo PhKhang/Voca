@@ -12,6 +12,12 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+
+    implementation("com.arthenica:ffmpeg-kit-full:6.0-2")
+    implementation ("com.squareup.okhttp3:okhttp:4.9.3")
+    implementation ("androidx.core:core:1.12.0")
+    implementation("androidx.media:media:1.7.0")
+    implementation("com.pierfrancescosoffritti.androidyoutubeplayer:chromecast-sender:0.30")
 }
 
     plugins {
