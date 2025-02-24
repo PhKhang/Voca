@@ -72,7 +72,7 @@ public class RegisterActivity extends Activity {
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         String userId = auth.getCurrentUser().getUid();
-                        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(userId);
+                        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(userId);
                         User user = new User(username, email);
                         userRef.setValue(user);
 

@@ -42,5 +42,7 @@
             android:exported="true">
         </activity>
     </application>
-
+    <meta-data
+        android:name="com.google.android.gms.auth.api.signin"
+        android:value="376964926034-26q0v64muogqhda7e51ket6qgpt9soos.apps.googleusercontent.com" />
 </manifest>
