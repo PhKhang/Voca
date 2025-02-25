@@ -16,7 +16,7 @@ import okhttp3.ResponseBody;
 public class FileDownloader {
     private static final String TAG = "FileDownloader";
 
-    public static void downloadFile(Context context, String fileUrl, String fileName) {
+    public static void downloadExternalFile(Context context, String fileUrl, String fileName) {
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder().url(fileUrl).build();
 

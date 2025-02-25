@@ -2,11 +2,16 @@ package com.example.voca;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.ContentValues;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
@@ -32,8 +37,12 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.Objects;
 
 public class RecordActivity extends AppCompatActivity {
@@ -42,6 +51,8 @@ public class RecordActivity extends AppCompatActivity {
     EditText etMp3Url;
     Button btnDownload;
     TextView tvStatus;
+
+    String songName = "MatKetNoi";
     private String downloadedMp3Path = "https://pub-b0a9bdcea1cd4f6ca28d98f878366466.r2.dev/youtube_LoKtEI9RONw_audio.mp3";
     private String combinedPath = "output.mp3";
 
@@ -72,6 +83,8 @@ public class RecordActivity extends AppCompatActivity {
         Button stopRecordButton = findViewById(R.id.stop_record_button);
         Button playButton = findViewById(R.id.play_button);
         Button returnButton = findViewById(R.id.return_button);
+        Button saveButton = findViewById(R.id.save_button);
+
         getLifecycle().addObserver(youTubePlayerView);
 
         IFramePlayerOptions options = new IFramePlayerOptions.Builder()
@@ -160,41 +173,22 @@ public class RecordActivity extends AppCompatActivity {
             Toast.makeText(RecordActivity.this, "Đã trở về đầu", Toast.LENGTH_SHORT).show();
         });
 
-        audioFilePath = Objects.requireNonNull(getExternalCacheDir()).getAbsolutePath() + "/audiorecord.m4a";
-    }
+        saveButton.setOnClickListener(v -> {
+            if (isRecording) {
+                Toast.makeText(RecordActivity.this, "Vui lòng dừng ghi âm trước khi lưu!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            try {
+                saveToRecordings();
+                Toast.makeText(RecordActivity.this, "Đã lưu file", Toast.LENGTH_SHORT).show();
+            } catch (IOException e) {
+                Toast.makeText(RecordActivity.this, "Lỗi khi lưu file", Toast.LENGTH_SHORT).show();
+                e.printStackTrace();
 
-    private void playOnlineAudio() {
-//        if (onlineMediaPlayer == null) {
-//            onlineMediaPlayer = new MediaPlayer();
-//        } else {
-//            onlineMediaPlayer.reset();
-//        }
-//
-//        onlineMediaPlayer.setOnBufferingUpdateListener((mp, percent) -> {
-//            if (percent < 100) {
-//                if (!mp.isPlaying() && percent > 15) {
-//                    mp.start();
-//                }
-//            }
-//        });
-//
-//        try {
-//            onlineMediaPlayer.setDataSource(url);
-//            onlineMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-//            onlineMediaPlayer.prepareAsync();
-//            onlineMediaPlayer.setOnPreparedListener(mp -> {
-//                mp.start();
-//                Toast.makeText(MainActivity.this, "Đang phát nhạc...", Toast.LENGTH_SHORT).show();
-//            });
-//            onlineMediaPlayer.setOnCompletionListener(mp -> {
-//                mp.release();
-//                onlineMediaPlayer = null;
-//            });
-//        } catch (IOException e) {
-//            Toast.makeText(this, "Không thể phát nhạc!", Toast.LENGTH_SHORT).show();
-//        }
-        File musicFile = new File(getExternalFilesDir(null), backgroundMusicPath);
-        playLocalFile(musicFile);
+            }
+        });
+
+        audioFilePath = Objects.requireNonNull(getExternalCacheDir()).getAbsolutePath() + "/audiorecord.m4a";
     }
 
     private void playLocalFile(File musicFile) {
@@ -276,7 +270,7 @@ public class RecordActivity extends AppCompatActivity {
 
     private void saveBackgroundMusic() {
         String fileName = "background_music.mp3";
-        FileDownloader.downloadFile(this, downloadedMp3Path, fileName);
+        FileDownloader.downloadExternalFile(this, downloadedMp3Path, fileName);
     }
 
     @Override
@@ -345,21 +339,35 @@ public class RecordActivity extends AppCompatActivity {
     }
 
 
-    private ByteArrayOutputStream downloadMusic(String urlString) throws IOException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        URL url = new URL(urlString);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.connect();
+    private void saveToRecordings() throws IOException {
+        String audioFilePath = new File(getExternalFilesDir(null), "output.mp3").getAbsolutePath();
+        File sourceFile = new File(audioFilePath);
 
-        InputStream inputStream = connection.getInputStream();
-        byte[] buffer = new byte[1024];
-        int bytesRead;
-        while ((bytesRead = inputStream.read(buffer)) != -1) {
-            outputStream.write(buffer, 0, bytesRead);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
+        String timestamp = dateFormat.format(new Date());
+        String uniqueFileName = songName + "_" + timestamp + ".mp3";
+
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Audio.Media.DISPLAY_NAME, uniqueFileName);
+        values.put(MediaStore.Audio.Media.MIME_TYPE, "audio/mpeg");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            values.put(MediaStore.Audio.Media.RELATIVE_PATH, Environment.DIRECTORY_RECORDINGS);
         }
 
-        inputStream.close();
-        return outputStream;
+        Uri uri = getContentResolver().insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values);
+
+        if (uri != null) {
+            try (OutputStream out = getContentResolver().openOutputStream(uri);
+                 FileInputStream in = new FileInputStream(sourceFile)) {
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, bytesRead);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void playCombinedAudio() {

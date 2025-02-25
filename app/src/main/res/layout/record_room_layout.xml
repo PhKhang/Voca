@@ -69,5 +69,13 @@
             android:text="Ghi âm lại"
             android:layout_marginTop="8dp"/>
 
+        <Button
+            android:id="@+id/save_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Lưu file"
+            android:layout_marginTop="8dp"/>
+
+
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
