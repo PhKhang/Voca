@@ -1,8 +1,10 @@
-package com.example.voca;
+package com.example.voca.ui.record;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.ProgressDialog;
 import android.content.ContentValues;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -25,6 +27,7 @@ import androidx.core.content.ContextCompat;
 
 import com.arthenica.ffmpegkit.FFmpegKit;
 import com.arthenica.ffmpegkit.ReturnCode;
+import com.example.voca.R;
 import com.example.voca.service.FileDownloader;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
@@ -36,10 +39,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -83,7 +83,6 @@ public class RecordActivity extends AppCompatActivity {
         Button stopRecordButton = findViewById(R.id.stop_record_button);
         Button playButton = findViewById(R.id.play_button);
         Button returnButton = findViewById(R.id.return_button);
-        Button saveButton = findViewById(R.id.save_button);
 
         getLifecycle().addObserver(youTubePlayerView);
 
@@ -114,7 +113,7 @@ public class RecordActivity extends AppCompatActivity {
                 ActivityCompat.requestPermissions(RecordActivity.this, new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_RECORD_AUDIO);
             } else {
                 // Kiểm tra file nhạc nền có tồn tại chưa
-                File musicFile = new File(getExternalFilesDir(null), "background_music.mp3");
+                File musicFile = new File(getExternalFilesDir(null), backgroundMusicPath);
                 if (!musicFile.exists()) {
                     saveBackgroundMusic();
                     Toast.makeText(RecordActivity.this, "Đang tải nhạc nền, vui lòng thử lại...", Toast.LENGTH_SHORT).show();
@@ -153,13 +152,35 @@ public class RecordActivity extends AppCompatActivity {
             Toast.makeText(RecordActivity.this, "Đã kết thúc ghi âm", Toast.LENGTH_SHORT).show();
         });
 
+//        playButton.setOnClickListener(v -> {
+//            // Kiểm tra xem có đang ghi âm không
+//            if (isRecording) {
+//                Toast.makeText(RecordActivity.this, "Vui lòng dừng ghi âm trước khi phát!", Toast.LENGTH_SHORT).show();
+//                return;
+//            }
+//            playCombinedAudio();
+//            Intent intent = new Intent(this, RecordResultActivity.class);
+//            startActivity(intent);
+//        });
         playButton.setOnClickListener(v -> {
-            // Kiểm tra xem có đang ghi âm không
             if (isRecording) {
                 Toast.makeText(RecordActivity.this, "Vui lòng dừng ghi âm trước khi phát!", Toast.LENGTH_SHORT).show();
                 return;
             }
-            playCombinedAudio();
+            playCombinedAudio(new Callback() {
+                @Override
+                public void onSuccess(String filePath) {
+                    Intent intent = new Intent(RecordActivity.this, RecordResultActivity.class);
+                    intent.putExtra("audio_path", filePath);
+                    intent.putExtra("song_name", songName);
+                    startActivity(intent);
+                }
+
+                @Override
+                public void onFailure() {
+                    Toast.makeText(RecordActivity.this, "Không thể phát do lỗi trộn!", Toast.LENGTH_SHORT).show();
+                }
+            });
         });
 
         returnButton.setOnClickListener(v -> {
@@ -173,20 +194,6 @@ public class RecordActivity extends AppCompatActivity {
             Toast.makeText(RecordActivity.this, "Đã trở về đầu", Toast.LENGTH_SHORT).show();
         });
 
-        saveButton.setOnClickListener(v -> {
-            if (isRecording) {
-                Toast.makeText(RecordActivity.this, "Vui lòng dừng ghi âm trước khi lưu!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            try {
-                saveToRecordings();
-                Toast.makeText(RecordActivity.this, "Đã lưu file", Toast.LENGTH_SHORT).show();
-            } catch (IOException e) {
-                Toast.makeText(RecordActivity.this, "Lỗi khi lưu file", Toast.LENGTH_SHORT).show();
-                e.printStackTrace();
-
-            }
-        });
 
         audioFilePath = Objects.requireNonNull(getExternalCacheDir()).getAbsolutePath() + "/audiorecord.m4a";
     }
@@ -269,7 +276,7 @@ public class RecordActivity extends AppCompatActivity {
     }
 
     private void saveBackgroundMusic() {
-        String fileName = "background_music.mp3";
+        String fileName = backgroundMusicPath;
         FileDownloader.downloadExternalFile(this, downloadedMp3Path, fileName);
     }
 
@@ -279,7 +286,7 @@ public class RecordActivity extends AppCompatActivity {
         if (mediaRecorder != null) {
             stopRecording();
         }
-        if (mediaPlayer != null) {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
             mediaPlayer.release();
             mediaPlayer = null;
         }
@@ -288,7 +295,7 @@ public class RecordActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (onlineMediaPlayer != null) {
+        if (onlineMediaPlayer != null && onlineMediaPlayer.isPlaying()) {
             onlineMediaPlayer.release();
             onlineMediaPlayer = null;
         }
@@ -328,7 +335,7 @@ public class RecordActivity extends AppCompatActivity {
                 Toast.makeText(RecordActivity.this, "Tiếp tục phát", Toast.LENGTH_SHORT).show();
             } catch (IllegalStateException e) {
                 // Nếu MediaPlayer đã bị reset hoặc release, tạo lại và phát từ đầu
-                File musicFile = new File(getExternalFilesDir(null), "background_music.mp3");
+                File musicFile = new File(getExternalFilesDir(null), backgroundMusicPath);
                 if (musicFile.exists()) {
                     playLocalFile(musicFile);
                 } else {
@@ -370,75 +377,128 @@ public class RecordActivity extends AppCompatActivity {
         }
     }
 
-    private void playCombinedAudio() {
-        File recordingFile = new File(getExternalFilesDir(null), "audio_recording.m4a");
-        File musicFile = new File(getExternalFilesDir(null), "background_music.mp3");
-
-        // Kiểm tra nếu file có tồn tại không
-        if (!recordingFile.exists()) {
-            Toast.makeText(this, "Lỗi: Không tìm thấy file ghi âm !", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (!musicFile.exists()) {
-            Toast.makeText(this, "Lỗi: Không tìm thấy file nhạc nền!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        try {
-            // Đọc file ghi âm vào ByteArrayOutputStream
-            ByteArrayOutputStream recordingStream = new ByteArrayOutputStream();
-            try (FileInputStream fis = new FileInputStream(recordingFile)) {
-                byte[] buffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = fis.read(buffer)) != -1) {
-                    recordingStream.write(buffer, 0, bytesRead);
-                }
-            }
-
-            // Đọc file nhạc nền vào ByteArrayOutputStream
-            ByteArrayOutputStream musicStream = new ByteArrayOutputStream();
-            try (FileInputStream fis = new FileInputStream(musicFile)) {
-                byte[] buffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = fis.read(buffer)) != -1) {
-                    musicStream.write(buffer, 0, bytesRead);
-                }
-            }
-
-            // Ghi dữ liệu vào file
-            try (FileOutputStream fos = new FileOutputStream(recordingFile)) {
-                recordingStream.writeTo(fos);
-            }
-            try (FileOutputStream fos = new FileOutputStream(musicFile)) {
-                musicStream.writeTo(fos);
-            }
-        } catch (IOException e) {
-            Toast.makeText(this, "Lỗi khi đọc file âm thanh!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Trộn âm thanh với FFmpeg
-        String outputFilePath = new File(getExternalFilesDir(null), combinedPath).getAbsolutePath();
-        String command = String.format("-y -i %s -i %s -filter_complex amix=inputs=2:duration=first:dropout_transition=3 %s",
-                recordingFile.getAbsolutePath(), musicFile.getAbsolutePath(), outputFilePath);
-
-        FFmpegKit.executeAsync(command, session -> {
-            if (ReturnCode.isSuccess(session.getReturnCode())) {
-                MediaPlayer mediaPlayer = new MediaPlayer();
-                try {
-                    mediaPlayer.setDataSource(outputFilePath);
-                    mediaPlayer.prepare();
-                    mediaPlayer.start();
-                    Toast.makeText(this, "Đang phát âm thanh kết hợp", Toast.LENGTH_SHORT).show();
-                } catch (IOException e) {
-                    Toast.makeText(this, "Lỗi khi phát âm thanh kết hợp!", Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                Log.e("FFmpegKit", "Command failed with state " + session.getState() + " and return code " + session.getReturnCode());
-                Toast.makeText(this, "Lỗi khi trộn âm thanh!", Toast.LENGTH_SHORT).show();
-            }
-        });
+//    private void playCombinedAudio() {
+//        File recordingFile = new File(getExternalFilesDir(null), "audio_recording.m4a");
+//        File musicFile = new File(getExternalFilesDir(null), backgroundMusicPath);
+//
+//        // Kiểm tra nếu file có tồn tại không
+//        if (!recordingFile.exists()) {
+//            Toast.makeText(this, "Lỗi: Không tìm thấy file ghi âm !", Toast.LENGTH_SHORT).show();
+//            return;
+//        }
+//
+//        if (!musicFile.exists()) {
+//            Toast.makeText(this, "Lỗi: Không tìm thấy file nhạc nền!", Toast.LENGTH_SHORT).show();
+//            return;
+//        }
+//
+//        try {
+//            // Đọc file ghi âm vào ByteArrayOutputStream
+//            ByteArrayOutputStream recordingStream = new ByteArrayOutputStream();
+//            try (FileInputStream fis = new FileInputStream(recordingFile)) {
+//                byte[] buffer = new byte[1024];
+//                int bytesRead;
+//                while ((bytesRead = fis.read(buffer)) != -1) {
+//                    recordingStream.write(buffer, 0, bytesRead);
+//                }
+//            }
+//
+//            // Đọc file nhạc nền vào ByteArrayOutputStream
+//            ByteArrayOutputStream musicStream = new ByteArrayOutputStream();
+//            try (FileInputStream fis = new FileInputStream(musicFile)) {
+//                byte[] buffer = new byte[1024];
+//                int bytesRead;
+//                while ((bytesRead = fis.read(buffer)) != -1) {
+//                    musicStream.write(buffer, 0, bytesRead);
+//                }
+//            }
+//
+//            // Ghi dữ liệu vào file
+//            try (FileOutputStream fos = new FileOutputStream(recordingFile)) {
+//                recordingStream.writeTo(fos);
+//            }
+//            try (FileOutputStream fos = new FileOutputStream(musicFile)) {
+//                musicStream.writeTo(fos);
+//            }
+//        } catch (IOException e) {
+//            Toast.makeText(this, "Lỗi khi đọc file âm thanh!", Toast.LENGTH_SHORT).show();
+//            return;
+//        }
+//
+//        // Trộn âm thanh với FFmpeg
+//        String outputFilePath = new File(getExternalFilesDir(null), combinedPath).getAbsolutePath();
+//        String command = String.format("-y -i %s -i %s -filter_complex amix=inputs=2:duration=first:dropout_transition=3 %s",
+//                recordingFile.getAbsolutePath(), musicFile.getAbsolutePath(), outputFilePath);
+//
+//        FFmpegKit.executeAsync(command, session -> {
+//            if (ReturnCode.isSuccess(session.getReturnCode())) {
+////                MediaPlayer mediaPlayer = new MediaPlayer();
+////                try {
+////                    mediaPlayer.setDataSource(outputFilePath);
+////                    mediaPlayer.prepare();
+////                    mediaPlayer.start();
+////                    Toast.makeText(this, "Đang phát âm thanh kết hợp", Toast.LENGTH_SHORT).show();
+////                } catch (IOException e) {
+////                    Toast.makeText(this, "Lỗi khi phát âm thanh kết hợp!", Toast.LENGTH_SHORT).show();
+////                }
+//                File outputFile = new File(outputFilePath);
+//                if (outputFile.exists()) {
+//                    Toast.makeText(this, "Đã trộn âm thanh thành công!", Toast.LENGTH_SHORT).show();
+//                } else {
+//                    Toast.makeText(this, "File đầu ra không tạo thành công!", Toast.LENGTH_SHORT).show();
+//                }
+//            } else {
+//                Log.e("FFmpegKit", "Command failed with state " + session.getState() + " and return code " + session.getReturnCode());
+//                Toast.makeText(this, "Lỗi khi trộn âm thanh!", Toast.LENGTH_SHORT).show();
+//            }
+//        });
+//    }
+private void playCombinedAudio(Callback callback) {
+    if (callback == null) {
+        throw new IllegalArgumentException("Callback cannot be null");
     }
 
+    File recordingFile = new File(getExternalFilesDir(null), "audio_recording.m4a");
+    File musicFile = new File(getExternalFilesDir(null), backgroundMusicPath);
+    File outputFile = new File(getExternalFilesDir(null), combinedPath);
+    String outputFilePath = outputFile.getAbsolutePath();
+
+    if (!recordingFile.exists() || !musicFile.exists()) {
+        Toast.makeText(this, "File không tồn tại!", Toast.LENGTH_SHORT).show();
+        callback.onFailure();
+        return;
+    }
+
+    String command = String.format("-y -i %s -i %s -filter_complex amix=inputs=2:duration=first:dropout_transition=3 %s",
+            recordingFile.getAbsolutePath(), musicFile.getAbsolutePath(), outputFilePath);
+
+    final ProgressDialog progressDialog = new ProgressDialog(this);
+    progressDialog.setMessage("Đang trộn âm thanh...");
+    progressDialog.setCancelable(false);
+    progressDialog.show();
+
+    FFmpegKit.executeAsync(command, session -> {
+        runOnUiThread(() -> {
+            progressDialog.dismiss();
+            if (ReturnCode.isSuccess(session.getReturnCode())) {
+                if (outputFile.exists() && outputFile.length() > 0) {
+                    combinedPath = outputFile.getName();
+                    callback.onSuccess(outputFilePath);
+                } else {
+                    Toast.makeText(this, "File đầu ra không hợp lệ!", Toast.LENGTH_SHORT).show();
+                    callback.onFailure();
+                }
+            } else {
+                Log.e("FFmpegKit", "Command failed: " + session.getState() + ", Code: " + session.getReturnCode().getValue());
+                Toast.makeText(this, "Lỗi khi trộn âm thanh: " + session.getReturnCode().getValue(), Toast.LENGTH_SHORT).show();
+                callback.onFailure();
+            }
+        });
+    });
+}
+
+    interface Callback {
+        void onSuccess(String filePath);
+        void onFailure();
+    }
 }
