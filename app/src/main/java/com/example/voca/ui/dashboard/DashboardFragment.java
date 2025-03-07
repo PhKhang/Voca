@@ -1,5 +1,6 @@
 package com.example.voca.ui.dashboard;
 
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,7 +14,7 @@ import android.widget.ImageView;
 import android.widget.MediaController;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.VideoView;
+
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -24,9 +25,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.voca.R;
 import com.example.voca.databinding.FragmentDashboardBinding;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ui.PlayerView;
 
 import java.util.ArrayList;
@@ -36,6 +37,9 @@ public class DashboardFragment extends Fragment {
 
     private FragmentDashboardBinding binding;
 
+    private ExoPlayer player;
+    private PostAdapter.PostViewHolder currentViewHolder = null;
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         DashboardViewModel dashboardViewModel =
@@ -43,6 +47,7 @@ public class DashboardFragment extends Fragment {
 
         binding = FragmentDashboardBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
+        player = new ExoPlayer.Builder(requireContext()).build();
 
 //        final TextView textView = binding.textHomeTitle;
 //        dashboardViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
@@ -57,7 +62,9 @@ public class DashboardFragment extends Fragment {
             recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
             List<Post> postList = new ArrayList<>();
-            postList.add(new Post("Người dùng 1", "1 phút trước", "post 1", R.drawable.ava, 0));
+            postList.add(new Post("Người dùng 1", "1 phút trước", "post 1", R.drawable.ava, R.raw.examplevid));
+            postList.add(new Post("Người dùng 2", "5 phút trước", "post 2", R.drawable.ava, R.raw.examplevid));
+            postList.add(new Post("Người dùng 2", "5 phút trước", "post 2", R.drawable.ava, R.raw.examplevid));
             postList.add(new Post("Người dùng 2", "5 phút trước", "post 2", R.drawable.ava, R.raw.examplevid));
 
             PostAdapter adapter = new PostAdapter(postList);
@@ -68,10 +75,13 @@ public class DashboardFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        if (player != null) {
+            player.release();
+            player = null;
+        }
+
         binding = null;
     }
-
-
     public class Post {
         private String username, postTime, content;
         private int avatarResId, videoResId;
@@ -93,7 +103,6 @@ public class DashboardFragment extends Fragment {
 
     public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder> {
         private List<Post> postList;
-
         public PostAdapter(List<Post> postList) {
             this.postList = postList;
         }
@@ -114,24 +123,51 @@ public class DashboardFragment extends Fragment {
             holder.userAvatar.setImageResource(post.getAvatarResId());
 
             if (post.getVideoResId() != 0) {
-                holder.playerView.setVisibility(View.VISIBLE);
+                holder.playerView.setVisibility(View.GONE);
+                holder.playButton.setVisibility(View.VISIBLE);
 
-                SimpleExoPlayer player = new SimpleExoPlayer.Builder(holder.itemView.getContext()).build();
-                holder.playerView.setPlayer(player);
+                holder.playButton.setOnClickListener(v -> {
+                    if (currentViewHolder != null && currentViewHolder != holder) {
+                        stopVideo(currentViewHolder);
+                    }
+                    currentViewHolder = holder;
 
-                Uri videoUri = Uri.parse("android.resource://" + holder.itemView.getContext().getPackageName() + "/" + post.getVideoResId());
-                MediaItem mediaItem = MediaItem.fromUri(videoUri);
+                    // Gán video mới
+                    String videoPath = "android.resource://" + holder.itemView.getContext().getPackageName() + "/" + post.getVideoResId();
+                    player.setMediaItem(MediaItem.fromUri(Uri.parse(videoPath)));
+                    player.prepare();
+                    player.play();
 
-                player.setMediaItem(mediaItem);
-                player.prepare();
-                player.play();
+                    // Cập nhật UI
+                    holder.playButton.setVisibility(View.GONE);
+                    holder.playerView.setVisibility(View.VISIBLE);
+                    holder.playerView.setPlayer(player);
 
-                holder.player = player;
+                });
+
+
+                // Khi video chạy hết, reset lại trạng thái ban đầu
+                player.addListener(new Player.Listener() {
+                    @Override
+                    public void onPlaybackStateChanged(int state) {
+                        if (state == Player.STATE_ENDED) {
+                            holder.playerView.setVisibility(View.GONE);
+                            holder.playButton.setVisibility(View.VISIBLE);
+                            player.seekTo(0);
+                            player.pause();
+                        }
+                    }
+                });
+
             } else {
-                holder.videoContainer.setVisibility(View.GONE);
+                holder.playerView.setVisibility(View.GONE);
             }
         }
-
+        private void stopVideo(PostViewHolder holder) {
+            player.stop();
+            holder.playButton.setVisibility(View.VISIBLE);
+            holder.playerView.setVisibility(View.GONE);
+        }
         @Override
         public int getItemCount() {
             return postList.size();
@@ -141,9 +177,8 @@ public class DashboardFragment extends Fragment {
             TextView username, postTime, postContent;
             ImageView userAvatar;
             PlayerView playerView;
-            SimpleExoPlayer player;
             FrameLayout videoContainer;
-//            ImageButton playButton;
+            ImageButton playButton;
 
             public PostViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -153,7 +188,7 @@ public class DashboardFragment extends Fragment {
                 userAvatar = itemView.findViewById(R.id.avatarImage);
 
                 playerView = itemView.findViewById(R.id.player_view);
-//                playButton = itemView.findViewById(R.id.btn_play_video);
+                playButton = itemView.findViewById(R.id.btn_play_video);
                 videoContainer = itemView.findViewById(R.id.video_container);
             }
         }
