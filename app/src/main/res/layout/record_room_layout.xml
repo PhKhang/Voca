@@ -69,8 +69,27 @@
             android:text="Ghi âm lại"
             android:layout_marginTop="8dp"/>
 
+        <EditText
+            android:id="@+id/mp3_link_edittext"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Put an MP3 link here"
+            android:inputType="textUri" />
 
+        <EditText
+            android:id="@+id/youtube_id_edittext"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Put a YouTube Video ID here"
+            android:inputType="text" />
 
+        <Button
+            android:id="@+id/submit_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Submit"
+            android:layout_marginTop="8dp"
+            />
 
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
