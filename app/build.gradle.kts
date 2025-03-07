@@ -18,6 +18,8 @@ dependencies {
     implementation ("androidx.core:core:1.12.0")
     implementation("androidx.media:media:1.7.0")
     implementation("com.pierfrancescosoffritti.androidyoutubeplayer:chromecast-sender:0.30")
+    implementation("de.hdodenhof:circleimageview:3.1.0")
+    implementation("com.google.android.exoplayer:exoplayer:2.19.1")
 }
 
     plugins {
