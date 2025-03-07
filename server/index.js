@@ -1,10 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+dotenv.config();
 
 const app = express();
 app.use(express.json());
-
-mongoose.connect('connection_string')
+mongoose.connect(process.env.connection_string)
     .then(() => console.log('Connected to MongoDB'))
     .catch((err) => console.log('Error:', err));
 
