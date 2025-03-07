@@ -55,7 +55,6 @@ public class RecordActivity extends AppCompatActivity {
     String songName = "MatKetNoi";
     private String downloadedMp3Path = "https://pub-b0a9bdcea1cd4f6ca28d98f878366466.r2.dev/youtube_LoKtEI9RONw_audio.mp3";
     private String combinedPath = "output.mp3";
-
     private String backgroundMusicPath = "background_music.mp3";
     private String videoId = "LoKtEI9RONw";
     private static final int REQUEST_RECORD_AUDIO = 1;
@@ -84,6 +83,10 @@ public class RecordActivity extends AppCompatActivity {
         Button playButton = findViewById(R.id.play_button);
         Button returnButton = findViewById(R.id.return_button);
 
+        EditText mp3LinkEditText = findViewById(R.id.mp3_link_edittext);
+        EditText youtubeIdEditText = findViewById(R.id.youtube_id_edittext);
+        Button submitButton = findViewById(R.id.submit_button);
+
         getLifecycle().addObserver(youTubePlayerView);
 
         IFramePlayerOptions options = new IFramePlayerOptions.Builder()
@@ -93,7 +96,6 @@ public class RecordActivity extends AppCompatActivity {
                 .ccLoadPolicy(0)
                 .autoplay(0)
                 .build();
-
 
         youTubePlayerView.setEnableAutomaticInitialization(false);
         saveBackgroundMusic();
@@ -107,6 +109,17 @@ public class RecordActivity extends AppCompatActivity {
             }
         }, true, options);
 
+        submitButton.setOnClickListener(v -> {
+            String inputMp3Link = mp3LinkEditText.getText().toString().trim();
+            String inputVideoId = youtubeIdEditText.getText().toString().trim();
+            if (!inputMp3Link.isEmpty()) {
+                downloadedMp3Path = inputMp3Link;
+            }
+
+            if (!inputVideoId.isEmpty()) {
+                videoId = inputVideoId;
+            }
+        });
 
         recordButton.setOnClickListener(v -> {
             if (ContextCompat.checkSelfPermission(RecordActivity.this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
