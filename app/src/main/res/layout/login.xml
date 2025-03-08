@@ -30,7 +30,6 @@
         android:paddingTop="8dp"
         android:text="Quên mật khẩu?"
         android:textAlignment="textEnd"
-        android:textColor="@color/black"
         android:textSize="14sp" />
 
     <Button

@@ -61,11 +61,11 @@ public class DashboardFragment extends Fragment {
             RecyclerView recyclerView = view.findViewById(R.id.recyclerView_posts);
             recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-            List<Post> postList = new ArrayList<>();
+            List<Post> postList = new ArrayList<>() ;
             postList.add(new Post("Người dùng 1", "1 phút trước", "post 1", R.drawable.ava, R.raw.examplevid));
             postList.add(new Post("Người dùng 2", "5 phút trước", "post 2", R.drawable.ava, R.raw.examplevid));
-            postList.add(new Post("Người dùng 2", "5 phút trước", "post 2", R.drawable.ava, R.raw.examplevid));
-            postList.add(new Post("Người dùng 2", "5 phút trước", "post 2", R.drawable.ava, R.raw.examplevid));
+            postList.add(new Post("Người dùng 2", "1 tiếng trước", "post 2", R.drawable.ava, R.raw.examplevid));
+            postList.add(new Post("Người dùng 2", "3 tiếng trước", "post 2", R.drawable.ava, R.raw.examplevid));
 
             PostAdapter adapter = new PostAdapter(postList);
             recyclerView.setAdapter(adapter);
