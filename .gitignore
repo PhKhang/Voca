@@ -17,3 +17,4 @@ app/google-services.json
 node_modules/
 .env
 .idea/misc.xml
+/.idea
