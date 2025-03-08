@@ -80,7 +80,7 @@ public class RecordActivity extends AppCompatActivity {
         YouTubePlayerView youTubePlayerView = findViewById(R.id.youtube_player_view);
         Button recordButton = findViewById(R.id.record_button);
         Button stopRecordButton = findViewById(R.id.stop_record_button);
-        Button playButton = findViewById(R.id.play_button);
+//        Button playButton = findViewById(R.id.play_button);
         Button returnButton = findViewById(R.id.return_button);
 
         EditText mp3LinkEditText = findViewById(R.id.mp3_link_edittext);
@@ -163,23 +163,6 @@ public class RecordActivity extends AppCompatActivity {
             stopOnlineAudio();
             isRecording = false; // Reset trạng thái recording
             Toast.makeText(RecordActivity.this, "Đã kết thúc ghi âm", Toast.LENGTH_SHORT).show();
-        });
-
-//        playButton.setOnClickListener(v -> {
-//            // Kiểm tra xem có đang ghi âm không
-//            if (isRecording) {
-//                Toast.makeText(RecordActivity.this, "Vui lòng dừng ghi âm trước khi phát!", Toast.LENGTH_SHORT).show();
-//                return;
-//            }
-//            playCombinedAudio();
-//            Intent intent = new Intent(this, RecordResultActivity.class);
-//            startActivity(intent);
-//        });
-        playButton.setOnClickListener(v -> {
-            if (isRecording) {
-                Toast.makeText(RecordActivity.this, "Vui lòng dừng ghi âm trước khi phát!", Toast.LENGTH_SHORT).show();
-                return;
-            }
             playCombinedAudio(new Callback() {
                 @Override
                 public void onSuccess(String filePath) {
@@ -195,6 +178,37 @@ public class RecordActivity extends AppCompatActivity {
                 }
             });
         });
+
+//        playButton.setOnClickListener(v -> {
+//            // Kiểm tra xem có đang ghi âm không
+//            if (isRecording) {
+//                Toast.makeText(RecordActivity.this, "Vui lòng dừng ghi âm trước khi phát!", Toast.LENGTH_SHORT).show();
+//                return;
+//            }
+//            playCombinedAudio();
+//            Intent intent = new Intent(this, RecordResultActivity.class);
+//            startActivity(intent);
+//        });
+//        playButton.setOnClickListener(v -> {
+//            if (isRecording) {
+//                Toast.makeText(RecordActivity.this, "Vui lòng dừng ghi âm trước khi phát!", Toast.LENGTH_SHORT).show();
+//                return;
+//            }
+//            playCombinedAudio(new Callback() {
+//                @Override
+//                public void onSuccess(String filePath) {
+//                    Intent intent = new Intent(RecordActivity.this, RecordResultActivity.class);
+//                    intent.putExtra("audio_path", filePath);
+//                    intent.putExtra("song_name", songName);
+//                    startActivity(intent);
+//                }
+//
+//                @Override
+//                public void onFailure() {
+//                    Toast.makeText(RecordActivity.this, "Không thể phát do lỗi trộn!", Toast.LENGTH_SHORT).show();
+//                }
+//            });
+//        });
 
         returnButton.setOnClickListener(v -> {
             youTubePlayerInstance.seekTo(0f);

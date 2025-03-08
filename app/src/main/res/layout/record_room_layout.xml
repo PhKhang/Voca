@@ -53,13 +53,13 @@
             android:text="Hoàn thành"
             android:layout_marginTop="8dp"/>
 
-        <!-- Nút phát lại -->
-        <Button
-            android:id="@+id/play_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Phát lại"
-            android:layout_marginTop="8dp"/>
+<!--        &lt;!&ndash; Nút phát lại &ndash;&gt;-->
+<!--        <Button-->
+<!--            android:id="@+id/play_button"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="Phát lại"-->
+<!--            android:layout_marginTop="8dp"/>-->
 
         <!-- Nút lưu file ghi âm -->
         <Button
