@@ -9,6 +9,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.EditText;
 
@@ -67,6 +68,12 @@ public class LoginActivity extends Activity {
         Button btnGoToRegister = findViewById(R.id.btnSignup);
         btnGoToRegister.setOnClickListener(v -> {
             startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
+        });
+
+        TextView forgotPasswordTextView = findViewById(R.id.forgotPasswordTextView);
+        forgotPasswordTextView.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, ForgotPassActivity.class);
+            startActivity(intent);
         });
 
     }

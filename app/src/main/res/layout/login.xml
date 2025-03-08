@@ -23,6 +23,16 @@
         android:inputType="textPassword"
         android:layout_marginTop="12dp"/>
 
+    <TextView
+        android:id="@+id/forgotPasswordTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="8dp"
+        android:text="Quên mật khẩu?"
+        android:textAlignment="textEnd"
+        android:textColor="@color/black"
+        android:textSize="14sp" />
+
     <Button
         android:id="@+id/btnLogin"
         android:layout_width="match_parent"
