@@ -1,4 +1,4 @@
-package com.example.voca;
+package com.example.voca.ui;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -7,12 +7,12 @@ import android.os.Bundle;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.EditText;
 
+import com.example.voca.R;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;

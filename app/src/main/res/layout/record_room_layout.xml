@@ -69,5 +69,12 @@
             android:text="Ghi âm lại"
             android:layout_marginTop="8dp"/>
 
+        <Button
+            android:id="@+id/return_home_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Quay về màn hình chính"
+            android:layout_marginTop="8dp"/>
+
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

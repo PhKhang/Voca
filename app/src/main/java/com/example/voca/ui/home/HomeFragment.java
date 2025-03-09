@@ -12,8 +12,8 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.example.voca.LoginActivity;
-import com.example.voca.SongsManagementActivity;
+import com.example.voca.ui.LoginActivity;
+import com.example.voca.ui.SongsManagementActivity;
 import com.example.voca.ui.record.RecordActivity;
 import com.example.voca.databinding.FragmentHomeBinding;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;

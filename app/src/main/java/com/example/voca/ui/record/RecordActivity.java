@@ -81,6 +81,7 @@ public class RecordActivity extends AppCompatActivity {
         Button stopRecordButton = findViewById(R.id.stop_record_button);
 //        Button playButton = findViewById(R.id.play_button);
         Button returnButton = findViewById(R.id.return_button);
+        Button returnHomeButton = findViewById(R.id.return_home_button);
 
         getLifecycle().addObserver(youTubePlayerView);
 
@@ -205,6 +206,7 @@ public class RecordActivity extends AppCompatActivity {
             Toast.makeText(RecordActivity.this, "Đã trở về đầu", Toast.LENGTH_SHORT).show();
         });
 
+        returnHomeButton.setOnClickListener(v -> finish());
 
         audioFilePath = Objects.requireNonNull(getExternalCacheDir()).getAbsolutePath() + "/audiorecord.m4a";
     }
@@ -289,6 +291,12 @@ public class RecordActivity extends AppCompatActivity {
     private void saveBackgroundMusic() {
         String fileName = backgroundMusicPath;
         FileDownloader.downloadExternalFile(this, downloadedMp3Path, fileName);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        finish();
     }
 
     @Override

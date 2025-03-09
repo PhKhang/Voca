@@ -1,4 +1,4 @@
-package com.example.voca;
+package com.example.voca.ui;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -6,6 +6,7 @@ import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 
+import com.example.voca.R;
 import com.example.voca.bus.SongBUS;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.SongDTO;
@@ -31,7 +32,10 @@ public class SongsManagementActivity extends Activity {
         EditText mp3LinkEditText = findViewById(R.id.mp3_link_edittext);
         EditText youtubeIdEditText = findViewById(R.id.youtube_id_edittext);
         EditText titleEditText = findViewById(R.id.title_edittext);
+
         Button submitButton = findViewById(R.id.submit_button);
+        Button returnButton = findViewById(R.id.return_button);
+        returnButton.setOnClickListener(v -> finish());
 
         submitButton.setOnClickListener(v -> {
             String inputMp3Link = mp3LinkEditText.getText().toString().trim();
@@ -80,5 +84,12 @@ public class SongsManagementActivity extends Activity {
             });
         });
 
+
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        finish();
     }
 }
