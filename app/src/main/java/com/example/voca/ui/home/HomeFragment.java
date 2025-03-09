@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.voca.LoginActivity;
+import com.example.voca.SongsManagementActivity;
 import com.example.voca.ui.record.RecordActivity;
 import com.example.voca.databinding.FragmentHomeBinding;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -62,6 +63,11 @@ public class HomeFragment extends Fragment {
 
         binding.openRecordingPage.setOnClickListener(v -> {
             Intent intent = new Intent(requireContext(), RecordActivity.class);
+            startActivity(intent);
+        });
+
+        binding.openSongsManagementPage.setOnClickListener(v -> {
+            Intent intent = new Intent(requireContext(), SongsManagementActivity.class);
             startActivity(intent);
         });
 

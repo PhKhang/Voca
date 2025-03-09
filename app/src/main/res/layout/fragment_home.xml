@@ -21,6 +21,14 @@
             tools:ignore="MissingConstraints" />
 
         <Button
+            android:id="@+id/openSongsManagementPage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mở trang quản lý bài hát"
+            android:layout_marginTop="16dp"
+            tools:ignore="MissingConstraints" />
+
+        <Button
             android:id="@+id/btnSignout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

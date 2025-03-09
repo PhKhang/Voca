@@ -51,7 +51,6 @@ public class RecordActivity extends AppCompatActivity {
     EditText etMp3Url;
     Button btnDownload;
     TextView tvStatus;
-
     String songName = "MatKetNoi";
     private String downloadedMp3Path = "https://pub-b0a9bdcea1cd4f6ca28d98f878366466.r2.dev/youtube_LoKtEI9RONw_audio.mp3";
     private String combinedPath = "output.mp3";
@@ -83,10 +82,6 @@ public class RecordActivity extends AppCompatActivity {
 //        Button playButton = findViewById(R.id.play_button);
         Button returnButton = findViewById(R.id.return_button);
 
-        EditText mp3LinkEditText = findViewById(R.id.mp3_link_edittext);
-        EditText youtubeIdEditText = findViewById(R.id.youtube_id_edittext);
-        Button submitButton = findViewById(R.id.submit_button);
-
         getLifecycle().addObserver(youTubePlayerView);
 
         IFramePlayerOptions options = new IFramePlayerOptions.Builder()
@@ -109,17 +104,6 @@ public class RecordActivity extends AppCompatActivity {
             }
         }, true, options);
 
-        submitButton.setOnClickListener(v -> {
-            String inputMp3Link = mp3LinkEditText.getText().toString().trim();
-            String inputVideoId = youtubeIdEditText.getText().toString().trim();
-            if (!inputMp3Link.isEmpty()) {
-                downloadedMp3Path = inputMp3Link;
-            }
-
-            if (!inputVideoId.isEmpty()) {
-                videoId = inputVideoId;
-            }
-        });
 
         recordButton.setOnClickListener(v -> {
             if (ContextCompat.checkSelfPermission(RecordActivity.this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {

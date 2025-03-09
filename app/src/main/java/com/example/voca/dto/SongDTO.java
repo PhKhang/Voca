@@ -5,7 +5,7 @@ public class SongDTO {
     private String youtube_id;
     private String title;
     private String thumbnail;
-    private String uploaded_by; // ID của User
+    private String uploaded_by;
     private String created_at;
 
     // Constructor
