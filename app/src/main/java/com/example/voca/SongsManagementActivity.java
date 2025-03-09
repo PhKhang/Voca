@@ -16,7 +16,7 @@ public class SongsManagementActivity extends Activity {
     private UserBUS userBus;
 
     String videoId = "";
-    String downloadedMp3Path = "https://pub-9baa3a81ecf34466aeb5591929ebf0b3.r2.dev/youtube_LoKtEI9RONw_audio.mp3";
+    String Mp3Path = "https://pub-9baa3a81ecf34466aeb5591929ebf0b3.r2.dev/youtube_LoKtEI9RONw_audio.mp3";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +38,7 @@ public class SongsManagementActivity extends Activity {
             String inputVideoId = youtubeIdEditText.getText().toString().trim();
             String inputTitleVideo = titleEditText.getText().toString().trim();
             if (!inputMp3Link.isEmpty()) {
-                downloadedMp3Path = inputMp3Link;
+                Mp3Path = inputMp3Link;
             }
 
             if (!inputVideoId.isEmpty()) {
@@ -53,7 +53,7 @@ public class SongsManagementActivity extends Activity {
                         Log.d("UserModule", "Tìm thấy người dùng: " + user.getUsername());
 
                         // Bước 2: Tạo một bài hát mới do người dùng này tải lên
-                        SongDTO newSong = new SongDTO(null, videoId, inputTitleVideo,
+                        SongDTO newSong = new SongDTO(null, videoId, inputTitleVideo, Mp3Path,
                                 thumbnailUrl, user.get_id(), null);
 
                         songBus.createSong(newSong, new SongBUS.OnSongCreatedListener() {
