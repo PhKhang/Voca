@@ -59,18 +59,28 @@ app.post('/users', async (req, res) => {
 });
 
 app.get('/users', async (req, res) => {
-    const users = await User.find();
-    res.json(users);
+    try {
+        const users = await User.find();
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.get('/users/:id', async (req, res) => {
-    const user = await User.findById(req.params.id);
-    user ? res.json(user) : res.status(404).json({ error: 'User not found' });
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.put('/users/:id', async (req, res) => {
     try {
         const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!user) return res.status(404).json({ error: 'User not found' });
         res.json(user);
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -78,8 +88,13 @@ app.put('/users/:id', async (req, res) => {
 });
 
 app.delete('/users/:id', async (req, res) => {
-    await User.findByIdAndDelete(req.params.id);
-    res.json({ message: 'User deleted' });
+    try {
+        const user = await User.findByIdAndDelete(req.params.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json({ message: 'User deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // CRUD APIs for Songs
@@ -87,25 +102,41 @@ app.post('/songs', async (req, res) => {
     try {
         const song = new Song(req.body);
         await song.save();
-        res.status(201).json(song);
+        // Populate uploaded_by ngay sau khi tạo
+        const populatedSong = await Song.findById(song._id).populate('uploaded_by');
+        res.status(201).json(populatedSong);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 });
 
 app.get('/songs', async (req, res) => {
-    const songs = await Song.find().populate('uploaded_by');
-    res.json(songs);
+    try {
+        const songs = await Song.find().populate('uploaded_by');
+        res.json(songs);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.get('/songs/:id', async (req, res) => {
-    const song = await Song.findById(req.params.id).populate('uploaded_by');
-    song ? res.json(song) : res.status(404).json({ error: 'Song not found' });
+    try {
+        const song = await Song.findById(req.params.id).populate('uploaded_by');
+        if (!song) return res.status(404).json({ error: 'Song not found' });
+        res.json(song);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.delete('/songs/:id', async (req, res) => {
-    await Song.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Song deleted' });
+    try {
+        const song = await Song.findByIdAndDelete(req.params.id);
+        if (!song) return res.status(404).json({ error: 'Song not found' });
+        res.json({ message: 'Song deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // CRUD APIs for Posts
@@ -113,25 +144,47 @@ app.post('/posts', async (req, res) => {
     try {
         const post = new Post(req.body);
         await post.save();
-        res.status(201).json(post);
+        // Populate user_id và song_id (bao gồm uploaded_by trong song_id)
+        const populatedPost = await Post.findById(post._id)
+            .populate('user_id')
+            .populate({ path: 'song_id', populate: { path: 'uploaded_by' } });
+        res.status(201).json(populatedPost);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 });
 
 app.get('/posts', async (req, res) => {
-    const posts = await Post.find().populate('user_id').populate('song_id');
-    res.json(posts);
+    try {
+        const posts = await Post.find()
+            .populate('user_id')
+            .populate({ path: 'song_id', populate: { path: 'uploaded_by' } });
+        res.json(posts);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.get('/posts/:id', async (req, res) => {
-    const post = await Post.findById(req.params.id).populate('user_id').populate('song_id');
-    post ? res.json(post) : res.status(404).json({ error: 'Post not found' });
+    try {
+        const post = await Post.findById(req.params.id)
+            .populate('user_id')
+            .populate({ path: 'song_id', populate: { path: 'uploaded_by' } });
+        if (!post) return res.status(404).json({ error: 'Post not found' });
+        res.json(post);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.delete('/posts/:id', async (req, res) => {
-    await Post.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Post deleted' });
+    try {
+        const post = await Post.findByIdAndDelete(req.params.id);
+        if (!post) return res.status(404).json({ error: 'Post not found' });
+        res.json({ message: 'Post deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // CRUD APIs for Likes
@@ -139,20 +192,47 @@ app.post('/likes', async (req, res) => {
     try {
         const like = new Like(req.body);
         await like.save();
-        res.status(201).json(like);
+        // Populate post_id (và các tham chiếu trong post_id) cùng user_id
+        const populatedLike = await Like.findById(like._id)
+            .populate('user_id')
+            .populate({
+                path: 'post_id',
+                populate: [
+                    { path: 'user_id' },
+                    { path: 'song_id', populate: { path: 'uploaded_by' } }
+                ]
+            });
+        res.status(201).json(populatedLike);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 });
 
 app.get('/likes', async (req, res) => {
-    const likes = await Like.find().populate('post_id').populate('user_id');
-    res.json(likes);
+    try {
+        const likes = await Like.find()
+            .populate('user_id')
+            .populate({
+                path: 'post_id',
+                populate: [
+                    { path: 'user_id' },
+                    { path: 'song_id', populate: { path: 'uploaded_by' } }
+                ]
+            });
+        res.json(likes);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.delete('/likes/:id', async (req, res) => {
-    await Like.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Like removed' });
+    try {
+        const like = await Like.findByIdAndDelete(req.params.id);
+        if (!like) return res.status(404).json({ error: 'Like not found' });
+        res.json({ message: 'Like removed' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.listen(3000, () => console.log('Server is running on port 3000'));
