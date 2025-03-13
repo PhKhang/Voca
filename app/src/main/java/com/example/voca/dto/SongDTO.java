@@ -6,11 +6,11 @@ public class SongDTO {
     private String title;
     private String mp3_file;
     private String thumbnail;
-    private String uploaded_by;
+    private UserDTO uploaded_by;
     private String created_at;
 
     // Constructor
-    public SongDTO(String _id, String youtube_id, String title, String mp3_file, String thumbnail, String uploaded_by, String created_at) {
+    public SongDTO(String _id, String youtube_id, String title, String mp3_file, String thumbnail, UserDTO uploaded_by, String created_at) {
         this._id = _id;
         this.youtube_id = youtube_id;
         this.title = title;
@@ -36,8 +36,8 @@ public class SongDTO {
     public String getThumbnail() { return thumbnail; }
     public void setThumbnail(String thumbnail) { this.thumbnail = thumbnail; }
 
-    public String getUploaded_by() { return uploaded_by; }
-    public void setUploaded_by(String uploaded_by) { this.uploaded_by = uploaded_by; }
+    public UserDTO getUploaded_by() { return uploaded_by; }
+    public void setUploaded_by(UserDTO uploaded_by) { this.uploaded_by = uploaded_by; }
 
     public String getCreated_at() { return created_at; }
     public void setCreated_at(String created_at) { this.created_at = created_at; }

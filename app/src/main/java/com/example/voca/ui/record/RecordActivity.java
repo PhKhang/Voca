@@ -28,6 +28,14 @@ import androidx.core.content.ContextCompat;
 import com.arthenica.ffmpegkit.FFmpegKit;
 import com.arthenica.ffmpegkit.ReturnCode;
 import com.example.voca.R;
+import com.example.voca.bus.LikeBUS;
+import com.example.voca.bus.PostBUS;
+import com.example.voca.bus.SongBUS;
+import com.example.voca.bus.UserBUS;
+import com.example.voca.dto.LikeDTO;
+import com.example.voca.dto.PostDTO;
+import com.example.voca.dto.SongDTO;
+import com.example.voca.dto.UserDTO;
 import com.example.voca.service.FileDownloader;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
@@ -42,7 +50,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 public class RecordActivity extends AppCompatActivity {
@@ -68,13 +78,120 @@ public class RecordActivity extends AppCompatActivity {
 
     private boolean isRecording;
 
-
+    UserBUS userBUS;
+    PostBUS postBUS;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.record_room_layout);
+
+        UserBUS userBUS = new UserBUS();
+//        userBUS.fetchUsers(new UserBUS.OnUsersFetchedListener() {
+//            @Override
+//            public void onUsersFetched(List<UserDTO> users) {
+//                for (UserDTO user : users) {
+//                    System.out.println("User: " + user.getUsername());
+//                }
+//            }
+//            @Override
+//            public void onError(String error) {
+//                System.err.println("Error: " + error);
+//            }
+//        });
+
+        PostBUS postBUS = new PostBUS();
+        SongBUS songBUS = new SongBUS();
+        postBUS.fetchPosts(new PostBUS.OnPostsFetchedListener() {
+            @Override
+            public void onPostsFetched(List<PostDTO> posts) {
+                for (PostDTO post : posts) {
+                    UserDTO user = post.getUser_id();
+                    SongDTO song = post.getSong_id();
+
+                    String userId = (user != null) ? user.get_id() : "UNKNOWN";
+                    String username = (user != null) ? user.getUsername() : "No Username";
+                    String songTitle = (song != null) ? song.getTitle() : "No Title";
+
+                    Log.d("Post", "Caption: " + post.getCaption() +
+                            ", User: " + username +
+                            " (ID: " + userId + ")" +
+                            ", Song: " + songTitle);
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.d("error", error);
+            }
+        });
+
+
+
+// Bước 1: Tạo một người dùng mới
+        UserDTO newUser = new UserDTO(null, "firebase_uid_123456", "john_doe4",
+                "john4@example.com", "https://example.com/avatar4.jpg",
+                "user", null, null, 0);
+        userBUS.createUser(newUser, new UserBUS.OnUserCreatedListener() {
+            @Override
+            public void onUserCreated(UserDTO user) {
+                Log.d("UserModule", "Người dùng được tạo: " + user.getUsername() + " với ID: " + user.get_id());
+
+                // Bước 2: Tạo một bài hát do người dùng vừa tạo tải lên
+                SongDTO newSong = new SongDTO(null, "youtube_id_45678", "Sample Song 3",
+                        "https://example3.com/audio.mp3", "https://example3.com/thumbnail.png", user, null);
+                songBUS.createSong(newSong, new SongBUS.OnSongCreatedListener() {
+                    @Override
+                    public void onSongCreated(SongDTO song) {
+                        Log.d("SongModule", "Bài hát được tạo: " + song.getTitle() + " với ID: " + song.get_id());
+
+                        // Bước 3: Tạo bài đăng (dùng nguyên `UserDTO` và `SongDTO`)
+                        PostDTO newPost = new PostDTO(null, user, song,
+                                "https://example3.com/audio.mp3", "Great song 2!", 0, null);
+                        postBUS.createPost(newPost, new PostBUS.OnPostCreatedListener() {
+                            @Override
+                            public void onPostCreated(PostDTO post) {
+                                Log.d("PostModule", "Bài đăng được tạo với ID: " + post.get_id());
+
+                                // Bước 4: Tạo một lượt thích cho bài đăng (Chỉ truyền `post.get_id()`, `user.get_id()`)
+                                LikeDTO newLike = new LikeDTO(null, post, user, null);
+                                LikeBUS likeBUS = new LikeBUS();
+                                likeBUS.createLike(newLike, new LikeBUS.OnLikeCreatedListener() {
+                                    @Override
+                                    public void onLikeCreated(LikeDTO like) {
+                                        Log.d("LikeModule", "Lượt thích được tạo với ID: " + like.get_id());
+                                    }
+
+                                    @Override
+                                    public void onError(String error) {
+                                        Log.e("LikeModule", "Lỗi khi tạo lượt thích: " + error);
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                Log.e("PostModule", "Lỗi khi tạo bài đăng: " + error);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("SongModule", "Lỗi khi tạo bài hát: " + error);
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e("UserModule", "Lỗi khi tạo người dùng: " + error);
+            }
+        });
+
+
+
         isRecording = false;
         YouTubePlayerView youTubePlayerView = findViewById(R.id.youtube_player_view);
         Button recordButton = findViewById(R.id.record_button);

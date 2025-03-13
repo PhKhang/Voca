@@ -2,15 +2,15 @@ package com.example.voca.dto;
 
 public class PostDTO {
     private String _id;
-    private String user_id; // ID của User
-    private String song_id; // ID của Song
+    private UserDTO user_id; // ID của User
+    private SongDTO song_id; // ID của Song
     private String audio_url;
     private String caption;
     private int likes;
     private String created_at;
 
     // Constructor
-    public PostDTO(String _id, String user_id, String song_id, String audio_url, String caption, int likes, String created_at) {
+    public PostDTO(String _id, UserDTO user_id, SongDTO song_id, String audio_url, String caption, int likes, String created_at) {
         this._id = _id;
         this.user_id = user_id;
         this.song_id = song_id;
@@ -24,11 +24,11 @@ public class PostDTO {
     public String get_id() { return _id; }
     public void set_id(String _id) { this._id = _id; }
 
-    public String getUser_id() { return user_id; }
-    public void setUser_id(String user_id) { this.user_id = user_id; }
+    public UserDTO getUser_id() { return user_id; }
+    public void setUser_id(UserDTO user_id) { this.user_id = user_id; }
 
-    public String getSong_id() { return song_id; }
-    public void setSong_id(String song_id) { this.song_id = song_id; }
+    public SongDTO getSong_id() { return song_id; }
+    public void setSong_id(SongDTO song_id) { this.song_id = song_id; }
 
     public String getAudio_url() { return audio_url; }
     public void setAudio_url(String audio_url) { this.audio_url = audio_url; }

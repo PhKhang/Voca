@@ -56,9 +56,8 @@ public class SongsManagementActivity extends Activity {
                     if (user != null) {
                         Log.d("UserModule", "Tìm thấy người dùng: " + user.getUsername());
 
-                        // Bước 2: Tạo một bài hát mới do người dùng này tải lên
                         SongDTO newSong = new SongDTO(null, videoId, inputTitleVideo, Mp3Path,
-                                thumbnailUrl, user.get_id(), null);
+                                thumbnailUrl, user, null);
 
                         songBus.createSong(newSong, new SongBUS.OnSongCreatedListener() {
                             @Override
