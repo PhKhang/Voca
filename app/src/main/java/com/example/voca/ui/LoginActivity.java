@@ -168,6 +168,10 @@ public class LoginActivity extends Activity {
             if (!username.isEmpty()) {
                 // Lưu vào Firebase Realtime Database
                 RegisterActivity.User newUser = new RegisterActivity.User(username, user.getEmail());
+
+                // Lưu dữ liệu người dùng lên MongoDB
+                RegisterActivity.createUser(user.getEmail(), username, user.getUid());
+
                 usersRef.child(user.getUid()).setValue(newUser)
                         .addOnCompleteListener(task -> {
                             if (task.isSuccessful()) {

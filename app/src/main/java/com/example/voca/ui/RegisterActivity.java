@@ -4,12 +4,15 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import com.example.voca.R;
+import com.example.voca.bus.UserBUS;
+import com.example.voca.dto.UserDTO;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.FirebaseApp;
@@ -19,6 +22,8 @@ public class RegisterActivity extends Activity {
     private EditText etEmail, etPassword, etConfirmPassword, etUsername;
     private Button btnRegister, btnBackToLogin;
     private FirebaseAuth auth;
+
+    static UserBUS userBUS = new UserBUS();
 
 
     @Override
@@ -77,13 +82,33 @@ public class RegisterActivity extends Activity {
                         User user = new User(username, email);
                         userRef.setValue(user);
 
-                        Toast.makeText(RegisterActivity.this, "Registration successful", Toast.LENGTH_SHORT).show();
+                        createUser(email, username, auth.getCurrentUser().getUid());
+
+                        Toast.makeText(RegisterActivity.this, "Đăng kí thành công", Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent(this, LoginActivity.class);
                         startActivity(intent);
                     } else {
-                        Toast.makeText(RegisterActivity.this, "Registration failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(RegisterActivity.this, "Đăng kí thất bại: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
+
+    public static void createUser(String email, String username, String firebaseUID){
+        UserDTO newUser = new UserDTO(null, firebaseUID, username,
+                email, "",
+                "user", null, null, 0);
+
+        userBUS.createUser(newUser, new UserBUS.OnUserCreatedListener() {
+            @Override
+            public void onUserCreated(UserDTO user) {
+                Log.d("User create successfully", "Success");
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.d("User create failed", error);
+            }
+        });
     }
 
     public static class User {
