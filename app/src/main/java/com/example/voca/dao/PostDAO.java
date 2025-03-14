@@ -1,5 +1,7 @@
 package com.example.voca.dao;
 
+import android.util.Log;
+
 import com.example.voca.api.PostApi;
 import com.example.voca.dto.PostDTO;
 

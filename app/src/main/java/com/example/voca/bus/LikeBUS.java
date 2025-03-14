@@ -35,6 +35,32 @@ public class LikeBUS {
         });
     }
 
+    public void isPostLikedByUser(String postId, String userId, OnLikeCheckedListener listener) {
+        fetchLikes(new OnLikesFetchedListener() {
+            @Override
+            public void onLikesFetched(List<LikeDTO> likes) {
+                boolean isLiked = false;
+                for (LikeDTO like : likes) {
+                    if (like.getPost_id().get_id().equals(postId) && like.getUser_id().get_id().equals(userId)) {
+                        isLiked = true;
+                        break;
+                    }
+                }
+                listener.onChecked(isLiked);
+            }
+
+            @Override
+            public void onError(String error) {
+                listener.onChecked(false); // Mặc định chưa like nếu có lỗi
+            }
+        });
+    }
+
+    // Interface callback
+    public interface OnLikeCheckedListener {
+        void onChecked(boolean isLiked);
+    }
+
     // Tạo mới một lượt thích
     public void createLike(LikeDTO like, final OnLikeCreatedListener listener) {
         likeDAO.createLike(like, new Callback<LikeDTO>() {
