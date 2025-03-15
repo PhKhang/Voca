@@ -6,17 +6,18 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
+// Kết nối tới MongoDB
 mongoose.connect(process.env.connection_string)
     .then(() => console.log('Connected to MongoDB'))
     .catch((err) => console.log('Error:', err));
 
-// Schema Definitions
+// Định nghĩa Schema
 const userSchema = new mongoose.Schema({
     firebase_uid: { type: String, required: true, unique: true },
     username: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     avatar: { type: String },
-    roll: { type: String, default: 'user' },
+    roll: { type: String, default: 'user' }, // Có thể bạn muốn sửa "roll" thành "role"
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date, default: Date.now }
 });
@@ -48,7 +49,8 @@ const likeSchema = new mongoose.Schema({
 });
 const Like = mongoose.model('Like', likeSchema);
 
-// API với full populate
+// API Endpoints
+// Lấy danh sách users
 app.get('/users', async (req, res) => {
     try {
         const filters = { ...req.query };
@@ -59,32 +61,26 @@ app.get('/users', async (req, res) => {
     }
 });
 
+// Lấy danh sách songs với thông tin uploaded_by
 app.get('/songs', async (req, res) => {
     try {
         const filters = { ...req.query };
-        const songs = await Song.find(filters).populate({
-            path: 'uploaded_by',
-            populate: { path: 'uploaded_by' }
-        });
+        const songs = await Song.find(filters).populate('uploaded_by');
         res.json(songs);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
+// Lấy danh sách posts với thông tin user_id và song_id (bao gồm uploaded_by trong song)
 app.get('/posts', async (req, res) => {
     try {
         const filters = { ...req.query };
         const posts = await Post.find(filters)
-            .populate({
-                path: 'user_id',
-                populate: { path: 'uploaded_by' }
-            })
+            .populate('user_id')
             .populate({
                 path: 'song_id',
-                populate: {
-                    path: 'uploaded_by'
-                }
+                populate: { path: 'uploaded_by' }
             });
         res.json(posts);
     } catch (err) {
@@ -92,26 +88,19 @@ app.get('/posts', async (req, res) => {
     }
 });
 
+// Lấy danh sách likes với thông tin user_id và post_id (bao gồm user_id và song_id trong post)
 app.get('/likes', async (req, res) => {
     try {
         const filters = { ...req.query };
         const likes = await Like.find(filters)
-            .populate({
-                path: 'user_id',
-                populate: { path: 'uploaded_by' }
-            })
+            .populate('user_id')
             .populate({
                 path: 'post_id',
                 populate: [
-                    {
-                        path: 'user_id',
-                        populate: { path: 'uploaded_by' }
-                    },
+                    { path: 'user_id' },
                     {
                         path: 'song_id',
-                        populate: {
-                            path: 'uploaded_by'
-                        }
+                        populate: { path: 'uploaded_by' }
                     }
                 ]
             });
@@ -121,7 +110,7 @@ app.get('/likes', async (req, res) => {
     }
 });
 
-// Start server
+// Khởi động server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
