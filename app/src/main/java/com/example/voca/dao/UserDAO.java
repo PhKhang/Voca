@@ -31,6 +31,10 @@ public class UserDAO {
         Call<UserDTO> call = userApi.getUserById(id);
         call.enqueue(callback);
     }
+    public void getUserByFirebaseUID(String firebaseUID, Callback<List<UserDTO>> callback) {
+        Call<List<UserDTO>> call = userApi.getUserByFirebaseUID(firebaseUID);
+        call.enqueue(callback);
+    }
 
     public void createUser(UserDTO user, Callback<UserDTO> callback) {
         Call<UserDTO> call = userApi.createUser(user);

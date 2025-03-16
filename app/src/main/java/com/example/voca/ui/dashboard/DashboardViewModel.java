@@ -42,9 +42,6 @@ public class DashboardViewModel extends ViewModel {
             @Override
             public void onPostsFetched(List<PostDTO> postList) {
                 Log.d("DashboardViewModel", "postsLiveData updated");
-//                for (PostDTO post : postList){
-//                    Log.d("Posts", post.get_id());
-//                }
                 postsLiveData.postValue(postList);
             }
 
@@ -52,20 +49,6 @@ public class DashboardViewModel extends ViewModel {
             public void onError(String error) {
                 Log.d("DashboardViewModel", "posts error");
                 errorLiveData.postValue(error);
-            }
-        });
-    }
-
-    public void fetchPostUsername(String userId){
-        userBUS.fetchUserById(userId, new UserBUS.OnUserFetchedListener(){
-            String username;
-            @Override
-            public void onUserFetched(UserDTO user) {
-
-            }
-            @Override
-            public void onError(String error) {
-
             }
         });
     }

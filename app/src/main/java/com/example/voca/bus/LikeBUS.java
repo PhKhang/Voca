@@ -1,5 +1,10 @@
 package com.example.voca.bus;
 
+import android.util.Log;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+
 import com.example.voca.dao.LikeDAO;
 import com.example.voca.dto.LikeDTO;
 
@@ -35,30 +40,34 @@ public class LikeBUS {
         });
     }
 
-    public void isPostLikedByUser(String postId, String userId, OnLikeCheckedListener listener) {
-        fetchLikes(new OnLikesFetchedListener() {
+    public void checkLike(String postId, String userId, final OnLikeCheckedListener listener) {
+        Log.d("CheckingLike", "1");
+        likeDAO.checkLike(postId, userId, (new Callback<List<LikeDTO>>() {
             @Override
-            public void onLikesFetched(List<LikeDTO> likes) {
-                boolean isLiked = false;
-                for (LikeDTO like : likes) {
-                    if (like.getPost_id().get_id().equals(postId) && like.getUser_id().get_id().equals(userId)) {
-                        isLiked = true;
-                        break;
-                    }
+            public void onResponse(Call<List<LikeDTO>> call, Response<List<LikeDTO>> response) {
+                Log.d("CheckingLike", "2");
+                if (response.isSuccessful() && !response.body().isEmpty()) {
+                    Log.d("CheckingLike", "success");
+                    String likeId = response.body().get(0).get_id();
+                    Log.d("CheckingLike", "success2");
+                    listener.onResult(!response.body().isEmpty(), likeId); // Nếu danh sách không rỗng thì đã like
+                } else {
+                    Log.d("CheckingLike", "fail");
+                    listener.onResult(false, null); // Mặc định là chưa like nếu lỗi hoặc rỗng
                 }
-                listener.onChecked(isLiked);
             }
 
             @Override
-            public void onError(String error) {
-                listener.onChecked(false); // Mặc định chưa like nếu có lỗi
+            public void onFailure(Call<List<LikeDTO>> call, Throwable t) {
+                listener.onResult(false, null);
+                Log.d("checkLikeError", t.getMessage());
             }
-        });
+        }));
     }
 
     // Interface callback
     public interface OnLikeCheckedListener {
-        void onChecked(boolean isLiked);
+        void onResult(boolean isLiked, String likeId);
     }
 
     // Tạo mới một lượt thích
@@ -137,5 +146,9 @@ public class LikeBUS {
     public interface OnLikeDeletedListener {
         void onLikeDeleted();
         void onError(String error);
+    }
+
+    public interface OnLikeActionListener {
+        void onResult(boolean success);
     }
 }

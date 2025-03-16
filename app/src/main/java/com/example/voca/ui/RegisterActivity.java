@@ -82,7 +82,7 @@ public class RegisterActivity extends Activity {
                         User user = new User(username, email);
                         userRef.setValue(user);
 
-                        createUser(email, username, auth.getCurrentUser().getUid());
+                        createUser(email, username, userId);
 
                         Toast.makeText(RegisterActivity.this, "Đăng kí thành công", Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent(this, LoginActivity.class);

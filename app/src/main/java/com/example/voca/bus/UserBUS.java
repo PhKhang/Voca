@@ -58,6 +58,25 @@ public class UserBUS {
         });
     }
 
+    public void fetchUserByFirebaseUID(String firebaseUID, final OnUserFetchedByFirebaseUIDListener listener) {
+        userDAO.getUserByFirebaseUID(firebaseUID, new Callback<List<UserDTO>>() {
+            @Override
+            public void onResponse(Call<List<UserDTO>> call, Response<List<UserDTO>> response) {
+                if (response.isSuccessful()) {
+                    Log.d("RESPON", response.toString());
+                    listener.onUserFetched(response.body());
+                } else {
+                    listener.onError("Lỗi khi lấy người dùng bằng firebaseUID: " + response);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<UserDTO>> call, Throwable t) {
+                listener.onError(t.getMessage());
+            }
+        });
+    }
+
     // Tạo mới một người dùng
     public void createUser(UserDTO user, final OnUserCreatedListener listener) {
         userDAO.createUser(user, new Callback<UserDTO>() {
@@ -66,7 +85,7 @@ public class UserBUS {
                 if (response.isSuccessful()) {
                     listener.onUserCreated(response.body());
                 } else {
-                    listener.onError("Lỗi khi tạo người dùng: " + response.code());
+                    listener.onError("Lỗi khi tạo người dùng: " + response);
                 }
             }
 
@@ -123,6 +142,10 @@ public class UserBUS {
 
     public interface OnUserFetchedListener {
         void onUserFetched(UserDTO user);
+        void onError(String error);
+    }
+    public interface OnUserFetchedByFirebaseUIDListener {
+        void onUserFetched(List<UserDTO> user);
         void onError(String error);
     }
 

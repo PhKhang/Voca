@@ -3,6 +3,7 @@ package com.example.voca.ui;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.TextUtils;
@@ -13,6 +14,8 @@ import android.widget.Toast;
 import android.widget.EditText;
 
 import com.example.voca.R;
+import com.example.voca.bus.UserBUS;
+import com.example.voca.dto.UserDTO;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -29,12 +32,16 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.List;
+
 public class LoginActivity extends Activity {
     private EditText emailInput, passwordInput;
     private Button loginBtn;
     private FirebaseAuth mAuth; // Firebase Authentication
     private GoogleSignInClient mGoogleSignInClient;
     private static final int RC_SIGN_IN = 100;
+
+    UserBUS userBUS = new UserBUS();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,6 +91,7 @@ public class LoginActivity extends Activity {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null) {
+                            updateCurrentUser(user.getUid());
                             Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                             intent.putExtra("userEmail", email);
                             startActivity(intent);
@@ -124,6 +132,7 @@ public class LoginActivity extends Activity {
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null) {
                             checkIfUserExists(user);
+                            updateCurrentUser(mAuth.getUid());
                         }
                     } else {
                         Toast.makeText(this, "Xác thực thất bại", Toast.LENGTH_SHORT).show();
@@ -188,7 +197,26 @@ public class LoginActivity extends Activity {
         builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());
         builder.show();
     }
+    public void updateCurrentUser(String firebaseUID){
+        userBUS.fetchUserByFirebaseUID(firebaseUID, new UserBUS.OnUserFetchedByFirebaseUIDListener() {
+            @Override
+            public void onUserFetched(List<UserDTO> user) {
+                UserDTO currentUser = user.get(0);
+//                Log.d("fetch user data success", user.toString());
 
+                // Lưu userId để dùng trong quá trình sử dụng ứng dụng
+                SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putString("userId", currentUser.get_id());
+                editor.apply();
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.d("fetch user data fail", error);
+            }
+        });
+    }
     private void goToMainActivity() {
         startActivity(new Intent(LoginActivity.this, MainActivity.class));
         finish();

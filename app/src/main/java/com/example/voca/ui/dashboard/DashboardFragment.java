@@ -1,5 +1,8 @@
 package com.example.voca.ui.dashboard;
 
+import static android.content.Context.MODE_PRIVATE;
+
+import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
@@ -26,11 +29,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.voca.R;
 import com.example.voca.bus.LikeBUS;
+import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.databinding.FragmentDashboardBinding;
+import com.example.voca.dto.LikeDTO;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
-import com.example.voca.viewmodel.UserViewModel;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.Player;
@@ -38,10 +42,6 @@ import com.google.android.exoplayer2.ui.PlayerView;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -57,7 +57,9 @@ public class DashboardFragment extends Fragment {
     private ExoPlayer player;
     private PostAdapter.PostViewHolder currentViewHolder = null;
 
-    LikeBUS likeBUS = new LikeBUS();
+    private LikeBUS likeBUS = new LikeBUS();
+    private UserBUS userBUS = new UserBUS();
+    private PostBUS postBUS = new PostBUS();
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                                  ViewGroup container, Bundle savedInstanceState) {
@@ -74,18 +76,20 @@ public class DashboardFragment extends Fragment {
 
         dashboardViewModel.getPostsLiveData().observe(getViewLifecycleOwner(), posts -> {
             Log.d("DashboardFragment", "LiveData updated, size: " + (posts != null ? posts.size() : 0));
-            Toast.makeText(requireContext(), "fetched post data", Toast.LENGTH_SHORT).show();
             postAdapter.updateData(posts);
 
         });
-        Toast.makeText(requireContext(), Integer.toString(postAdapter.getItemCount()), Toast.LENGTH_SHORT).show();
+        // Xem tổng số posts
+//        Toast.makeText(requireContext(), Integer.toString(postAdapter.getItemCount()), Toast.LENGTH_SHORT).show();
 
         dashboardViewModel.getErrorLiveData().observe(getViewLifecycleOwner(), error -> {
             Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
             Log.d("DashboardFragment error", error);
         });
+//        Test lớp SharedPreferences
 
 
+//        Log.d("UserFirebaseUid", firebaseUid);
 
         return root;
     }
@@ -152,22 +156,96 @@ public class DashboardFragment extends Fragment {
 
 
             holder.username.setText(post.getUser_id().getUsername());
-
             holder.postTime.setText(TimeFormatter.formatTime(post.getCreated_at()));
             holder.postContent.setText(post.getCaption());
-            //holder.userAvatar.setImageResource(post.getCaption());
-            holder.likeNumber.setText(Integer.toString(post.getLikes(   )));
+//            holder.userAvatar.setImageResource(post.getUser_id().getAvatar());
+            holder.likeNumber.setText(Integer.toString(post.getLikes()));
 
-//            likeBUS.isPostLikedByUser(post.get_id(), currentUserId, new LikeBUS.OnLikeCheckedListener() {
-//                @Override
-//                public void onChecked(boolean isLiked) {
-//                    if (isLiked) {
-//                        holder.likeButton.setImageResource(R.drawable.heart_filled); // Icon trái tim đầy
-//                    } else {
-//                        holder.likeButton.setImageResource(R.drawable.heart_outline); // Icon trái tim rỗng
-//                    }
-//                }
-//            });
+            SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", MODE_PRIVATE);
+            String userId = prefs.getString("userId", null);
+            Toast.makeText(getContext(), "bb", Toast.LENGTH_SHORT).show();
+
+
+            holder.likeBtn.setOnClickListener(v -> {
+                //Toast.makeText(getContext(), "Likebtnpressed", Toast.LENGTH_SHORT).show();
+                if (holder.likeBtn.getTag() != null && holder.likeBtn.getTag().equals("liked")){
+                    likeBUS.checkLike(post.get_id(), userId, (isLiked, likeId) -> {
+                        likeBUS.deleteLike(likeId, new LikeBUS.OnLikeDeletedListener() {
+                            @Override
+                            public void onLikeDeleted() {
+                                holder.likeBtn.setImageResource(R.drawable.heart1);
+                                holder.likeBtn.setTag("unliked");
+                                post.setLikes(post.getLikes() - 1);
+                                postBUS.updatePost(post.get_id(), post, new PostBUS.OnPostUpdatedListener(){
+
+                                    @Override
+                                    public void onPostUpdated(PostDTO post) {
+
+                                    }
+
+                                    @Override
+                                    public void onError(String error) {
+                                        Log.d("PostUpdateFailed", error);
+                                    }
+                                });
+                            }
+                            @Override
+                            public void onError(String error) {
+                                Log.d("LikePostError", error);
+                            }
+                        });
+                    });
+                } else {
+                    userBUS.fetchUserById(userId, new UserBUS.OnUserFetchedListener() {
+                        @Override
+                        public void onUserFetched(UserDTO user) {
+                            LikeDTO newLike = new LikeDTO(null, post, user, null);
+                            likeBUS.createLike(newLike, new LikeBUS.OnLikeCreatedListener() {
+                                @Override
+                                public void onLikeCreated(LikeDTO like) {
+                                    holder.likeBtn.setImageResource(R.drawable.heart3);
+                                    holder.likeBtn.setTag("liked");
+
+                                    post.setLikes(post.getLikes() + 1);
+                                    postBUS.updatePost(post.get_id(), post, new PostBUS.OnPostUpdatedListener(){
+
+                                        @Override
+                                        public void onPostUpdated(PostDTO post) {
+
+                                        }
+
+                                        @Override
+                                        public void onError(String error) {
+                                            Log.d("PostUpdateFailed", error);
+                                        }
+                                    });
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                    Log.d("LikePostError", error);
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onError(String error) {
+
+                        }
+                    });
+                }
+            });
+
+            likeBUS.checkLike(post.get_id(), userId, (isLiked, likeId) -> {
+                if (isLiked) {
+                    holder.likeBtn.setImageResource(R.drawable.heart3);
+                    holder.likeBtn.setTag("liked");
+                } else {
+                    holder.likeBtn.setImageResource(R.drawable.heart1);
+                    holder.likeBtn.setTag("unliked");
+                }
+            });
+
             if (!post.getAudio_url().equals("0")) {
                 holder.playerView.setVisibility(View.GONE);
                 holder.playButton.setVisibility(View.VISIBLE);
@@ -178,7 +256,7 @@ public class DashboardFragment extends Fragment {
                     }
                     currentViewHolder = holder;
 
-                    Toast.makeText(requireContext(), post.getAudio_url(), Toast.LENGTH_SHORT).show();
+//                    Toast.makeText(requireContext(), post.getAudio_url(), Toast.LENGTH_SHORT).show();
                     player.setMediaItem(MediaItem.fromUri(Uri.parse(post.getAudio_url())));
                     player.prepare();
                     player.play();
@@ -233,6 +311,7 @@ public class DashboardFragment extends Fragment {
             PlayerView playerView;
             FrameLayout videoContainer;
             ImageButton playButton;
+            ImageButton likeBtn;
 
             public PostViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -240,6 +319,7 @@ public class DashboardFragment extends Fragment {
                 postTime = itemView.findViewById(R.id.txt_post_time);
                 postContent = itemView.findViewById(R.id.txt_post_content);
                 userAvatar = itemView.findViewById(R.id.avatarImage);
+                likeBtn = itemView.findViewById(R.id.btn_like);
                 likeNumber = itemView.findViewById(R.id.txt_like_count);
 
                 playerView = itemView.findViewById(R.id.player_view);

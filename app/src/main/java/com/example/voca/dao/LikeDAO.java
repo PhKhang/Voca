@@ -1,5 +1,7 @@
 package com.example.voca.dao;
 
+import android.util.Log;
+
 import com.example.voca.api.LikeApi;
 import com.example.voca.dto.LikeDTO;
 
@@ -39,6 +41,11 @@ public class LikeDAO {
 
     public void deleteLike(String id, Callback<Void> callback) {
         Call<Void> call = likeApi.deleteLike(id);
+        call.enqueue(callback);
+    }
+    public void checkLike(String postId, String userId, Callback<List<LikeDTO>> callback) {
+        Log.d("CheckingLike", "3");
+        Call<List<LikeDTO>> call = likeApi.checkLike(postId, userId);
         call.enqueue(callback);
     }
 }
