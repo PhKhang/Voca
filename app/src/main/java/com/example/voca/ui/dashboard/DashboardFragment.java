@@ -27,6 +27,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.voca.R;
 import com.example.voca.bus.LikeBUS;
 import com.example.voca.bus.PostBUS;
@@ -158,12 +159,16 @@ public class DashboardFragment extends Fragment {
             holder.username.setText(post.getUser_id().getUsername());
             holder.postTime.setText(TimeFormatter.formatTime(post.getCreated_at()));
             holder.postContent.setText(post.getCaption());
-//            holder.userAvatar.setImageResource(post.getUser_id().getAvatar());
+
+            Glide.with(requireContext())
+                    .load(post.getUser_id().getAvatar())
+                    .placeholder(R.drawable.ava) // Ảnh mặc định nếu tải chậm
+                    .error(R.drawable.ava) // Ảnh nếu lỗi tải
+                    .into(holder.userAvatar);
             holder.likeNumber.setText(Integer.toString(post.getLikes()));
 
             SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", MODE_PRIVATE);
             String userId = prefs.getString("userId", null);
-            Toast.makeText(getContext(), "bb", Toast.LENGTH_SHORT).show();
 
 
             holder.likeBtn.setOnClickListener(v -> {
