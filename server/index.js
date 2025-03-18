@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema({
     username: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     avatar: { type: String },
-    roll: { type: String, default: 'user' }, // Có thể sửa thành "role"
+    role: { type: String, default: 'user' }, 
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date, default: Date.now }
 });
@@ -28,6 +28,7 @@ const songSchema = new mongoose.Schema({
     title: { type: String, required: true },
     thumbnail: { type: String, required: true },
     uploaded_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    recorded_people: {type: Number, default: 0},
     created_at: { type: Date, default: Date.now }
 });
 const Song = mongoose.model('Song', songSchema);
@@ -313,6 +314,93 @@ app.delete('/likes/:id', async (req, res) => {
         res.json({ message: 'Like deleted' });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+// Like a Post
+app.post('/posts/:id/like', async (req, res) => {
+    try {
+        const postId = req.params.id;
+        const { user_id } = req.body; // Giả sử user_id được gửi trong body
+
+        // Kiểm tra xem post có tồn tại không
+        const post = await Post.findById(postId);
+        if (!post) return res.status(404).json({ error: 'Post not found' });
+
+        // Kiểm tra xem user đã like chưa (tránh like trùng)
+        const existingLike = await Like.findOne({ post_id: postId, user_id });
+        if (existingLike) return res.status(400).json({ error: 'User already liked this post' });
+
+        // Tạo bản ghi Like
+        const like = new Like({ post_id: postId, user_id });
+        await like.save();
+
+        // Tăng số likes trong Post
+        post.likes += 1;
+        await post.save();
+
+        // Populate dữ liệu trả về
+        const populatedLike = await Like.findById(like._id)
+            .populate('user_id')
+            .populate({
+                path: 'post_id',
+                populate: [
+                    { path: 'user_id' },
+                    { path: 'song_id', populate: { path: 'uploaded_by' } }
+                ]
+            });
+
+        res.status(201).json(populatedLike);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Unlike a Post
+app.delete('/posts/:id/unlike', async (req, res) => {
+    try {
+        const postId = req.params.id;
+        const { user_id } = req.body; // Giả sử user_id được gửi trong body
+
+        // Kiểm tra xem post có tồn tại không
+        const post = await Post.findById(postId);
+        if (!post) return res.status(404).json({ error: 'Post not found' });
+
+        // Tìm và xóa bản ghi Like
+        const like = await Like.findOneAndDelete({ post_id: postId, user_id });
+        if (!like) return res.status(404).json({ error: 'Like not found' });
+
+        // Giảm số likes trong Post
+        if (post.likes > 0) {
+            post.likes -= 1;
+            await post.save();
+        }
+
+        res.json({ message: 'Post unliked successfully', likes: post.likes });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// Increment recorded_people for a Song
+app.post('/songs/:id/record', async (req, res) => {
+    try {
+        const songId = req.params.id;
+
+        // Kiểm tra xem song có tồn tại không
+        const song = await Song.findById(songId);
+        if (!song) return res.status(404).json({ error: 'Song not found' });
+
+        // Tăng recorded_people lên 1 bằng $inc
+        const updatedSong = await Song.findByIdAndUpdate(
+            songId,
+            { $inc: { recorded_people: 1 } }, // Tăng giá trị recorded_people lên 1
+            { new: true } // Trả về document sau khi cập nhật
+        ).populate('uploaded_by');
+
+        res.json(updatedSong);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
     }
 });
 
