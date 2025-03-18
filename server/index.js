@@ -1,6 +1,10 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const multer = require('multer');
+const multerS3 = require('multer-s3');
+const { S3Client } = require('@aws-sdk/client-s3');
+const { fromEnv } = require('@aws-sdk/credential-providers');
 dotenv.config();
 
 const app = express();
@@ -9,6 +13,34 @@ mongoose.connect(process.env.connection_string)
     .then(() => console.log('Connected to MongoDB'))
     .catch((err) => console.log('Error:', err));
 
+const s3Client = new S3Client({
+    credentials: fromEnv(),
+    endpoint: "https://fd0314cb84aca3240521990fc2bb803c.r2.cloudflarestorage.com",
+});
+    
+const upload = multer({
+    storage: multerS3({
+        s3: s3Client,
+        bucket: 'voca',
+        metadata: (req, file, cb) => {
+            cb(null, { fieldName: file.fieldname });
+        },
+        contentType: multerS3.AUTO_CONTENT_TYPE,
+        key: (req, file, cb) => {
+            cb(null, `${Date.now().toString()}-${file.originalname}`);
+        },
+    }),
+});
+
+// File upload
+app.post('/upload', upload.single('file'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).send('No file uploaded.');
+    }
+    console.log(req.file.key);
+    return res.status(200).send({ filename: `https://pub-9baa3a81ecf34466aeb5591929ebf0b3.r2.dev/${req.file.key}` });
+}); 
+    
 // Schema Definitions
 const userSchema = new mongoose.Schema({
     firebase_uid: { type: String, required: true, unique: true },
