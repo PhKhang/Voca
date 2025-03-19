@@ -6,20 +6,20 @@ public class UserDTO {
     private String username;
     private String email;
     private String avatar;
-    private String roll;
+    private String role;
     private String created_at;
     private String updated_at;
     private int __v;
 
     // Constructor
     public UserDTO(String _id, String firebase_uid, String username, String email,
-                   String avatar, String roll, String created_at, String updated_at, int __v) {
+                   String avatar, String role, String created_at, String updated_at, int __v) {
         this._id = _id;
         this.firebase_uid = firebase_uid;
         this.username = username;
         this.email = email;
         this.avatar = avatar;
-        this.roll = roll;
+        this.role = role;
         this.created_at = created_at;
         this.updated_at = updated_at;
         this.__v = __v;
@@ -41,8 +41,8 @@ public class UserDTO {
     public String getAvatar() { return avatar; }
     public void setAvatar(String avatar) { this.avatar = avatar; }
 
-    public String getRoll() { return roll; }
-    public void setRoll(String roll) { this.roll = roll; }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 
     public String getCreated_at() { return created_at; }
     public void setCreated_at(String created_at) { this.created_at = created_at; }
