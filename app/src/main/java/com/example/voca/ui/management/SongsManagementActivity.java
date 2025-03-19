@@ -1,4 +1,4 @@
-package com.example.voca.ui;
+package com.example.voca.ui.management;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -15,7 +15,6 @@ import com.example.voca.dto.UserDTO;
 public class SongsManagementActivity extends Activity {
     private SongBUS songBus;
     private UserBUS userBus;
-
     String videoId = "";
     String Mp3Path = "https://pub-9baa3a81ecf34466aeb5591929ebf0b3.r2.dev/youtube_LoKtEI9RONw_audio.mp3";
 

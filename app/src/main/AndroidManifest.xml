@@ -47,7 +47,11 @@
             android:exported="true">
         </activity>
         <activity
-            android:name=".ui.SongsManagementActivity"
+            android:name=".ui.AdminActivity"
+            android:exported="true">
+        </activity>
+        <activity
+            android:name=".ui.management.SongsManagementActivity"
             android:exported="true">
         </activity>
 
