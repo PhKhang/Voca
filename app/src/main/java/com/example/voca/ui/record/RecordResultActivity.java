@@ -40,6 +40,7 @@ public class RecordResultActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getSupportActionBar().hide();
         setContentView(R.layout.record_result_layout);
 
         seekBarTime = findViewById(R.id.seekBarTime);

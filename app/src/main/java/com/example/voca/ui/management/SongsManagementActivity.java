@@ -1,10 +1,11 @@
 package com.example.voca.ui.management;
 
-import android.app.Activity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.example.voca.R;
 import com.example.voca.bus.SongBUS;
@@ -12,7 +13,7 @@ import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.SongDTO;
 import com.example.voca.dto.UserDTO;
 
-public class SongsManagementActivity extends Activity {
+public class SongsManagementActivity extends AppCompatActivity {
     private SongBUS songBus;
     private UserBUS userBus;
     String videoId = "";
@@ -21,6 +22,7 @@ public class SongsManagementActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getSupportActionBar().hide();
         setContentView(R.layout.activity_songsmanagement);
 
         songBus = new SongBUS();
@@ -61,22 +63,26 @@ public class SongsManagementActivity extends Activity {
                         songBus.createSong(newSong, new SongBUS.OnSongCreatedListener() {
                             @Override
                             public void onSongCreated(SongDTO song) {
-                                Log.d("SongModule", "Bài hát mới được tạo: " + song.getTitle() + " với ID: " + song.get_id());
+                                Toast.makeText(SongsManagementActivity.this, "Bài hát mới được tạo: " + song.getTitle() + " với ID: " + song.get_id(), Toast.LENGTH_SHORT).show();
+                                finish();
                             }
 
                             @Override
                             public void onError(String error) {
-                                Log.e("SongModule", "Lỗi khi tạo bài hát: " + error);
+                                Toast.makeText(SongsManagementActivity.this, "Lỗi khi tạo bài hát", Toast.LENGTH_SHORT).show();
+                                //Log.e("SongModule", "Lỗi khi tạo bài hát: " + error);
                             }
                         });
 
                     } else {
+                        Toast.makeText(SongsManagementActivity.this, "Lỗi khi tạo bài hát", Toast.LENGTH_SHORT).show();
                         Log.e("UserModule", "Không tìm thấy người dùng với ID: " + userId);
                     }
                 }
 
                 @Override
                 public void onError(String error) {
+                    Toast.makeText(SongsManagementActivity.this, "Lỗi khi tạo bài hát", Toast.LENGTH_SHORT).show();
                     Log.e("UserModule", "Lỗi khi tìm người dùng: " + error);
                 }
             });

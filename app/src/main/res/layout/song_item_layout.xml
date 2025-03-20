@@ -7,7 +7,6 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="665dp"
         android:orientation="horizontal"
         android:padding="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -17,8 +16,8 @@
 
         <ImageView
             android:id="@+id/imageSong"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
             android:layout_marginRight="10dp"
             android:scaleType="centerCrop"
             android:src="@drawable/ic_dashboard_black_24dp" />
@@ -35,13 +34,18 @@
                 android:layout_height="wrap_content"
                 android:text="Tên bài hát"
                 android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
             <TextView
                 android:id="@+id/textUploader"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Người upload" />
+                android:text="Người upload"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
         </LinearLayout>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
