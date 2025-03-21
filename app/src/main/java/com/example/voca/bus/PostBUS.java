@@ -40,6 +40,24 @@ public class PostBUS {
         });
     }
 
+    public void fetchPostsByUserId(String userId, final OnPostsFetchedListener listener){
+        postDAO.getPostsByUserId(userId, new Callback<List<PostDTO>>() {
+            @Override
+            public void onResponse(Call<List<PostDTO>> call, Response<List<PostDTO>> response) {
+                if (response.isSuccessful()) {
+                    listener.onPostsFetched(response.body());
+                } else {
+                    listener.onError("Lỗi khi lấy danh sách bài đăng của người dùng: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<PostDTO>> call, Throwable t) {
+                listener.onError(t.getMessage());
+            }
+        });
+    }
+
     // Lấy thông tin một bài đăng theo ID
     public void fetchPostById(String id, final OnPostFetchedListener listener) {
         postDAO.getPostById(id, new Callback<PostDTO>() {

@@ -29,6 +29,11 @@ public class PostDAO {
         call.enqueue(callback);
     }
 
+    public void getPostsByUserId(String user_id, Callback<List<PostDTO>> callback){
+        Call<List<PostDTO>> call = postApi.getPostsByUserId(user_id);
+        call.enqueue(callback);
+    }
+
     public void getPostById(String id, Callback<PostDTO> callback) {
         Call<PostDTO> call = postApi.getPostById(id);
         call.enqueue(callback);

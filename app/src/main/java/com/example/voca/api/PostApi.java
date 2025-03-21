@@ -9,6 +9,7 @@ import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.DELETE;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 import java.util.List;
 
@@ -22,6 +23,8 @@ public interface PostApi {
     @POST("posts")
     Call<PostDTO> createPost(@Body PostDTO post);
 
+    @GET("posts")
+    Call<List<PostDTO>> getPostsByUserId(@Query("user_id") String user_id);
     @PUT("posts/{id}")
     Call<PostDTO> updatePost(@Path("id") String id, @Body PostDTO post);
 
