@@ -7,6 +7,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.voca.R;
@@ -19,6 +20,7 @@ public class SongDetailsActivity extends AppCompatActivity {
     private EditText editTitle, editMp3File, editYoutubeId;
     private ImageView imageThumbnail;
     private Button btnSave;
+    private Button btnDelete;
     private SongBUS songBUS;
     private String songId;
 
@@ -36,6 +38,7 @@ public class SongDetailsActivity extends AppCompatActivity {
         editYoutubeId = findViewById(R.id.editYoutubeId);
         imageThumbnail = findViewById(R.id.imageThumbnail);
         btnSave = findViewById(R.id.btnSave);
+        btnDelete = findViewById(R.id.btnDelete);
 
         textCreatedAt.setEnabled(false);
 
@@ -56,6 +59,7 @@ public class SongDetailsActivity extends AppCompatActivity {
         new LoadImage(imageThumbnail).execute(thumbnailUrl);
 
         btnSave.setOnClickListener(v -> updateSong());
+        btnDelete.setOnClickListener(v -> deleteSong());
     }
 
     private void updateSong() {
@@ -85,5 +89,27 @@ public class SongDetailsActivity extends AppCompatActivity {
                 Toast.makeText(SongDetailsActivity.this, "Lỗi cập nhật: " + error, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void deleteSong() {
+        new AlertDialog.Builder(this)
+                .setTitle("Xác nhận xóa")
+                .setMessage("Bạn có chắc chắn muốn xóa bài hát này?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    songBUS.deleteSong(songId, new SongBUS.OnSongDeletedListener() {
+                        @Override
+                        public void onSongDeleted() {
+                            Toast.makeText(SongDetailsActivity.this, "Xóa thành công!", Toast.LENGTH_SHORT).show();
+                            finish();
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            Toast.makeText(SongDetailsActivity.this, "Lỗi xóa: " + error, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
     }
 }
