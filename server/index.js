@@ -27,6 +27,7 @@ const songSchema = new mongoose.Schema({
     youtube_id: { type: String, required: true, unique: true },
     title: { type: String, required: true },
     thumbnail: { type: String, required: true },
+    mp3_file: { type: String, required: true },
     uploaded_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     recorded_people: {type: Number, default: 0},
     created_at: { type: Date, default: Date.now }
