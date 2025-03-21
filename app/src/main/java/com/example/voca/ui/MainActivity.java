@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
                 // Choose a directory using the system's file picker.
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
-                intent.setType("audio/*");
+                intent.setType("*/*");
 
                 intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, "");
 
