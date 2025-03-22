@@ -112,6 +112,24 @@ public class SongBUS {
         });
     }
 
+    public void searchSongsByTitle(String query, final OnSongsFetchedListener listener) {
+        songDAO.searchSongs(query, new Callback<List<SongDTO>>() {
+            @Override
+            public void onResponse(Call<List<SongDTO>> call, Response<List<SongDTO>> response) {
+                if (response.isSuccessful()) {
+                    listener.onSongsFetched(response.body());
+                } else {
+                    listener.onError("Lỗi khi tìm kiếm bài hát: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<SongDTO>> call, Throwable t) {
+                listener.onError(t.getMessage());
+            }
+        });
+    }
+
     // Các interface listener
     public interface OnSongsFetchedListener {
         void onSongsFetched(List<SongDTO> songs);

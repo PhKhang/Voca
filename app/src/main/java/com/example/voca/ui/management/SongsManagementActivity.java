@@ -1,6 +1,8 @@
 package com.example.voca.ui.management;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
@@ -17,7 +19,7 @@ public class SongsManagementActivity extends AppCompatActivity {
     private SongBUS songBus;
     private UserBUS userBus;
     String videoId = "";
-    String Mp3Path = "https://pub-9baa3a81ecf34466aeb5591929ebf0b3.r2.dev/youtube_LoKtEI9RONw_audio.mp3";
+    String Mp3Path = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,7 +30,8 @@ public class SongsManagementActivity extends AppCompatActivity {
         songBus = new SongBUS();
         userBus = new UserBUS();
 
-        String userId = "67c9a9733177a378bbc0d7a7";
+        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        String userId = prefs.getString("userId", null);
 
         EditText mp3LinkEditText = findViewById(R.id.mp3_link_edittext);
         EditText youtubeIdEditText = findViewById(R.id.youtube_id_edittext);
@@ -42,6 +45,7 @@ public class SongsManagementActivity extends AppCompatActivity {
             String inputMp3Link = mp3LinkEditText.getText().toString().trim();
             String inputVideoId = youtubeIdEditText.getText().toString().trim();
             String inputTitleVideo = titleEditText.getText().toString().trim();
+
             if (!inputMp3Link.isEmpty()) {
                 Mp3Path = inputMp3Link;
             }
@@ -58,7 +62,7 @@ public class SongsManagementActivity extends AppCompatActivity {
                         Log.d("UserModule", "Tìm thấy người dùng: " + user.getUsername());
 
                         SongDTO newSong = new SongDTO(null, videoId, inputTitleVideo, Mp3Path,
-                                thumbnailUrl, user, null);
+                                thumbnailUrl, user, null, 0);
 
                         songBus.createSong(newSong, new SongBUS.OnSongCreatedListener() {
                             @Override
@@ -70,7 +74,7 @@ public class SongsManagementActivity extends AppCompatActivity {
                             @Override
                             public void onError(String error) {
                                 Toast.makeText(SongsManagementActivity.this, "Lỗi khi tạo bài hát", Toast.LENGTH_SHORT).show();
-                                //Log.e("SongModule", "Lỗi khi tạo bài hát: " + error);
+                                Log.e("SongModule", "Lỗi khi tạo bài hát: " + error);
                             }
                         });
 

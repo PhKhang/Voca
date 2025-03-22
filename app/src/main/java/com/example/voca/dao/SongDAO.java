@@ -38,6 +38,11 @@ public class SongDAO {
         call.enqueue(callback);
     }
 
+    public void searchSongs(String query, Callback<List<SongDTO>> callback) {
+        Call<List<SongDTO>> call = songApi.searchSongs(query);
+        call.enqueue(callback);
+    }
+
     public void updateSong(String id, SongDTO song, Callback<SongDTO> callback) {
         Call<SongDTO> call = songApi.updateSong(id, song);
         call.enqueue(callback);

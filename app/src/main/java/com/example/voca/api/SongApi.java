@@ -9,6 +9,7 @@ import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.DELETE;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 import java.util.List;
 
@@ -18,6 +19,9 @@ public interface SongApi {
 
     @GET("songs/{id}")
     Call<SongDTO> getSongById(@Path("id") String id);
+
+    @GET("songs")
+    Call<List<SongDTO>> searchSongs(@Query("title") String title);
 
     @POST("songs")
     Call<SongDTO> createSong(@Body SongDTO song);

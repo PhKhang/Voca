@@ -9,7 +9,9 @@ import android.widget.SearchView;
 import android.widget.Toast;
 
 import com.example.voca.R;
+import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.SongBUS;
+import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.SongDTO;
 import com.example.voca.dto.UserDTO;
 import com.example.voca.bus.UserBUS;
@@ -23,8 +25,10 @@ import java.util.List;
 public class AdminActivity extends AppCompatActivity {
     private ListView listView;
     private List<SongDTO> songList;
+    private List<PostDTO> postList;
     private SongAdapter songAdapter;
     private SongBUS songBUS;
+    private PostBUS postBUS;
     private Button addSongButton;
     private SearchView searchView;
 
@@ -39,6 +43,7 @@ public class AdminActivity extends AppCompatActivity {
         searchView = findViewById(R.id.searchView);
         songList = new ArrayList<>();
         songBUS = new SongBUS();
+        postBUS = new PostBUS();
 
         fetchSongs();
         addSongButton.setOnClickListener(v -> {
@@ -49,16 +54,23 @@ public class AdminActivity extends AppCompatActivity {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
+                songBUS.searchSongsByTitle(query, new SongBUS.OnSongsFetchedListener() {
+                    @Override
+                    public void onSongsFetched(List<SongDTO> songs) {
+                        songAdapter.updateData(songs); // Cập nhật danh sách hiển thị
+                    }
 
-                String searchText = query;
-//                // Call the  api
-//                https://wahstatus.com/wp-json/wp/v2/posts/?search= searchText + &per_page=29
-                return false;
+                    @Override
+                    public void onError(String errorMessage) {
+                        Toast.makeText(getApplicationContext(), errorMessage, Toast.LENGTH_SHORT).show();
+                    }
+                });
+                return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                return false;
+                return false; // Không tìm kiếm khi đang nhập
             }
         });
 
@@ -73,6 +85,7 @@ public class AdminActivity extends AppCompatActivity {
             intent.putExtra("thumbnail", selectedSong.getThumbnail());
             intent.putExtra("uploaded_by", selectedSong.getUploaded_by().getUsername()); // Nếu UserDTO có `getUsername()`
             intent.putExtra("created_at", selectedSong.getCreated_at());
+            intent.putExtra("recorded_people", selectedSong.getRecorded_people());
 
             startActivity(intent);
         });
@@ -89,13 +102,28 @@ public class AdminActivity extends AppCompatActivity {
             @Override
             public void onSongsFetched(List<SongDTO> songs) {
                 songList = songs;
-                songAdapter = new SongAdapter(AdminActivity.this, songList);
+                fetchPosts(); // Gọi tiếp API lấy danh sách bài post
+            }
+
+            @Override
+            public void onError(String error) {
+                Toast.makeText(AdminActivity.this, "Error fetching songs: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void fetchPosts() {
+        postBUS.fetchPosts(new PostBUS.OnPostsFetchedListener() {
+            @Override
+            public void onPostsFetched(List<PostDTO> posts) {
+                postList = posts;
+                songAdapter = new SongAdapter(AdminActivity.this, songList, postList);
                 listView.setAdapter(songAdapter);
             }
 
             @Override
             public void onError(String error) {
-                Toast.makeText(AdminActivity.this, "Error: " + error, Toast.LENGTH_SHORT).show();
+                Toast.makeText(AdminActivity.this, "Error fetching posts: " + error, Toast.LENGTH_SHORT).show();
             }
         });
     }

@@ -16,13 +16,14 @@ import com.example.voca.dto.SongDTO;
 import com.example.voca.service.LoadImage;
 
 public class SongDetailsActivity extends AppCompatActivity {
-    private TextView textUploader, textCreatedAt;
+    private TextView textUploader, textCreatedAt, textRecordedPeople;
     private EditText editTitle, editMp3File, editYoutubeId;
     private ImageView imageThumbnail;
     private Button btnSave;
     private Button btnDelete;
     private SongBUS songBUS;
     private String songId;
+    private int recordedPeople;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +35,7 @@ public class SongDetailsActivity extends AppCompatActivity {
         editTitle = findViewById(R.id.editTitle);
         textUploader = findViewById(R.id.textUploader);
         textCreatedAt = findViewById(R.id.editCreatedAt);
+        textRecordedPeople = findViewById(R.id.textRecordedPeople);
         editMp3File = findViewById(R.id.editMp3File);
         editYoutubeId = findViewById(R.id.editYoutubeId);
         imageThumbnail = findViewById(R.id.imageThumbnail);
@@ -50,12 +52,16 @@ public class SongDetailsActivity extends AppCompatActivity {
         String mp3File = intent.getStringExtra("mp3_file");
         String youtubeId = intent.getStringExtra("youtube_id");
         String thumbnailUrl = intent.getStringExtra("thumbnail");
+        String recordedPeopleStr = intent.getStringExtra("recorded_people");
+        recordedPeople = recordedPeopleStr != null ? Integer.parseInt(recordedPeopleStr) : 0;
 
         editTitle.setText(songTitle);
         textUploader.setText(uploadedBy);
         textCreatedAt.setText(createdAt);
         editMp3File.setText(mp3File);
         editYoutubeId.setText(youtubeId);
+        textRecordedPeople.setText(String.valueOf(recordedPeople)); // kiểu int nên phải làm z
+
         new LoadImage(imageThumbnail).execute(thumbnailUrl);
 
         btnSave.setOnClickListener(v -> updateSong());
@@ -74,7 +80,8 @@ public class SongDetailsActivity extends AppCompatActivity {
                 newMp3File,
                 "http://img.youtube.com/vi/" + newYoutubeId + "/0.jpg", // Không cập nhật ảnh thumbnail
                 null,
-                textCreatedAt.getText().toString()
+                textCreatedAt.getText().toString(),
+                recordedPeople
         );
 
         songBUS.updateSong(songId, updatedSong, new SongBUS.OnSongUpdatedListener() {

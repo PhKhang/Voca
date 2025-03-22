@@ -141,7 +141,7 @@ public class RecordActivity extends AppCompatActivity {
 
                 // Bước 2: Tạo một bài hát do người dùng vừa tạo tải lên
                 SongDTO newSong = new SongDTO(null, "youtube_id_45678", "Sample Song 3",
-                        "https://example3.com/audio.mp3", "https://example3.com/thumbnail.png", user, null);
+                        "https://example3.com/audio.mp3", "https://example3.com/thumbnail.png", user, null, 0);
                 songBUS.createSong(newSong, new SongBUS.OnSongCreatedListener() {
                     @Override
                     public void onSongCreated(SongDTO song) {
