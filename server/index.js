@@ -132,6 +132,18 @@ app.get('/songs', async (req, res) => {
     }
 });
 
+// Search Song by title
+app.get('/api/songs', async (req, res) => {
+    const { title } = req.query;
+    let filter = {};
+    if (title) {
+        filter.title = { $regex: `.*${title}.*`, $options: 'i' };
+    }
+
+    const songs = await Song.find(filter).populate('uploaded_by');
+    res.json(songs);
+});
+
 // Read Song by ID
 app.get('/songs/:id', async (req, res) => {
     try {
@@ -163,20 +175,6 @@ app.delete('/songs/:id', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
-});
-
-// Search Song by title
-app.get('/songs', async (req, res) => {
-    const { title } = req.query;
-    let filter = {};
-    if (title) {
-        filter.title = { $regex: `.*${title}.*`, $options: 'i' };
-    }
-    console.log("MongoDB Query:", filter);
-
-    const songs = await Song.find(filter).populate('uploaded_by');
-    console.log("Songs Found:", songs.length);
-    res.json(songs);
 });
 
 // API Endpoints cho Post
