@@ -164,6 +164,19 @@ app.delete('/songs/:id', async (req, res) => {
     }
 });
 
+// Search Song by title
+app.get('/songs', async (req, res) => {
+    const { title } = req.query;
+
+    let filter = {};
+    if (title) {
+        filter.title = { $regex: title, $options: 'i' };
+    }
+
+    const songs = await Song.find(filter).populate('uploaded_by');
+    res.json(songs);
+});
+
 // API Endpoints cho Post
 // Create Post
 app.post('/posts', async (req, res) => {
