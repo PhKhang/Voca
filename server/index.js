@@ -171,7 +171,10 @@ app.get('/songs', async (req, res) => {
     if (title) {
         filter.title = { $regex: `.*${title}.*`, $options: 'i' };
     }
+    console.log("MongoDB Query:", filter); // Kiểm tra query thực tế
+
     const songs = await Song.find(filter).populate('uploaded_by');
+    console.log("Songs Found:", songs.length); // Kiểm tra số bài hát trả về
     res.json(songs);
 });
 
