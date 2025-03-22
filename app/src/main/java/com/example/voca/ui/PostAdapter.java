@@ -25,6 +25,7 @@ import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.LikeDTO;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
+import com.example.voca.service.LoadImage;
 import com.example.voca.ui.dashboard.DashboardFragment;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
@@ -65,12 +66,21 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         holder.username.setText(post.getUser_id().getUsername());
         holder.postTime.setText(DashboardFragment.TimeFormatter.formatTime(post.getCreated_at()));
         holder.postContent.setText(post.getCaption());
-
         Glide.with(context)
                 .load(post.getUser_id().getAvatar())
                 .placeholder(R.drawable.ava) // Ảnh mặc định nếu tải chậm
                 .error(R.drawable.ava) // Ảnh nếu lỗi tải
                 .into(holder.userAvatar);
+
+        if (post.getSong_id() != null) {
+            Glide.with(context)
+                    .load(post.getSong_id().getThumbnail())
+                    .placeholder(R.drawable.default_thumbnail) // Ảnh mặc định nếu tải chậm
+                    .error(R.drawable.ava) // Ảnh nếu lỗi tải
+                    .into(holder.songThumbnail);
+            holder.songName.setText(post.getSong_id().getTitle());
+        }
+
         holder.likeNumber.setText(Integer.toString(post.getLikes()));
 
         SharedPreferences prefs = context.getSharedPreferences("UserPrefs", MODE_PRIVATE);
@@ -225,12 +235,18 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         ImageButton playButton;
         ImageButton likeBtn;
 
+        ImageView songThumbnail;
+        TextView songName;
+
         public PostViewHolder(@NonNull View itemView) {
             super(itemView);
             username = itemView.findViewById(R.id.txt_username);
             postTime = itemView.findViewById(R.id.txt_post_time);
             postContent = itemView.findViewById(R.id.txt_post_content);
             userAvatar = itemView.findViewById(R.id.avatarImage);
+
+            songThumbnail = itemView.findViewById(R.id.songThumbnail);
+            songName = itemView.findViewById(R.id.songName);
             likeBtn = itemView.findViewById(R.id.btn_like);
             likeNumber = itemView.findViewById(R.id.txt_like_count);
 

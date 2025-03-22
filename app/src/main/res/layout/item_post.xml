@@ -63,6 +63,36 @@
             app:layout_constraintTop_toBottomOf="@+id/avatarFrame"
             tools:text="nội dung bài đăng" />
 
+        <View
+            android:id="@+id/line"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="5dp"
+            app:layout_constraintTop_toBottomOf="@+id/txt_post_content" />
+        <LinearLayout
+            android:id="@+id/songDetails"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="5dp"
+            app:layout_constraintTop_toBottomOf="@+id/line">
+
+            <ImageView
+                android:id="@+id/songThumbnail"
+                android:layout_width="60dp"
+                android:layout_height="40dp"
+                android:src="@drawable/default_thumbnail"
+               />
+
+            <TextView
+                android:id="@+id/songName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Bài hát hiện không khả dụng"/>
+        </LinearLayout>
+
+
         <FrameLayout
             android:id="@+id/video_container"
             android:layout_width="match_parent"
@@ -72,7 +102,7 @@
             app:layout_constraintDimensionRatio="16:9"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/txt_post_content">
+            app:layout_constraintTop_toBottomOf="@+id/songDetails">
 
             <com.google.android.exoplayer2.ui.PlayerView
                 android:id="@+id/player_view"
