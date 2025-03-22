@@ -125,6 +125,7 @@ app.get('/songs', async (req, res) => {
     try {
         const filters = { ...req.query };
         const songs = await Song.find(filters).populate('uploaded_by');
+        console.log(filters);
         res.json(songs);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -171,10 +172,10 @@ app.get('/songs', async (req, res) => {
     if (title) {
         filter.title = { $regex: `.*${title}.*`, $options: 'i' };
     }
-    console.log("MongoDB Query:", filter); // Kiểm tra query thực tế
+    console.log("MongoDB Query:", filter);
 
     const songs = await Song.find(filter).populate('uploaded_by');
-    console.log("Songs Found:", songs.length); // Kiểm tra số bài hát trả về
+    console.log("Songs Found:", songs.length);
     res.json(songs);
 });
 
