@@ -3,6 +3,7 @@ package com.example.voca.ui;
 import static android.content.Context.MODE_PRIVATE;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.util.Log;
@@ -13,6 +14,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -79,6 +81,15 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                     .error(R.drawable.ava) // Ảnh nếu lỗi tải
                     .into(holder.songThumbnail);
             holder.songName.setText(post.getSong_id().getTitle());
+        }
+
+        if (context instanceof MainActivity){
+            holder.userAvatar.setOnClickListener(v -> {
+                Intent intent = new Intent(context, ProfileViewActivity.class);
+                intent.putExtra("user_id", post.getUser_id().get_id());
+                context.startActivity(intent);
+            });
+
         }
 
         holder.likeNumber.setText(Integer.toString(post.getLikes()));
