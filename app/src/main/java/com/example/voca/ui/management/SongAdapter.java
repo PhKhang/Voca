@@ -1,6 +1,7 @@
 package com.example.voca.ui.management;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -47,6 +48,10 @@ public class SongAdapter extends ArrayAdapter<SongDTO> {
         }
 
         SongDTO song = songs.get(position);
+        if (song == null) {
+            Log.e("SongAdapter", "SongDTO at position " + position + " is null");
+            return convertView; // Tránh crash
+        }
         new LoadImage(holder.thumbnail).execute(song.getThumbnail());
         holder.title.setText(song.getTitle());
         holder.uploader.setText(song.getUploaded_by().getUsername());
@@ -54,7 +59,11 @@ public class SongAdapter extends ArrayAdapter<SongDTO> {
 
         int totalLikes = 0;
         for (PostDTO post : posts) {
-            if (post.getSong_id().get_id().equals(song.get_id())) {
+            if (post == null || post.getSong_id() == null || post.getSong_id().get_id() == null) {
+                continue;
+            }
+
+            if (song.get_id() != null && post.getSong_id().get_id().equals(song.get_id())) {
                 totalLikes += post.getLikes();
             }
         }

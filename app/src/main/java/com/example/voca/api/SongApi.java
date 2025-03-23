@@ -20,7 +20,7 @@ public interface SongApi {
     @GET("songs/{id}")
     Call<SongDTO> getSongById(@Path("id") String id);
 
-    @GET("songs")
+    @GET("api/songs")
     Call<List<SongDTO>> searchSongs(@Query("title") String title);
 
     @POST("songs")

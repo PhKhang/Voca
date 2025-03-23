@@ -1,8 +1,11 @@
 package com.example.voca.ui;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SearchView;
@@ -31,7 +34,7 @@ public class AdminActivity extends AppCompatActivity {
     private PostBUS postBUS;
     private Button addSongButton;
     private SearchView searchView;
-
+    private ProgressDialog progressDialog;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -98,19 +101,27 @@ public class AdminActivity extends AppCompatActivity {
     }
 
     private void fetchSongs() {
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Loading songs...");
+        progressDialog.setCancelable(false);
+        progressDialog.show(); // Hiển thị progress dialog trước khi tải
+
         songBUS.fetchSongs(new SongBUS.OnSongsFetchedListener() {
             @Override
             public void onSongsFetched(List<SongDTO> songs) {
                 songList = songs;
-                fetchPosts(); // Gọi tiếp API lấy danh sách bài post
+                fetchPosts(); // Gọi fetchPosts() sau khi tải xong bài hát
+                progressDialog.dismiss(); // Ẩn progress dialog khi hoàn tất
             }
 
             @Override
             public void onError(String error) {
+                progressDialog.dismiss(); // Ẩn progress dialog nếu có lỗi
                 Toast.makeText(AdminActivity.this, "Error fetching songs: " + error, Toast.LENGTH_SHORT).show();
             }
         });
     }
+
 
     private void fetchPosts() {
         postBUS.fetchPosts(new PostBUS.OnPostsFetchedListener() {

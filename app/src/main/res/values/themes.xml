@@ -12,6 +12,7 @@
         <!-- Status bar color. -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
     <style name="RoundedButton" parent="Widget.MaterialComponents.Button">

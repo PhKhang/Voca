@@ -57,21 +57,31 @@
             android:text="Recorded People"
             android:textSize="14sp"/>
 
-        <Button
-            android:id="@+id/btnSave"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Lưu thay đổi"
-            android:layout_marginTop="10dp"
-            style="@style/RoundedButton"/>
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp">
 
-        <Button
-            android:id="@+id/btnDelete"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Xóa bài hát"
-            android:layout_marginTop="10dp"
-            style="@style/RoundedButton"/>
+            <Button
+                android:id="@+id/btnSave"
+                style="@style/RoundedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="Lưu thay đổi" />
+
+            <Button
+                android:id="@+id/btnDelete"
+                style="@style/RoundedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Xóa bài hát" />
+        </LinearLayout>
+
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
