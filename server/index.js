@@ -41,7 +41,9 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     return res.status(200).send({ filename: `https://pub-9baa3a81ecf34466aeb5591929ebf0b3.r2.dev/${req.file.key}` });
 }); 
 
-app.post('/delete', async (req, res) => {
+app.delete('/delete', async (req, res) => {
+    console.log("In");
+    console.log("Request body:", req.body);
     const deleteFile = {
         "Bucket": "voca",
         "Key": decodeURI(req.body.key?.split('/').pop()),

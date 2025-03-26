@@ -59,17 +59,6 @@ public class FileUploader {
             }
         });
 
-//            client.newCall(request).enqueue(new Callback() {
-//                @Override
-//                public void onFailure(Call call, IOException e) {
-//                    e.printStackTrace();
-//                }
-//
-//                @Override
-//                public void onResponse(Call call, Response response) throws IOException {
-//                    System.out.println("Response: " + response.body().string());
-//                }
-//            });
     }
 
     File getFileFromUri(Uri uri) throws IOException {
@@ -111,5 +100,25 @@ public class FileUploader {
             }
         }
         return file;
+    }
+
+    public void deleteFileByURL(String url) {
+        OkHttpClient client = new OkHttpClient();
+        String json = "{\"key\": \"" + url + "\"}";
+        System.out.println("Json: " + json);
+        RequestBody requestBody = RequestBody.create(json, MediaType.get("application/json"));
+        Request request = new Request.Builder()
+                .url("http://10.0.2.2:3000/delete")
+                .delete(requestBody)
+                .build();
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            try (Response response = client.newCall(request).execute()){
+                System.out.println("Response: " + response.body().string());
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 }
