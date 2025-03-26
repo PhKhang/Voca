@@ -2,15 +2,22 @@ package com.example.voca.ui.dashboard;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static com.google.android.material.internal.ViewUtils.hideKeyboard;
+
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -37,14 +44,14 @@ import com.example.voca.dto.LikeDTO;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
 import com.example.voca.ui.PostAdapter;
+import com.example.voca.ui.ProfileViewActivity;
 import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.ui.PlayerView;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -57,6 +64,13 @@ public class DashboardFragment extends Fragment {
     private PostAdapter postAdapter;
     RecyclerView recyclerView;
     private ExoPlayer player;
+    private RecyclerView recyclerViewUsers;
+    private EditText searchEditText;
+    private UserBUS userBUS = new UserBUS();
+//    private FrameLayout searchResultsContainer;
+    private UserAdapter userAdapter;
+    private List<UserDTO> userList = new ArrayList<>(), filteredUsers = new ArrayList<>();
+
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                                  ViewGroup container, Bundle savedInstanceState) {
@@ -76,26 +90,108 @@ public class DashboardFragment extends Fragment {
             postAdapter.updateData(posts);
 
         });
-        // Xem tổng số posts
-//        Toast.makeText(requireContext(), Integer.toString(postAdapter.getItemCount()), Toast.LENGTH_SHORT).show();
-
         dashboardViewModel.getErrorLiveData().observe(getViewLifecycleOwner(), error -> {
             Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
             Log.d("DashboardFragment error", error);
         });
-//        Test lớp SharedPreferences
 
+        recyclerViewUsers = root.findViewById(R.id.recyclerViewUsers);
+        searchEditText = root.findViewById(R.id.searchEditText);
+//        searchResultsContainer = root.findViewById(R.id.searchOverlay);
 
-//        Log.d("UserFirebaseUid", firebaseUid);
+        userBUS.fetchUsers(new UserBUS.OnUsersFetchedListener() {
+            @Override
+            public void onUsersFetched(List<UserDTO> users) {
+                userList = users;
+                filteredUsers.addAll(userList);
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.d("FetchUsersError", error);
+            }
+        });
+
+        userAdapter = new UserAdapter(filteredUsers);
+        recyclerViewUsers.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerViewUsers.setAdapter(userAdapter);
+
+        ImageView clearSearchButton = root.findViewById(R.id.clearSearchButton);
+        clearSearchButton.setOnClickListener(v -> {
+            searchEditText.setText("");
+            searchEditText.clearFocus();
+        });
+        searchEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void afterTextChanged(Editable s) {
+                String query = s.toString().trim();
+
+                clearSearchButton.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
+
+                if (!query.isEmpty()) {
+                    searchUsers(query);
+                } else {
+                    hideSearchResults();
+                }
+            }
+
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+        });
+        // Xử lý sự kiện khi nhấn nút xóa
+        clearSearchButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                searchEditText.setText("");
+                searchEditText.clearFocus();
+
+                recyclerViewUsers.setVisibility(View.GONE);
+            }
+        });
+//        searchResultsContainer.setOnClickListener(v -> hideSearchResults());
+        searchEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (hasFocus && searchEditText.getText().length() > 0) {
+                    // Hiển thị kết quả tìm kiếm khi có focus và có nội dung
+                    recyclerViewUsers.setVisibility(View.VISIBLE);
+                } else {
+                    recyclerViewUsers.setVisibility(View.GONE);
+                }
+            }
+        });
 
         return root;
     }
 
-        @Override
+    private void searchUsers(String query) {
+        if (userList == null) {
+            return;
+        }
+
+        filteredUsers.clear();
+        for (UserDTO user : userList) {
+            if (user.getUsername().toLowerCase().contains(query.toLowerCase())) {
+                filteredUsers.add(user);
+            }
+        }
+
+        Collections.sort(filteredUsers, Comparator.comparing(UserDTO::getUsername));
+
+        userAdapter.notifyDataSetChanged();
+        recyclerViewUsers.setVisibility(View.VISIBLE);
+//        searchResultsContainer.setVisibility(View.VISIBLE);
+    }
+
+    private void hideSearchResults() {
+//        searchEditText.setText("");
+        recyclerViewUsers.setVisibility(View.GONE);
+//        searchResultsContainer.setVisibility(View.GONE);
+    }
+
+    @Override
         public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
             super.onViewCreated(view, savedInstanceState);
-
-
 
         }
 
@@ -133,5 +229,53 @@ public class DashboardFragment extends Fragment {
         }
     }
 
+    public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
+        private List<UserDTO> userList;
 
+
+        public UserAdapter(List<UserDTO> userList) {
+            this.userList = userList;
+        }
+
+        @NonNull
+        @Override
+        public UserViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(requireContext()).inflate(R.layout.item_user_search, parent, false);
+            return new UserViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull UserViewHolder holder, int position) {
+            UserDTO user = userList.get(position);
+
+            holder.txtUsername.setText(user.getUsername());
+
+            Glide.with(requireContext())
+                    .load(user.getAvatar())
+                    .placeholder(R.drawable.ava)
+                    .into(holder.imgAvatar);
+
+            holder.itemView.setOnClickListener(v -> {
+                Intent intent = new Intent(requireContext(), ProfileViewActivity.class);
+                intent.putExtra("user_id", user.get_id());
+                requireContext().startActivity(intent);
+            });
+        }
+
+        @Override
+        public int getItemCount() {
+            return userList.size();
+        }
+
+        public class UserViewHolder extends RecyclerView.ViewHolder {
+            ImageView imgAvatar;
+            TextView txtUsername;
+
+            public UserViewHolder(@NonNull View itemView) {
+                super(itemView);
+                imgAvatar = itemView.findViewById(R.id.img_avatar);
+                txtUsername = itemView.findViewById(R.id.txt_username);
+            }
+        }
+    }
 }
