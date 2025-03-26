@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
-const { S3Client } = require('@aws-sdk/client-s3');
+const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { fromEnv } = require('@aws-sdk/credential-providers');
 dotenv.config();
 
@@ -40,6 +40,18 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     console.log(req.file.key);
     return res.status(200).send({ filename: `https://pub-9baa3a81ecf34466aeb5591929ebf0b3.r2.dev/${req.file.key}` });
 }); 
+
+app.post('/delete', async (req, res) => {
+    const deleteFile = {
+        "Bucket": "voca",
+        "Key": decodeURI(req.body.key?.split('/').pop()),
+    }
+    console.log("To delete:", deleteFile);
+    
+    const command = new DeleteObjectCommand(deleteFile);
+    await s3Client.send(command);
+    res.status(200).send('File deleted successfully');
+});
     
 // Schema Definitions
 const userSchema = new mongoose.Schema({
