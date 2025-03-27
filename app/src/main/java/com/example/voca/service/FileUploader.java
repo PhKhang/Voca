@@ -6,6 +6,9 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.OpenableColumns;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -22,7 +25,7 @@ import okhttp3.Response;
 
 public class FileUploader {
     Context context;
-    public void run(Context context, Uri uri) {
+    public void run(Context context, Uri uri, OnUploadCompleteListener listener) {
         this.context = context;
         File file;
         try {
@@ -53,9 +56,12 @@ public class FileUploader {
         System.out.println("Request starting...");
         Executors.newSingleThreadExecutor().execute(() -> {
             try (Response response = client.newCall(request).execute()) {
-                System.out.println("Response: " + response.body().string());
-            } catch (IOException e) {
+                JSONObject mjson = new JSONObject(response.body().string());
+                String cloudflareUrl = mjson.getString("filename");
+                listener.onSuccess(cloudflareUrl);
+            } catch (IOException | JSONException e) {
                 e.printStackTrace();
+                listener.onFailure();
             }
         });
 
@@ -120,5 +126,10 @@ public class FileUploader {
                 e.printStackTrace();
             }
         });
+    }
+
+    public interface OnUploadCompleteListener {
+        void onSuccess(String url);
+        void onFailure();
     }
 }

@@ -52,7 +52,17 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 System.out.println("Clicked");
-                new FileUploader().run(getApplicationContext(), fileUri);
+                new FileUploader().run(getApplicationContext(), fileUri, new FileUploader.OnUploadCompleteListener() {
+                    @Override
+                    public void onSuccess(String url) {
+
+                    }
+
+                    @Override
+                    public void onFailure() {
+
+                    }
+                });
             }
         });
 

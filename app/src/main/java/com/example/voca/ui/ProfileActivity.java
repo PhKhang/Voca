@@ -1,5 +1,6 @@
 package com.example.voca.ui;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -33,6 +34,7 @@ import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.LikeDTO;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
+import com.example.voca.service.FileUploader;
 import com.example.voca.ui.dashboard.DashboardFragment;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
@@ -113,6 +115,13 @@ public class ProfileActivity extends AppCompatActivity {
                 }
             }
         }
+
+        findViewById(R.id.edit_avatar).setOnClickListener(v1 -> {
+            Intent intent = new Intent(Intent.ACTION_PICK);
+            intent.setType("image/*");
+            startActivityForResult(intent, 2);
+        });
+
 
         findViewById(R.id.edit_passwordBtn).setOnClickListener(v1 -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -251,7 +260,69 @@ public class ProfileActivity extends AppCompatActivity {
                 Log.d("UserProfileError", error);
             }
         });
+    }
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
 
+        if (requestCode == 2 && resultCode == Activity.RESULT_OK) {
+            if (data != null) {
+                Uri imageUri = data.getData(); // Lấy URI của ảnh đã chọn
+                showConfirmDialog(imageUri); // Hiển thị Dialog xác nhận
+            }
+        }
+    }
+
+    private void showConfirmDialog(Uri imageUri) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.dialog_confirm_avatar, null);
+        builder.setView(dialogView);
+
+        ImageView previewAvatar = dialogView.findViewById(R.id.preview_avatar);
+        Button btnConfirm = dialogView.findViewById(R.id.btn_confirm);
+        Button btnCancel = dialogView.findViewById(R.id.btn_cancel);
+
+        Glide.with(this).load(imageUri).circleCrop().into(previewAvatar);
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Xác nhận -> Upload file lên server
+        btnConfirm.setOnClickListener(v -> {
+            new FileUploader().run(this, imageUri, new FileUploader.OnUploadCompleteListener() {
+                @Override
+                public void onSuccess(String url) {
+                    String currentAvatarUrl = curUser.getAvatar();
+                    // Xóa avatar cũ
+                    if (currentAvatarUrl != null && !currentAvatarUrl.isEmpty()) {
+                        new FileUploader().deleteFileByURL(currentAvatarUrl);
+                    }
+                    curUser.setAvatar(url);
+
+                    userBUS.updateUser(curUser.get_id(), curUser,new UserBUS.OnUserUpdatedListener() {
+                        @Override
+                        public void onUserUpdated(UserDTO user) {
+
+                        }
+                        @Override
+                        public void onError(String error) {
+                            Log.d("AvatarUpdateFailed", error);
+                        }
+                    });
+                    dialog.dismiss();
+                    runOnUiThread(() -> recreate());
+                }
+
+                @Override
+                public void onFailure() {
+                    Log.d("UploadAvatarFailed", "");
+                }
+            });
+
+        });
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
     }
 }
