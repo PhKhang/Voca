@@ -191,7 +191,8 @@ public class RecordActivity extends AppCompatActivity {
             }
         });
 
-
+//        Intent intent = getIntent();
+//        videoId = intent.getStringExtra("song_id");
 
         isRecording = false;
         YouTubePlayerView youTubePlayerView = findViewById(R.id.youtube_player_view);

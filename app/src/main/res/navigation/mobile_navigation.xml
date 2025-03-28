@@ -11,17 +11,17 @@
         android:label="@string/title_home"
         tools:layout="@layout/fragment_home" />
 
-<!--    <fragment-->
-<!--        android:id="@+id/navigation_sing"-->
-<!--        android:name="com.example.voca.ui."-->
-<!--        android:label="@string/title_dashboard"-->
-<!--        tools:layout="@layout/fragment_dashboard" />-->
-
     <fragment
         android:id="@+id/navigation_dashboard"
         android:name="com.example.voca.ui.dashboard.DashboardFragment"
         android:label="@string/title_dashboard"
         tools:layout="@layout/fragment_dashboard" />
+
+    <fragment
+        android:id="@+id/navigation_sing"
+        android:name="com.example.voca.ui.sing.SingFragment"
+        android:label="@string/title_sing"
+        tools:layout="@layout/fragment_sing" />
 
     <fragment
         android:id="@+id/navigation_notifications"

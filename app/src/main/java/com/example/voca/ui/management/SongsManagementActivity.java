@@ -1,12 +1,20 @@
 package com.example.voca.ui.management;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.DocumentsContract;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.voca.R;
@@ -14,12 +22,15 @@ import com.example.voca.bus.SongBUS;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.SongDTO;
 import com.example.voca.dto.UserDTO;
+import com.example.voca.service.FileUploader;
 
 public class SongsManagementActivity extends AppCompatActivity {
     private SongBUS songBus;
     private UserBUS userBus;
-    String videoId = "";
-    String Mp3Path = "";
+    private Uri fileUri;
+    private String videoId = "";
+    private String Mp3Path = "";
+    private EditText mp3LinkEditText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,13 +44,16 @@ public class SongsManagementActivity extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         String userId = prefs.getString("userId", null);
 
-        EditText mp3LinkEditText = findViewById(R.id.mp3_link_edittext);
+        mp3LinkEditText = findViewById(R.id.mp3_link_edittext);
         EditText youtubeIdEditText = findViewById(R.id.youtube_id_edittext);
         EditText titleEditText = findViewById(R.id.title_edittext);
 
         Button submitButton = findViewById(R.id.submit_button);
         Button returnButton = findViewById(R.id.return_button);
         returnButton.setOnClickListener(v -> finish());
+
+        Button pickButton = findViewById(R.id.pick);
+        pickButton.setOnClickListener(view -> openFilePicker()); // Mở trình chọn file
 
         submitButton.setOnClickListener(v -> {
             String inputMp3Link = mp3LinkEditText.getText().toString().trim();
@@ -91,13 +105,62 @@ public class SongsManagementActivity extends AppCompatActivity {
                 }
             });
         });
+    }
 
-
+    private void openFilePicker() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("audio/*");
+        startActivityForResult(intent, 3); // Request code là 3
     }
 
     @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        finish();
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == 3 && resultCode == Activity.RESULT_OK) {
+            if (data != null) {
+                Uri audioUri = data.getData(); // Lấy URI của file âm thanh
+                showConfirmAudioDialog(audioUri); // Hiển thị Dialog xác nhận
+            }
+        }
+    }
+
+    private void showConfirmAudioDialog(Uri audioUri) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.dialog_confirm_audio, null);
+        builder.setView(dialogView);
+
+        TextView audioName = dialogView.findViewById(R.id.audio_name);
+        Button btnConfirm = dialogView.findViewById(R.id.btn_confirm);
+        Button btnCancel = dialogView.findViewById(R.id.btn_cancel);
+
+        audioName.setText(audioUri.getLastPathSegment());
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        btnConfirm.setOnClickListener(v -> {
+            new FileUploader().run(this, audioUri, new FileUploader.OnUploadCompleteListener() {
+                @Override
+                public void onSuccess(String url) {
+                    runOnUiThread(() -> {
+                        Mp3Path = url;
+                        mp3LinkEditText.setText(url);
+                        Toast.makeText(SongsManagementActivity.this, "Tải lên thành công!", Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                    });
+                }
+
+                @Override
+                public void onFailure() {
+                    Log.d("UploadAudioFailed", "Tải lên thất bại!");
+                    dialog.dismiss();
+                    Toast.makeText(SongsManagementActivity.this, "Tải lên thất bại!", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
     }
 }
