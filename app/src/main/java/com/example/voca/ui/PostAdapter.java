@@ -105,7 +105,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                     likeBUS.deleteLike(likeId, new LikeBUS.OnLikeDeletedListener() {
                         @Override
                         public void onLikeDeleted() {
-                            holder.likeBtn.setImageResource(R.drawable.heart1);
+                            holder.likeBtn.setImageResource(R.drawable.ic_heart_24dp);
                             holder.likeBtn.setTag("unliked");
                             post.setLikes(post.getLikes() - 1);
                             postBUS.updatePost(post.get_id(), post, new PostBUS.OnPostUpdatedListener(){
@@ -135,7 +135,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                         likeBUS.createLike(newLike, new LikeBUS.OnLikeCreatedListener() {
                             @Override
                             public void onLikeCreated(LikeDTO like) {
-                                holder.likeBtn.setImageResource(R.drawable.heart3);
+                                holder.likeBtn.setImageResource(R.drawable.ic_heart_filled_24dp);
                                 holder.likeBtn.setTag("liked");
 
                                 post.setLikes(post.getLikes() + 1);
@@ -170,10 +170,10 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
         likeBUS.checkLike(post.get_id(), userId, (isLiked, likeId) -> {
             if (isLiked) {
-                holder.likeBtn.setImageResource(R.drawable.heart3);
+                holder.likeBtn.setImageResource(R.drawable.ic_heart_filled_24dp);
                 holder.likeBtn.setTag("liked");
             } else {
-                holder.likeBtn.setImageResource(R.drawable.heart1);
+                holder.likeBtn.setImageResource(R.drawable.ic_heart_24dp);
                 holder.likeBtn.setTag("unliked");
             }
         });
