@@ -2,10 +2,13 @@ package com.example.voca.ui.dashboard;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static androidx.core.content.ContextCompat.getColor;
 import static com.google.android.material.internal.ViewUtils.hideKeyboard;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
@@ -13,6 +16,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -252,7 +256,7 @@ public class DashboardFragment extends Fragment {
 
             Glide.with(requireContext())
                     .load(user.getAvatar())
-                    .placeholder(R.drawable.ava)
+                    .placeholder(R.drawable.default_account_avatar)
                     .into(holder.imgAvatar);
 
             holder.itemView.setOnClickListener(v -> {

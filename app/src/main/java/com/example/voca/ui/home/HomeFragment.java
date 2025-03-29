@@ -13,7 +13,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.voca.ui.LoginActivity;
-import com.example.voca.ui.ProfileActivity;
+import com.example.voca.ui.ProfileFragment;
 import com.example.voca.ui.management.SongsManagementActivity;
 import com.example.voca.ui.AdminActivity;
 import com.example.voca.ui.record.RecordActivity;
@@ -72,12 +72,6 @@ public class HomeFragment extends Fragment {
             Intent intent = new Intent(requireContext(), AdminActivity.class);
             startActivity(intent);
         });
-
-        binding.openProfileButton.setOnClickListener(v -> {
-            Intent intent = new Intent(requireContext(), ProfileActivity.class);
-            startActivity(intent);
-        });
-
 
         View root = binding.getRoot();
         final TextView textView = binding.textHome;

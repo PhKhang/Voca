@@ -70,15 +70,15 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         holder.postContent.setText(post.getCaption());
         Glide.with(context)
                 .load(post.getUser_id().getAvatar())
-                .placeholder(R.drawable.ava) // Ảnh mặc định nếu tải chậm
-                .error(R.drawable.ava) // Ảnh nếu lỗi tải
+                .placeholder(R.drawable.default_account_avatar) // Ảnh mặc định nếu tải chậm
+                .error(R.drawable.default_account_avatar) // Ảnh nếu lỗi tải
                 .into(holder.userAvatar);
 
         if (post.getSong_id() != null) {
             Glide.with(context)
                     .load(post.getSong_id().getThumbnail())
                     .placeholder(R.drawable.default_thumbnail) // Ảnh mặc định nếu tải chậm
-                    .error(R.drawable.ava) // Ảnh nếu lỗi tải
+                    .error(R.drawable.default_thumbnail) // Ảnh nếu lỗi tải
                     .into(holder.songThumbnail);
             holder.songName.setText(post.getSong_id().getTitle());
         }
