@@ -90,7 +90,7 @@ public class SingAdapter extends BaseAdapter {
 
         holder.singButton.setOnClickListener(v -> {
             Intent intent = new Intent(context, RecordActivity.class);
-            intent.putExtra("song_id", song.get_id());
+            intent.putExtra("song_id", song.getYoutube_id());
             context.startActivity(intent);
         });
 
