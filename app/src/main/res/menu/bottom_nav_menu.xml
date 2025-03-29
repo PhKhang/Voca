@@ -13,7 +13,7 @@
 
     <item
         android:id="@+id/navigation_sing"
-        android:icon="@drawable/ic_dashboard_black_24dp"
+        android:icon="@drawable/ic_karaoke_24dp"
         android:title="@string/title_sing" />
 
     <item
