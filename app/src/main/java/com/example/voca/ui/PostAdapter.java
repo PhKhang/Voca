@@ -101,18 +101,18 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         holder.likeBtn.setOnClickListener(v -> {
             //Toast.makeText(getContext(), "Likebtnpressed", Toast.LENGTH_SHORT).show();
             if (holder.likeBtn.getTag() != null && holder.likeBtn.getTag().equals("liked")){
+                holder.likeBtn.setImageResource(R.drawable.ic_heart_24dp);
+                holder.likeBtn.setTag("unliked");
                 likeBUS.checkLike(post.get_id(), userId, (isLiked, likeId) -> {
                     likeBUS.deleteLike(likeId, new LikeBUS.OnLikeDeletedListener() {
                         @Override
                         public void onLikeDeleted() {
-                            holder.likeBtn.setImageResource(R.drawable.ic_heart_24dp);
-                            holder.likeBtn.setTag("unliked");
                             post.setLikes(post.getLikes() - 1);
                             postBUS.updatePost(post.get_id(), post, new PostBUS.OnPostUpdatedListener(){
 
                                 @Override
                                 public void onPostUpdated(PostDTO post) {
-
+                                    holder.likeNumber.setText(Integer.toString(post.getLikes()));
                                 }
 
                                 @Override
@@ -124,10 +124,14 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                         @Override
                         public void onError(String error) {
                             Log.d("LikePostError", error);
+                            holder.likeBtn.setImageResource(R.drawable.ic_heart_filled_24dp);
+                            holder.likeBtn.setTag("liked");
                         }
                     });
                 });
             } else {
+                holder.likeBtn.setImageResource(R.drawable.ic_heart_filled_24dp);
+                holder.likeBtn.setTag("liked");
                 userBUS.fetchUserById(userId, new UserBUS.OnUserFetchedListener() {
                     @Override
                     public void onUserFetched(UserDTO user) {
@@ -135,15 +139,12 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                         likeBUS.createLike(newLike, new LikeBUS.OnLikeCreatedListener() {
                             @Override
                             public void onLikeCreated(LikeDTO like) {
-                                holder.likeBtn.setImageResource(R.drawable.ic_heart_filled_24dp);
-                                holder.likeBtn.setTag("liked");
-
                                 post.setLikes(post.getLikes() + 1);
                                 postBUS.updatePost(post.get_id(), post, new PostBUS.OnPostUpdatedListener(){
 
                                     @Override
                                     public void onPostUpdated(PostDTO post) {
-
+                                        holder.likeNumber.setText(Integer.toString(post.getLikes()));
                                     }
 
                                     @Override
@@ -156,6 +157,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                             @Override
                             public void onError(String error) {
                                 Log.d("LikePostError", error);
+                                holder.likeBtn.setImageResource(R.drawable.ic_heart_24dp);
+                                holder.likeBtn.setTag("unliked");
                             }
                         });
                     }
