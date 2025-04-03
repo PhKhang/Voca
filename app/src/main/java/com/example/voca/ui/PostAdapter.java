@@ -2,17 +2,20 @@ package com.example.voca.ui;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -97,6 +100,53 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         SharedPreferences prefs = context.getSharedPreferences("UserPrefs", MODE_PRIVATE);
         String userId = prefs.getString("userId", null);
 
+        if (post.getUser_id().get_id().equals(userId)){
+            holder.btnEditPost.setVisibility(View.VISIBLE);
+
+            holder.btnEditPost.setOnClickListener(v -> {
+                PopupMenu popupMenu = new PopupMenu(context, v, Gravity.END);
+                popupMenu.getMenuInflater().inflate(R.menu.post_option_menu, popupMenu.getMenu());
+
+                popupMenu.setOnMenuItemClickListener(item -> {
+                    if (item.getItemId() == R.id.option_edit) {
+                        Toast.makeText(context, "Sửa post", Toast.LENGTH_SHORT).show();
+
+                        return true;
+                    } else if (item.getItemId() == R.id.option_delete) {
+                        Toast.makeText(context, "Xóa post", Toast.LENGTH_SHORT).show();
+                        new AlertDialog.Builder(context)
+                                .setTitle("Xóa bài viết")
+                                .setMessage("Bạn có chắc muốn xóa bài viết này?")
+                                .setPositiveButton("Xóa", (dialog, which) -> {
+                                    postBUS.deletePost(post.get_id(), new PostBUS.OnPostDeletedListener() {
+                                        @Override
+                                        public void onPostDeleted() {
+                                            for (int i = 0; i < postList.size(); i++) {
+                                                if (postList.get(i).get_id().equals(post.get_id())) {
+                                                    postList.remove(i);
+                                                    notifyItemRemoved(i);
+                                                    return;
+                                                }
+                                            }
+                                        }
+
+                                        @Override
+                                        public void onError(String error) {
+                                            Toast.makeText(context, "Xóa failed: " + error, Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+
+                                })
+                                .setNegativeButton("Hủy", null)
+                                .show();
+                        return true;
+                    }
+                    return false;
+                });
+
+                popupMenu.show();
+            });
+        }
 
         holder.likeBtn.setOnClickListener(v -> {
             //Toast.makeText(getContext(), "Likebtnpressed", Toast.LENGTH_SHORT).show();
@@ -248,6 +298,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         FrameLayout videoContainer;
         ImageButton playButton;
         ImageButton likeBtn;
+        ImageButton btnEditPost;
 
         ImageView songThumbnail;
         TextView songName;
@@ -258,6 +309,9 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             postTime = itemView.findViewById(R.id.txt_post_time);
             postContent = itemView.findViewById(R.id.txt_post_content);
             userAvatar = itemView.findViewById(R.id.avatarImage);
+
+            btnEditPost = itemView.findViewById(R.id.btn_edit_post);
+            btnEditPost.setVisibility(View.GONE);
 
             songThumbnail = itemView.findViewById(R.id.songThumbnail);
             songName = itemView.findViewById(R.id.songName);

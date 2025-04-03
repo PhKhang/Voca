@@ -242,8 +242,9 @@ public class ProfileFragment extends Fragment {
         postBUS.fetchPostsByUserId(curUser.get_id(), new PostBUS.OnPostsFetchedListener() {
             @Override
             public void onPostsFetched(List<PostDTO> posts) {
-                postList = posts;
-                postAdapter.updateData(postList);
+                postList.clear(); // Xóa danh sách cũ
+                postList.addAll(posts); // Thêm danh sách mới vào danh sách cũ
+                postAdapter.notifyDataSetChanged();
             }
 
             @Override

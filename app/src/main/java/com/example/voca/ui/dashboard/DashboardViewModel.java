@@ -9,16 +9,11 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import com.example.voca.bus.LikeBUS;
+
 import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.UserBUS;
-import com.example.voca.dao.PostDAO;
 import com.example.voca.dto.PostDTO;
-import com.example.voca.dto.UserDTO;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 import java.util.List;
 
@@ -27,7 +22,7 @@ public class DashboardViewModel extends ViewModel {
     private final PostBUS postBUS;
     private final UserBUS userBUS;
 
-    private final MutableLiveData<List<PostDTO>> postsLiveData = new MutableLiveData<>();
+        private final MutableLiveData<List<PostDTO>> postsLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> errorLiveData =  new MutableLiveData<>();
 
     public DashboardViewModel() {

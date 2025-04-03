@@ -91,8 +91,9 @@ public class DashboardFragment extends Fragment {
 
         dashboardViewModel.getPostsLiveData().observe(getViewLifecycleOwner(), posts -> {
             Log.d("DashboardFragment", "LiveData updated, size: " + (posts != null ? posts.size() : 0));
-            postAdapter.updateData(posts);
-
+            if (posts != null) {
+                postAdapter.updateData(posts);
+            }
         });
         dashboardViewModel.getErrorLiveData().observe(getViewLifecycleOwner(), error -> {
             Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();

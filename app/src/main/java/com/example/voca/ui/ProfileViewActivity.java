@@ -49,14 +49,13 @@ public class ProfileViewActivity extends AppCompatActivity {
         getSupportActionBar().hide();
 
         String userId = getIntent().getStringExtra("user_id");
-        Log.d("ABCD", userId);
         player = new ExoPlayer.Builder(this).build();
 
         recyclerView = findViewById(R.id.recycler_posts);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         postList = new ArrayList<>();
-        postAdapter = new PostAdapter(postList, this, player);
+        postAdapter = new PostAdapter(new ArrayList<>(), this, player);
         recyclerView.setAdapter(postAdapter);
 
         userBUS.fetchUserById(userId, new UserBUS.OnUserFetchedListener() {
