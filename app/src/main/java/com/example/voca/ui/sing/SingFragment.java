@@ -1,6 +1,7 @@
 package com.example.voca.ui.sing;
 
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,6 +9,8 @@ import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 
 import com.example.voca.R;
@@ -29,9 +32,12 @@ public class SingFragment extends Fragment {
     private SongBUS songBUS;
     private PostBUS postBUS;
     private ProgressDialog progressDialog;
+    private Context context;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_sing, container, false);
+
+        context = getContext();
 
         listView = view.findViewById(R.id.listViewSing);
         songList = new ArrayList<>();
@@ -72,7 +78,8 @@ public class SingFragment extends Fragment {
             @Override
             public void onPostsFetched(List<PostDTO> posts) {
                 postList = posts;
-                singAdapter = new SingAdapter(requireContext(), postList, songList);
+                if (context != null)
+                    singAdapter = new SingAdapter(context, postList, songList);
                 listView.setAdapter(singAdapter);
             }
 
