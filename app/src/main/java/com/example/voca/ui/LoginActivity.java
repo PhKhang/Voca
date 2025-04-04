@@ -13,6 +13,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.EditText;
 
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.voca.R;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.UserDTO;
@@ -34,7 +37,7 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.List;
 
-public class LoginActivity extends Activity {
+public class LoginActivity extends AppCompatActivity {
     private EditText emailInput, passwordInput;
     private Button loginBtn;
     private FirebaseAuth mAuth; // Firebase Authentication
@@ -46,6 +49,10 @@ public class LoginActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.hide();
+        }
         setContentView(R.layout.login);
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)

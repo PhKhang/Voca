@@ -5,4 +5,5 @@
     <string name="title_dashboard">Dashboard</string>
     <string name="title_profile">Profile</string>
     <string name="title_notifications">Notifications</string>
+    <string name="sign_out">Đăng xuất</string>
 </resources>

@@ -10,6 +10,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.voca.R;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.UserDTO;
@@ -18,7 +21,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 
-public class RegisterActivity extends Activity {
+public class RegisterActivity extends AppCompatActivity {
     private EditText etEmail, etPassword, etConfirmPassword, etUsername;
     private Button btnRegister, btnBackToLogin;
     private FirebaseAuth auth;
@@ -29,6 +32,10 @@ public class RegisterActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.hide();
+        }
         setContentView(R.layout.activity_register);
 
         auth = FirebaseAuth.getInstance();
