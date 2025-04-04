@@ -12,24 +12,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.voca.R;
-import com.example.voca.bus.LikeBUS;
 import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.UserBUS;
-import com.example.voca.dto.LikeDTO;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
-import com.example.voca.ui.dashboard.DashboardFragment;
 import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.ui.PlayerView;
-import com.google.firebase.auth.AuthCredential;
-import com.google.firebase.auth.EmailAuthProvider;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.GoogleAuthProvider;
-import com.google.firebase.auth.UserInfo;
-
 import java.util.ArrayList;
 import java.util.List;
 

@@ -7,11 +7,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -32,6 +36,7 @@ import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
 import com.example.voca.service.LoadImage;
 import com.example.voca.ui.dashboard.DashboardFragment;
+import com.example.voca.ui.dashboard.SharedPostViewModel;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.Player;
@@ -47,7 +52,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     private LikeBUS likeBUS = new LikeBUS();
     private UserBUS userBUS = new UserBUS();
     private PostBUS postBUS = new PostBUS();
-
+    private static SharedPostViewModel sharedPostViewModel;
     PostViewHolder currentViewHolder;
 
     public PostAdapter(List<PostDTO> postList, Context context, ExoPlayer player) {
@@ -109,8 +114,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
                 popupMenu.setOnMenuItemClickListener(item -> {
                     if (item.getItemId() == R.id.option_edit) {
-                        Toast.makeText(context, "Sửa post", Toast.LENGTH_SHORT).show();
-
+                        Toast.makeText(context, "Sửa tiêu đề", Toast.LENGTH_SHORT).show();
+                        showEditPostDialog(post);
                         return true;
                     } else if (item.getItemId() == R.id.option_delete) {
                         Toast.makeText(context, "Xóa post", Toast.LENGTH_SHORT).show();
@@ -124,7 +129,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                                             for (int i = 0; i < postList.size(); i++) {
                                                 if (postList.get(i).get_id().equals(post.get_id())) {
                                                     postList.remove(i);
-                                                    notifyItemRemoved(i);
+                                                    Toast.makeText(context, "Xóa thành công!", Toast.LENGTH_SHORT).show();
+                                                    notifyItemChanged(i);
                                                     return;
                                                 }
                                             }
@@ -132,7 +138,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
                                         @Override
                                         public void onError(String error) {
-                                            Toast.makeText(context, "Xóa failed: " + error, Toast.LENGTH_SHORT).show();
+                                            Toast.makeText(context, "Xóa bài thất bại: " + error, Toast.LENGTH_SHORT).show();
                                         }
                                     });
 
@@ -159,7 +165,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                         public void onLikeDeleted() {
                             post.setLikes(post.getLikes() - 1);
                             postBUS.updatePost(post.get_id(), post, new PostBUS.OnPostUpdatedListener(){
-
                                 @Override
                                 public void onPostUpdated(PostDTO post) {
                                     holder.likeNumber.setText(Integer.toString(post.getLikes()));
@@ -323,4 +328,62 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             videoContainer = itemView.findViewById(R.id.video_container);
         }
     }
+
+    private void showEditPostDialog(PostDTO post) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle("Chỉnh sửa tiêu đề");
+
+        // Tạo EditText
+        EditText input = new EditText(context);
+        input.setText(post.getCaption()); // Hiển thị nội dung cũ
+        input.setSelection(input.getText().length());
+        builder.setView(input);
+
+        builder.setPositiveButton("Lưu", null);
+        builder.setNegativeButton("Hủy", (dialog, which) -> dialog.dismiss());
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Lấy nút "Lưu" để kiểm soát trạng thái
+        Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        positiveButton.setEnabled(false);
+
+        // Lắng nghe sự thay đổi trong EditText, chỉ khi tiêu đề mới khác tiêu đề cũ mới bấm nút "Lưu" được
+        input.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void afterTextChanged(Editable s) {
+                positiveButton.setEnabled(!s.toString().trim().equals(post.getCaption()));
+            }
+
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+        });
+
+        // Xử lý khi bấm nút "Lưu"
+        positiveButton.setOnClickListener(v -> {
+            String newCaption = input.getText().toString().trim();
+            post.setCaption(newCaption);
+            dialog.dismiss();
+            postBUS.updatePost(post.get_id(), post, new PostBUS.OnPostUpdatedListener() {
+                @Override
+                public void onPostUpdated(PostDTO post) {
+                    for (int i = 0; i < postList.size(); i++) {
+                        if (postList.get(i).get_id().equals(post.get_id())) {
+                            postList.get(i).setCaption(newCaption);
+                            Toast.makeText(context, "Chỉnh sửa thành công!", Toast.LENGTH_SHORT).show();
+                            notifyItemChanged(i);
+                            return;
+                        }
+                    }
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.d("UpdateCaptionError", error);
+                }
+            });
+        });
+    }
+
 }
