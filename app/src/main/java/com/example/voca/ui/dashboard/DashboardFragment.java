@@ -64,7 +64,7 @@ import java.util.TimeZone;
 public class DashboardFragment extends Fragment {
 
     private FragmentDashboardBinding binding;
-    private DashboardViewModel dashboardViewModel;
+    private SharedPostViewModel sharedPostViewModel;
     private PostAdapter postAdapter;
     RecyclerView recyclerView;
     private ExoPlayer player;
@@ -87,16 +87,13 @@ public class DashboardFragment extends Fragment {
         postAdapter = new PostAdapter(new ArrayList<>(), requireContext(), player);
         recyclerView.setAdapter(postAdapter);
 
-        dashboardViewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
-
-        dashboardViewModel.getPostsLiveData().observe(getViewLifecycleOwner(), posts -> {
+        sharedPostViewModel = new ViewModelProvider(requireActivity()).get(SharedPostViewModel.class);
+        sharedPostViewModel.fetchAllPosts();
+        sharedPostViewModel.getAllPostsLiveData().observe(getViewLifecycleOwner(), posts -> {
             Log.d("DashboardFragment", "LiveData updated, size: " + (posts != null ? posts.size() : 0));
-            postAdapter.updateData(posts);
-
-        });
-        dashboardViewModel.getErrorLiveData().observe(getViewLifecycleOwner(), error -> {
-            Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
-            Log.d("DashboardFragment error", error);
+            if (posts != null) {
+                postAdapter.updateData(posts);
+            }
         });
 
         recyclerViewUsers = root.findViewById(R.id.recyclerViewUsers);

@@ -27,6 +27,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -39,6 +40,7 @@ import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
 import com.example.voca.service.FileUploader;
+import com.example.voca.ui.dashboard.SharedPostViewModel;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
@@ -57,6 +59,7 @@ public class ProfileFragment extends Fragment {
     ExoPlayer player;
     PostBUS postBUS = new PostBUS();
     UserBUS userBUS = new UserBUS();
+    private SharedPostViewModel sharedPostViewModel;
     SharedPreferences prefs;
 
     @Override
@@ -76,8 +79,15 @@ public class ProfileFragment extends Fragment {
         recyclerView = view.findViewById(R.id.recycler_posts);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        postList = new ArrayList<>();
-        postAdapter = new PostAdapter(postList, requireContext(), player);
+        sharedPostViewModel = new ViewModelProvider(requireActivity()).get(SharedPostViewModel.class);
+        sharedPostViewModel.fetchUserPosts(userId);
+        sharedPostViewModel.getUserPostsLiveData().observe(getViewLifecycleOwner(), posts -> {
+            if (posts != null) {
+                postAdapter.updateData(posts);
+            }
+        });
+
+        postAdapter = new PostAdapter(new ArrayList<>(), requireContext(), player);
         recyclerView.setAdapter(postAdapter);
 
         userBUS.fetchUserById(userId, new UserBUS.OnUserFetchedListener() {
@@ -242,8 +252,12 @@ public class ProfileFragment extends Fragment {
         postBUS.fetchPostsByUserId(curUser.get_id(), new PostBUS.OnPostsFetchedListener() {
             @Override
             public void onPostsFetched(List<PostDTO> posts) {
-                postList = posts;
-                postAdapter.updateData(postList);
+                if (postList == null) {
+                    postList = new ArrayList<>();
+                }
+                postList.clear(); // Xóa danh sách cũ
+                postList.addAll(posts); // Thêm danh sách mới vào danh sách cũ
+                postAdapter.notifyDataSetChanged();
             }
 
             @Override
