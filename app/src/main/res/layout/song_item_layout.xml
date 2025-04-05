@@ -45,13 +45,27 @@
                 android:maxLines="1"
                 android:ellipsize="end" />
 
-            <TextView
-                android:id="@+id/textUploader"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Người upload"
-                android:maxLines="1"
-                android:ellipsize="end" />
+                android:orientation="horizontal"
+                >
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_profile_2_24dp"
+                    android:layout_marginRight="2dp"/>
+
+                <TextView
+                    android:id="@+id/textUploader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Người upload"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -67,7 +81,7 @@
 
                     <ImageView
                         android:layout_width="15dp"
-                        android:layout_height="15dp"
+                        android:layout_height="16dp"
                         android:src="@drawable/red_heart"
                         android:layout_marginRight="2dp"/>
 
@@ -86,8 +100,8 @@
                     android:gravity="center_vertical">
 
                     <ImageView
-                        android:layout_width="15dp"
-                        android:layout_height="15dp"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
                         android:src="@drawable/ic_karaoke_24dp"
                         android:layout_marginRight="2dp"
                         app:tint="@color/purple_500"/>

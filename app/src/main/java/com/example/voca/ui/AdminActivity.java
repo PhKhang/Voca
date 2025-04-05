@@ -22,6 +22,7 @@ import com.example.voca.bus.UserBUS;
 import com.example.voca.ui.management.SongAdapter;
 import com.example.voca.ui.management.SongDetailsActivity;
 import com.example.voca.ui.management.SongsManagementActivity;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +34,7 @@ public class AdminActivity extends AppCompatActivity {
     private SongAdapter songAdapter;
     private SongBUS songBUS;
     private PostBUS postBUS;
-    private Button addSongButton;
+    private ExtendedFloatingActionButton addSongButton;
     private SearchView searchView;
     private ProgressDialog progressDialog;
     @Override
@@ -57,7 +58,6 @@ public class AdminActivity extends AppCompatActivity {
             Intent intent = new Intent(AdminActivity.this, SongsManagementActivity.class);
             startActivity(intent);
         });
-
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {

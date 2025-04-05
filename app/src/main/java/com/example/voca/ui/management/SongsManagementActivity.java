@@ -1,5 +1,6 @@
 package com.example.voca.ui.management;
 
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -35,7 +36,10 @@ public class SongsManagementActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getSupportActionBar().hide();
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.hide();
+        }
         setContentView(R.layout.activity_songsmanagement);
 
         songBus = new SongBUS();
@@ -116,11 +120,10 @@ public class SongsManagementActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == 3 && resultCode == Activity.RESULT_OK) {
+        if (requestCode == 1 && resultCode == AppCompatActivity.RESULT_OK) {
             if (data != null) {
-                Uri audioUri = data.getData(); // Lấy URI của file âm thanh
-                showConfirmAudioDialog(audioUri); // Hiển thị Dialog xác nhận
+                Uri audioUri = data.getData();
+                showConfirmAudioDialog(audioUri);
             }
         }
     }
