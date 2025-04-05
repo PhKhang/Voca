@@ -24,6 +24,7 @@ import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.SongDTO;
 import com.example.voca.dto.UserDTO;
 import com.example.voca.service.FileUploader;
+import com.google.android.material.appbar.MaterialToolbar;
 
 public class SongsManagementActivity extends AppCompatActivity {
     private SongBUS songBus;
@@ -58,7 +59,7 @@ public class SongsManagementActivity extends AppCompatActivity {
 
         Button pickButton = findViewById(R.id.pick);
         pickButton.setOnClickListener(view -> openFilePicker()); // Mở trình chọn file
-
+        setClickOnNavigationButton();
         submitButton.setOnClickListener(v -> {
             String inputMp3Link = mp3LinkEditText.getText().toString().trim();
             String inputVideoId = youtubeIdEditText.getText().toString().trim();
@@ -108,6 +109,16 @@ public class SongsManagementActivity extends AppCompatActivity {
                     Log.e("UserModule", "Lỗi khi tìm người dùng: " + error);
                 }
             });
+        });
+    }
+
+    private void setClickOnNavigationButton() {
+        MaterialToolbar topAppBar = findViewById(R.id.topAppBar);
+        topAppBar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
         });
     }
 

@@ -6,8 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
-import android.widget.Button;
+import android.view.View;
 import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.Toast;
@@ -17,129 +16,200 @@ import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.SongBUS;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.SongDTO;
-import com.example.voca.dto.UserDTO;
-import com.example.voca.bus.UserBUS;
 import com.example.voca.ui.management.SongAdapter;
 import com.example.voca.ui.management.SongDetailsActivity;
 import com.example.voca.ui.management.SongsManagementActivity;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class AdminActivity extends AppCompatActivity {
-    private ListView listView;
-    private List<SongDTO> songList;
-    private List<PostDTO> postList;
+    private static final String LOADING_MESSAGE = "Đang lấy dữ liệu bài hát...";
+    private ListView songListView;
+    private List<SongDTO> songs;
+    private List<PostDTO> posts;
     private SongAdapter songAdapter;
     private SongBUS songBUS;
     private PostBUS postBUS;
     private ExtendedFloatingActionButton addSongButton;
     private SearchView searchView;
     private ProgressDialog progressDialog;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        hideActionBar();
+        setContentView(R.layout.activity_songs);
+
+        initializeViews();
+        initializeData();
+        setupListeners();
+        loadSongs();
+        setClickOnNavigationButton();
+
+    }
+
+    private void hideActionBar() {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.hide();
         }
-        setContentView(R.layout.activity_songs);
+    }
 
-        listView = findViewById(R.id.listViewSongs);
+    private void setClickOnNavigationButton() {
+        MaterialToolbar topAppBar = findViewById(R.id.topAppBar);
+        topAppBar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+    }
+
+    private void initializeViews() {
+        songListView = findViewById(R.id.listViewSongs);
         addSongButton = findViewById(R.id.addSong_button);
         searchView = findViewById(R.id.searchView);
-        songList = new ArrayList<>();
+    }
+
+    private void initializeData() {
+        songs = new ArrayList<>();
+        posts = new ArrayList<>();
         songBUS = new SongBUS();
         postBUS = new PostBUS();
+        songAdapter = new SongAdapter(this, songs, posts);
+        songListView.setAdapter(songAdapter);
+    }
 
-        fetchSongs();
-        addSongButton.setOnClickListener(v -> {
-            Intent intent = new Intent(AdminActivity.this, SongsManagementActivity.class);
-            startActivity(intent);
-        });
+    private void setupListeners() {
+        addSongButton.setOnClickListener(v -> navigateToSongManagement());
+        setupSearchViewListener();
+        setupRootViewClickListener();
+        setupSongItemClickListener();
+    }
+
+    private void setupSearchViewListener() {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                songBUS.searchSongsByTitle(query, new SongBUS.OnSongsFetchedListener() {
-                    @Override
-                    public void onSongsFetched(List<SongDTO> songs) {
-                        songAdapter.updateData(songs); // Cập nhật danh sách hiển thị
-                    }
-
-                    @Override
-                    public void onError(String errorMessage) {
-                        Toast.makeText(getApplicationContext(), errorMessage, Toast.LENGTH_SHORT).show();
-                    }
-                });
+                searchSongsByTitle(query);
                 return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                return false; // Không tìm kiếm khi đang nhập
+                if (newText.isEmpty()) {
+                    songAdapter.updateData(songs);
+                }
+                return true;
             }
         });
+    }
 
-        listView.setOnItemClickListener((parent, view, position, id) -> {
-            SongDTO selectedSong = songList.get(position);
-
-            Intent intent = new Intent(AdminActivity.this, SongDetailsActivity.class);
-            intent.putExtra("song_id", selectedSong.get_id());
-            intent.putExtra("youtube_id", selectedSong.getYoutube_id());
-            intent.putExtra("title", selectedSong.getTitle());
-            intent.putExtra("mp3_file", selectedSong.getMp3_file());
-            intent.putExtra("thumbnail", selectedSong.getThumbnail());
-            intent.putExtra("uploaded_by", selectedSong.getUploaded_by().getUsername()); // Nếu UserDTO có `getUsername()`
-            intent.putExtra("created_at", selectedSong.getCreated_at());
-            intent.putExtra("recorded_people", selectedSong.getRecorded_people());
-
-            startActivity(intent);
+    private void setupRootViewClickListener() {
+        findViewById(R.id.root_layout).setOnClickListener(v -> {
+            searchView.clearFocus();
+            searchView.setQuery("", false);
+            songAdapter.updateData(songs);
         });
+    }
+
+    private void setupSongItemClickListener() {
+        songListView.setOnItemClickListener((parent, view, position, id) -> {
+            SongDTO selectedSong = songAdapter.getItem(position);
+            navigateToSongDetails(selectedSong);
+        });
+    }
+
+    private void navigateToSongManagement() {
+        Intent intent = new Intent(this, SongsManagementActivity.class);
+        startActivity(intent);
+    }
+
+    private void navigateToSongDetails(SongDTO song) {
+        Intent intent = new Intent(this, SongDetailsActivity.class);
+        intent.putExtra("song_id", song.get_id());
+        intent.putExtra("youtube_id", song.getYoutube_id());
+        intent.putExtra("title", song.getTitle());
+        intent.putExtra("mp3_file", song.getMp3_file());
+        intent.putExtra("thumbnail", song.getThumbnail());
+        intent.putExtra("uploaded_by", song.getUploaded_by().getUsername());
+        intent.putExtra("created_at", song.getCreated_at());
+        intent.putExtra("recorded_people", song.getRecorded_people());
+        startActivity(intent);
     }
 
     @Override
     protected void onRestart() {
         super.onRestart();
-        fetchSongs(); // Gọi lại API để cập nhật danh sách bài hát
+        loadSongs();
     }
 
-    private void fetchSongs() {
-        progressDialog = new ProgressDialog(this);
-        progressDialog.setMessage("Loading songs...");
-        progressDialog.setCancelable(false);
-        progressDialog.show(); // Hiển thị progress dialog trước khi tải
+    @Override
+    protected void onResume() {
+        super.onResume();
+        searchView.setQuery("", false);
+        findViewById(R.id.root_layout).requestFocus();
+    }
 
+    private void loadSongs() {
+        showLoadingDialog();
         songBUS.fetchSongs(new SongBUS.OnSongsFetchedListener() {
             @Override
-            public void onSongsFetched(List<SongDTO> songs) {
-                songList = songs;
-                fetchPosts(); // Gọi fetchPosts() sau khi tải xong bài hát
-                progressDialog.dismiss(); // Ẩn progress dialog khi hoàn tất
+            public void onSongsFetched(List<SongDTO> fetchedSongs) {
+                songs = fetchedSongs;
+                songAdapter.updateData(songs);
+                loadPosts();
+                progressDialog.dismiss();
             }
 
             @Override
             public void onError(String error) {
-                progressDialog.dismiss(); // Ẩn progress dialog nếu có lỗi
-                Toast.makeText(AdminActivity.this, "Error fetching songs: " + error, Toast.LENGTH_SHORT).show();
+                progressDialog.dismiss();
+                showToast("Error fetching songs: " + error);
             }
         });
     }
 
-
-    private void fetchPosts() {
+    private void loadPosts() {
         postBUS.fetchPosts(new PostBUS.OnPostsFetchedListener() {
             @Override
-            public void onPostsFetched(List<PostDTO> posts) {
-                postList = posts;
-                songAdapter = new SongAdapter(AdminActivity.this, songList, postList);
-                listView.setAdapter(songAdapter);
+            public void onPostsFetched(List<PostDTO> fetchedPosts) {
+                posts = fetchedPosts;
+                songAdapter.notifyDataSetChanged();
             }
 
             @Override
             public void onError(String error) {
-                Toast.makeText(AdminActivity.this, "Error fetching posts: " + error, Toast.LENGTH_SHORT).show();
+                showToast("Error fetching posts: " + error);
             }
         });
+    }
+
+    private void searchSongsByTitle(String query) {
+        songBUS.searchSongsByTitle(query, new SongBUS.OnSongsFetchedListener() {
+            @Override
+            public void onSongsFetched(List<SongDTO> songs) {
+                songAdapter.updateData(songs);
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                showToast(errorMessage);
+            }
+        });
+    }
+
+    private void showLoadingDialog() {
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage(LOADING_MESSAGE);
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }

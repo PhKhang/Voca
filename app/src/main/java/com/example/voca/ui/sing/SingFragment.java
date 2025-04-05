@@ -9,8 +9,6 @@ import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 
 import com.example.voca.R;
@@ -18,8 +16,7 @@ import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.SongBUS;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.SongDTO;
-import com.example.voca.ui.AdminActivity;
-import com.example.voca.ui.management.SongAdapter;
+import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,24 +30,52 @@ public class SingFragment extends Fragment {
     private PostBUS postBUS;
     private ProgressDialog progressDialog;
     private Context context;
+    private TabLayout tabLayout;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_sing, container, false);
 
         context = getContext();
 
+        tabLayout = view.findViewById(R.id.tabLayout);
         listView = view.findViewById(R.id.listViewSing);
+
         songList = new ArrayList<>();
         postList = new ArrayList<>();
         songBUS = new SongBUS();
         postBUS = new PostBUS();
 
-        fetchSongs();
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                resetAndFetchData(tab.getPosition());
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+                resetAndFetchData(tab.getPosition());
+            }
+        });
+
+        fetchSongs(0);
 
         return view;
     }
 
-    private void fetchSongs() {
+    private void resetAndFetchData(int tabPosition) {
+        if (songList != null) songList.clear();
+        if (postList != null) postList.clear();
+        if (singAdapter != null) singAdapter.notifyDataSetChanged();
+
+        fetchSongs(tabPosition);
+    }
+
+    private void fetchSongs(int tabPosition) {
         progressDialog = new ProgressDialog(requireContext());
         progressDialog.setMessage("Loading songs...");
         progressDialog.setCancelable(false);
@@ -59,7 +84,7 @@ public class SingFragment extends Fragment {
         songBUS.fetchSongs(new SongBUS.OnSongsFetchedListener() {
             @Override
             public void onSongsFetched(List<SongDTO> songs) {
-                songList = songs;
+                songList = filterSongsByTab(songs, tabPosition);
                 fetchPosts();
                 progressDialog.dismiss();
             }
@@ -68,7 +93,6 @@ public class SingFragment extends Fragment {
             public void onError(String error) {
                 progressDialog.dismiss();
                 Toast.makeText(requireContext(), "Error fetching songs: " + error, Toast.LENGTH_SHORT).show();
-
             }
         });
     }
@@ -78,9 +102,10 @@ public class SingFragment extends Fragment {
             @Override
             public void onPostsFetched(List<PostDTO> posts) {
                 postList = posts;
-                if (context != null)
+                if (context != null) {
                     singAdapter = new SingAdapter(context, postList, songList);
-                listView.setAdapter(singAdapter);
+                    listView.setAdapter(singAdapter);
+                }
             }
 
             @Override
@@ -89,5 +114,28 @@ public class SingFragment extends Fragment {
             }
         });
     }
-}
 
+    private List<SongDTO> filterSongsByTab(List<SongDTO> songs, int tabPosition) {
+        List<SongDTO> filteredList = new ArrayList<>();
+        switch (tabPosition) {
+            case 0:
+                filteredList.addAll(songs);
+                break;
+            case 1:
+                for (SongDTO song : songs) {
+                    if (true) { // nhiều lượt thích nhất
+                        filteredList.add(song);
+                    }
+                }
+                break;
+            case 2:
+                for (SongDTO song : songs) {
+                    if (true) { // hát nhiều nhất
+                        filteredList.add(song);
+                    }
+                }
+                break;
+        }
+        return filteredList;
+    }
+}

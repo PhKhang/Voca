@@ -7,6 +7,7 @@
 
     <color name="light_red">#FFFF8D8D</color>
     <color name="red">#FFFF5C5C</color>
+    <color name="secondary_red">#FFC74D4D</color>
     <color name="darker_red">#FFE51414</color>
     <color name="yellow">#FFFFF890</color>
     <color name="darker_yellow">#FFFFEA49</color>

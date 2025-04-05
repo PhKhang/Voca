@@ -101,11 +101,13 @@ public class ProfileFragment extends Fragment {
 
                 ImageView avatar = view.findViewById(R.id.avatarImage);
 
-                Glide.with(ProfileFragment.this)
-                        .load(user.getAvatar())
-                        .placeholder(R.drawable.default_account_avatar) // Ảnh mặc định nếu tải chậm
-                        .error(R.drawable.default_account_avatar) // Ảnh nếu lỗi tải
-                        .into(avatar);
+                if (isAdded() && avatar != null) { // Check both Fragment and View
+                    Glide.with(ProfileFragment.this)
+                            .load(user.getAvatar())
+                            .placeholder(R.drawable.default_account_avatar) // Ảnh mặc định nếu tải chậm
+                            .error(R.drawable.default_account_avatar) // Ảnh nếu lỗi tải
+                            .into(avatar);
+                }
 
                 curUser = user;
                 loadUserPosts();

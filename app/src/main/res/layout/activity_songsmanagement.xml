@@ -4,51 +4,76 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <LinearLayout
-        android:orientation="vertical"
-        android:gravity="center"
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="16dp">
-        <com.google.android.material.textfield.TextInputLayout
+        android:layout_height="wrap_content"
+        android:fitsSystemWindows="true"
+        app:layout_constraintTop_toTopOf="parent"
+        style="@style/Widget.MaterialComponents.AppBarLayout.Primary">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/topAppBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Tiêu đề"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            android:minHeight="?attr/actionBarSize"
+            app:title="Thêm bài hát mới"
+            app:titleCentered="true"
+            app:navigationIcon="@drawable/ic_back_24dp"/>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="16dp"
+        app:layout_constraintTop_toBottomOf="@id/appBarLayout"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Tiêu đề">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/title_edittext"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"/>
+                android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="ID của Video Youtube"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_marginTop="12dp">
+            android:layout_marginTop="12dp"
+            android:hint="ID của Video Youtube">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/youtube_id_edittext"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"/>
+                android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Đường dẫn nhạc nền"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_marginTop="12dp">
+            android:layout_marginTop="12dp"
+            android:hint="Đường dẫn nhạc nền">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/mp3_link_edittext"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textUri"/>
+                android:inputType="textUri" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <Button
@@ -62,17 +87,15 @@
             android:id="@+id/submit_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Thêm"
             android:layout_marginTop="8dp"
-            />
+            android:text="Thêm" />
 
         <Button
             android:id="@+id/return_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Quay lại"
             android:layout_marginTop="8dp"
-            />
+            android:text="Quay lại" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

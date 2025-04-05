@@ -1,6 +1,7 @@
 package com.example.voca.ui.management;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -15,6 +16,7 @@ import com.example.voca.R;
 import com.example.voca.bus.SongBUS;
 import com.example.voca.dto.SongDTO;
 import com.example.voca.service.LoadImage;
+import com.google.android.material.appbar.MaterialToolbar;
 
 public class SongDetailsActivity extends AppCompatActivity {
     private TextView textUploader, textCreatedAt, textRecordedPeople;
@@ -71,6 +73,17 @@ public class SongDetailsActivity extends AppCompatActivity {
 
         btnSave.setOnClickListener(v -> updateSong());
         btnDelete.setOnClickListener(v -> deleteSong());
+        setClickOnNavigationButton();
+    }
+
+    private void setClickOnNavigationButton() {
+        MaterialToolbar topAppBar = findViewById(R.id.topAppBar);
+        topAppBar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
     }
 
     private void updateSong() {
