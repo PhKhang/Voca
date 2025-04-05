@@ -84,10 +84,17 @@
             android:layout_marginTop="16dp"
             app:cardCornerRadius="16dp">
 
-            <VideoView
-                android:id="@+id/videoView"
-                android:layout_width="wrap_content"
-                android:layout_height="250dp" />
+            <com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+                android:id="@+id/youtube_player_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:focusable="false"
+                android:focusableInTouchMode="false"/>
+            <!--            <VideoView-->
+<!--                android:id="@+id/videoView"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="250dp" />-->
         </androidx.cardview.widget.CardView>
 
         <androidx.cardview.widget.CardView
@@ -158,8 +165,8 @@
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:background="@drawable/circular_button"
-                android:src="@drawable/ic_home_black_24dp"
-                app:srcCompat="@android:drawable/ic_media_rew" />
+                android:src="@drawable/quantum_ic_volume_off_white_36"
+                app:srcCompat="@drawable/quantum_ic_volume_off_white_36" />
 
             <Space
                 android:layout_width="0dp"
@@ -178,7 +185,7 @@
                     android:layout_width="50dp"
                     android:layout_height="50dp"
                     android:background="@drawable/circular_button"
-                    android:src="@drawable/ic_home_black_24dp"
+                    android:src="@android:drawable/ic_media_previous"
                     app:srcCompat="@android:drawable/ic_media_previous" />
 
                 <Space
@@ -187,11 +194,11 @@
 
 
                 <ImageButton
-                    android:id="@+id/imageButton2"
+                    android:id="@+id/play"
                     android:layout_width="60dp"
                     android:layout_height="60dp"
                     android:background="@drawable/circular_button"
-                    android:src="@drawable/ic_home_black_24dp"
+                    android:src="@drawable/cast_ic_expanded_controller_play"
                     app:srcCompat="@android:drawable/ic_media_play" />
 
                 <Space
@@ -203,7 +210,7 @@
                     android:layout_width="50dp"
                     android:layout_height="50dp"
                     android:background="@drawable/circular_button"
-                    android:src="@drawable/ic_home_black_24dp"
+                    android:src="@android:drawable/ic_media_next"
                     app:srcCompat="@android:drawable/ic_media_next" />
 
             </LinearLayout>
