@@ -88,7 +88,13 @@ public class DashboardFragment extends Fragment {
         recyclerView.setAdapter(postAdapter);
 
         sharedPostViewModel = new ViewModelProvider(requireActivity()).get(SharedPostViewModel.class);
-        sharedPostViewModel.fetchAllPosts();
+
+        String priorityPostId = null;
+        if (getArguments() != null) {
+            priorityPostId = getArguments().getString("priorityPostId");
+        }
+        sharedPostViewModel.fetchAllPosts(priorityPostId);
+
         sharedPostViewModel.getAllPostsLiveData().observe(getViewLifecycleOwner(), posts -> {
             Log.d("DashboardFragment", "LiveData updated, size: " + (posts != null ? posts.size() : 0));
             if (posts != null) {

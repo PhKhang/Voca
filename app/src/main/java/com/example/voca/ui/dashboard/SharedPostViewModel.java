@@ -18,21 +18,25 @@ public class SharedPostViewModel extends ViewModel {
     private final PostBUS postBUS = new PostBUS();
     private final MutableLiveData<List<PostDTO>> allPosts = new MutableLiveData<>();
     private final MutableLiveData<List<PostDTO>> userPosts = new MutableLiveData<>();
-    public void fetchAllPosts() {
-        Log.d("DashboardViewModel", "fetchPosts() called");
+    public void fetchAllPosts(String priorityPostId) {
+        Log.d("DashboardViewModel", "fetchPosts() called with priorityPostId: " + priorityPostId);
         postBUS.fetchPosts(new PostBUS.OnPostsFetchedListener() {
             @Override
             public void onPostsFetched(List<PostDTO> postList) {
                 Log.d("DashboardViewModel", "postsLiveData updated");
-                allPosts.postValue(postList);
+                List<PostDTO> sortedList = sortWithPriority(postList, priorityPostId);
+                allPosts.postValue(sortedList);
             }
 
             @Override
             public void onError(String error) {
-                Log.d("DashboardViewModel", "posts error");
-                // errorLiveData.postValue(error);
+                Log.d("DashboardViewModel", "posts error: " + error);
             }
         });
+    }
+
+    public void fetchAllPosts() {
+        fetchAllPosts(null);
     }
 
     public void fetchUserPosts(String userId) {
@@ -47,6 +51,28 @@ public class SharedPostViewModel extends ViewModel {
 
             }
         });
+    }
+
+    private List<PostDTO> sortWithPriority(List<PostDTO> postList, String priorityPostId) {
+        if (postList == null || postList.isEmpty() || priorityPostId == null || priorityPostId.isEmpty()) {
+            return postList;
+        }
+
+        int priorityIndex = -1;
+        for (int i = 0; i < postList.size(); i++) {
+            if (priorityPostId.equals(postList.get(i).get_id())) {
+                priorityIndex = i;
+                break;
+            }
+        }
+
+        if (priorityIndex > 0) {  // Chỉ swap nếu không phải ở vị trí đầu
+            PostDTO temp = postList.get(0);
+            postList.set(0, postList.get(priorityIndex));
+            postList.set(priorityIndex, temp);
+        }
+
+        return postList;
     }
 
     public LiveData<List<PostDTO>> getAllPostsLiveData() {

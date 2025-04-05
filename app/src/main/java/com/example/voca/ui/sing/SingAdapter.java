@@ -99,6 +99,12 @@ public class SingAdapter extends BaseAdapter {
         return convertView;
     }
 
+    public void updateData(List<PostDTO> posts, List<SongDTO> songs) {
+        this.posts = posts;
+        this.songs = songs;
+        notifyDataSetChanged();
+    }
+
     static class ViewHolder {
         ImageView thumbnail;
         TextView title;

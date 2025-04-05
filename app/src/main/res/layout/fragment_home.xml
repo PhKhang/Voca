@@ -29,15 +29,25 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp" />
 
-        <SearchView
+        <ListView
+            android:id="@+id/listViewPosts"
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+            android:divider="@android:color/darker_gray"
+            android:dividerHeight="0dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/recyclerViewFunctions"/>
+
+        <ListView
+            android:id="@+id/listViewSings"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:queryHint="Tìm kiếm"
-            android:background="@drawable/shape_bg_search"
-            android:iconifiedByDefault="false"
-            app:iconifiedByDefault="false"
-            android:padding="0dp"
-            android:layout_marginTop="10dp" />
+            android:divider="@android:color/darker_gray"
+            android:dividerHeight="0dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/listViewPosts"/>
 
         <Button
             android:id="@+id/openSongsManagementPage"

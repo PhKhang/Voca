@@ -12,7 +12,21 @@
         tools:layout="@layout/fragment_home">
         <action
             android:id="@+id/action_homeFragment_to_singFragment"
-            app:destination="@id/navigation_sing" />
+            app:destination="@id/navigation_sing"
+            app:launchSingleTop="true"
+            app:popUpTo="@+id/mobile_navigation"
+            app:popUpToInclusive="true"/>
+        <action
+            android:id="@+id/action_homeFragment_to_dashboardFragment"
+            app:destination="@id/navigation_dashboard"
+            app:launchSingleTop="true"
+            app:popUpTo="@+id/mobile_navigation"
+            app:popUpToInclusive="true">
+            <argument
+                android:name="priorityPostId"
+                app:argType="string"
+                android:defaultValue="@null" />
+        </action>
     </fragment>
 
     <fragment
