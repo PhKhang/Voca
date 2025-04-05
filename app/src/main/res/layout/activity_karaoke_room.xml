@@ -8,13 +8,13 @@
     tools:context=".KaraokeRoom">
 
     <LinearLayout
-        android:layout_width="409dp"
-        android:layout_height="912dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:background="#F0F0FF"
         android:orientation="vertical"
         android:padding="10dp"
-        tools:layout_editor_absoluteX="1dp"
-        tools:layout_editor_absoluteY="1dp">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -99,8 +99,8 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="6dp"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:padding="6dp">
 
                 <TextView
                     android:id="@+id/textView3"
@@ -221,6 +221,60 @@
                 android:background="@drawable/circular_button"
                 android:src="@drawable/ic_home_black_24dp"
                 app:srcCompat="@android:drawable/ic_notification_clear_all" />
+
+        </LinearLayout>
+
+        <ScrollView
+            android:id="@+id/activities"
+            android:layout_width="match_parent"
+            android:layout_height="397dp"
+            android:layout_weight="1">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/editTextText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:hint="Write a comment"
+                android:inputType="text" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <ImageButton
+                android:id="@+id/imageButton6"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/circular_button"
+                app:srcCompat="@android:drawable/ic_menu_send" />
+
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <ImageButton
+                android:id="@+id/imageButton8"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/circular_button"
+                app:srcCompat="@android:drawable/ic_menu_send" />
 
         </LinearLayout>
 

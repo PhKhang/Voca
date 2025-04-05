@@ -19,9 +19,7 @@ public class KaraokeRoom extends AppCompatActivity {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
 
-//            VideoView videoView = findViewById(R.id.videoView);
-//            videoView.setVideoPath("http://videocdn.bodybuilding.com/video/mp4/62000/62792m.mp4");
-//            videoView.start();
+
 
             return insets;
         });
