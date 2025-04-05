@@ -1,32 +1,135 @@
 package com.example.voca.ui.home;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
-
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
+import androidx.navigation.NavOptions;
+import androidx.navigation.Navigation;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.voca.R;
+import com.example.voca.bus.PostBUS;
+import com.example.voca.bus.SongBUS;
+import com.example.voca.dto.PostDTO;
+import com.example.voca.dto.SongDTO;
+import com.example.voca.ui.LoginActivity;
+import com.example.voca.ui.ProfileFragment;
+import com.example.voca.ui.management.SongsManagementActivity;
+import com.example.voca.ui.AdminActivity;
+import com.example.voca.ui.record.RecordActivity;
 import com.example.voca.databinding.FragmentHomeBinding;
+import com.example.voca.ui.sing.SingAdapter;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserInfo;
+import java.util.ArrayList;
+import java.util.List;
+import com.google.android.material.search.SearchBar;
+import com.google.android.material.search.SearchView;
 
-public class HomeFragment extends Fragment {
-
+public class HomeFragment extends Fragment implements FunctionAdapter.OnFunctionClickListener {
     private FragmentHomeBinding binding;
+    private RecyclerView recyclerViewFunctions;
+    private FunctionAdapter adapter;
+    private List<FunctionItem> functionList;
+    private NavController navController;
+    private List<SongDTO> songList;
+    private List<PostDTO> postList;
+    private SingAdapter singAdapter;
+    private SongBUS songBUS;
+    private PostBUS postBUS;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        HomeViewModel homeViewModel =
-                new ViewModelProvider(this).get(HomeViewModel.class);
-
+        HomeViewModel homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
+        FirebaseApp.initializeApp(requireContext());
         binding = FragmentHomeBinding.inflate(inflater, container, false);
-        View root = binding.getRoot();
 
-        final TextView textView = binding.textHome;
-        homeViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
+        navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_activity_main);
+
+        recyclerViewFunctions = binding.recyclerViewFunctions;
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
+        recyclerViewFunctions.setLayoutManager(layoutManager);
+
+
+        functionList = new ArrayList<>();
+        functionList.add(new FunctionItem("Hát solo", R.drawable.ic_karaoke_24dp, R.drawable.support_bar_background, R.id.action_homeFragment_to_singFragment));
+        functionList.add(new FunctionItem("Hát chung", R.drawable.ic_room_karaoke_24dp, R.drawable.support_bar_background_2, RecordActivity.class));
+
+        adapter = new FunctionAdapter(functionList, this);
+        recyclerViewFunctions.setAdapter(adapter);
+
+        songList = new ArrayList<>();
+        postList = new ArrayList<>();
+        songBUS = new SongBUS();
+        postBUS = new PostBUS();
+        /*
+        binding.btnSignout.setOnClickListener(v -> {
+            Toast.makeText(requireContext(), "signout", Toast.LENGTH_SHORT).show();
+            FirebaseAuth mAuth = FirebaseAuth.getInstance();
+            FirebaseUser user = mAuth.getCurrentUser();
+            if (user == null) {
+                Toast.makeText(requireContext(), "Không có người dùng nào đăng nhập!", Toast.LENGTH_SHORT).show();
+            }
+
+            if (user != null) {
+                for (UserInfo profile : user.getProviderData()) {
+                    String providerId = profile.getProviderId();
+
+                    if (providerId.equals("google.com")) {
+                        GoogleSignIn.getClient(requireContext(), GoogleSignInOptions.DEFAULT_SIGN_IN).signOut();
+                    }
+                }
+            }
+            mAuth.signOut();
+
+            Intent intent = new Intent(requireContext(), LoginActivity.class);
+            startActivity(intent);
+            requireActivity().finish();
+        });
+        */
+
+        binding.openSongsManagementPage.setOnClickListener(v -> {
+            Intent intent = new Intent(requireContext(), AdminActivity.class);
+            startActivity(intent);
+        });
+
+        View root = binding.getRoot();
         return root;
+    }
+
+    @Override
+    public void onFunctionClick(FunctionItem functionItem) {
+        if (functionItem.getType() == FunctionItem.TYPE_FRAGMENT) {
+            if (functionItem.getDestinationId() == R.id.action_homeFragment_to_singFragment) {
+                navController.navigate(
+                        R.id.navigation_sing,
+                        null,
+                        new NavOptions.Builder()
+                                .setLaunchSingleTop(true)
+                                .build()
+                );
+            } else {
+                navController.navigate(functionItem.getDestinationId());
+            }
+        } else if (functionItem.getType() == FunctionItem.TYPE_ACTIVITY) {
+            Intent intent = new Intent(getContext(), functionItem.getActivityClass());
+            startActivity(intent);
+        }
     }
 
     @Override
