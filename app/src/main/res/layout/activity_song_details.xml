@@ -18,7 +18,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="?attr/actionBarSize"
-            app:title="Chi tiết bài hát"
+            app:subtitle="Chi tiết bài hát"
             app:titleCentered="true"
             app:navigationIcon="@drawable/ic_back_24dp" />
 

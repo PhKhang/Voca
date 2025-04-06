@@ -18,7 +18,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="?attr/actionBarSize"
-            app:title="Thêm bài hát mới"
+            app:subtitle="Thêm bài hát mới"
             app:titleCentered="true"
             app:navigationIcon="@drawable/ic_back_24dp"/>
 
@@ -89,13 +89,6 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Thêm" />
-
-        <Button
-            android:id="@+id/return_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Quay lại" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
