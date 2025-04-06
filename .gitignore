@@ -13,8 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
-app/google-services.json
-node_modules/
-.env
+**/.env
+**/google-services.json
 .idea/misc.xml
 /.idea
