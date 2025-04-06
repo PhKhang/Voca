@@ -120,13 +120,11 @@ public class SingFragment extends Fragment {
         switch (tabPosition) {
             case 0:
                 filteredList.addAll(songs);
-                singAdapter.updateData(postList, filteredList);
                 break;
             case 1:
                 for (SongDTO song : songs) {
                     if (true) { // nhiều lượt thích nhất
                         filteredList.add(song);
-                        singAdapter.updateData(postList, filteredList);
                     }
                 }
                 break;
@@ -134,7 +132,6 @@ public class SingFragment extends Fragment {
                 for (SongDTO song : songs) {
                     if (true) { // hát nhiều nhất
                         filteredList.add(song);
-                        singAdapter.updateData(postList, filteredList);
                     }
                 }
                 break;
