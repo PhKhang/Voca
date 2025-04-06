@@ -101,6 +101,29 @@ app.post('/likes', async (req, res) => {
     }
 });
 
+app.delete('/likes/:id', async (req, res) => {
+    try {
+        // Tìm và xóa Like
+        const like = await Like.findByIdAndDelete(req.params.id);
+        if (!like) {
+            return res.status(404).json({ error: 'Like not found' });
+        }
+
+        // Giảm số lượt thích trong Post
+        const post = await Post.findById(like.post_id);
+        if (!post) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+        post.likes -= 1;
+        if (post.likes < 0) post.likes = 0; // Đảm bảo không có số likes âm
+        await post.save();
+
+        res.json({ message: 'Like deleted', post_likes: post.likes });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/notifications/:userId', async (req, res) => {
     try {
         const notifications = await Notification.find({ recipient_id: req.params.userId })
@@ -348,24 +371,24 @@ app.delete('/posts/:id', async (req, res) => {
 
 // API Endpoints cho Like
 // Create Like
-app.post('/likes', async (req, res) => {
-    try {
-        const like = new Like(req.body);
-        await like.save();
-        const populatedLike = await Like.findById(like._id)
-            .populate('user_id')
-            .populate({
-                path: 'post_id',
-                populate: [
-                    { path: 'user_id' },
-                    { path: 'song_id', populate: { path: 'uploaded_by' } }
-                ]
-            });
-        res.status(201).json(populatedLike);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
+// app.post('/likes', async (req, res) => {
+//     try {
+//         const like = new Like(req.body);
+//         await like.save();
+//         const populatedLike = await Like.findById(like._id)
+//             .populate('user_id')
+//             .populate({
+//                 path: 'post_id',
+//                 populate: [
+//                     { path: 'user_id' },
+//                     { path: 'song_id', populate: { path: 'uploaded_by' } }
+//                 ]
+//             });
+//         res.status(201).json(populatedLike);
+//     } catch (err) {
+//         res.status(400).json({ error: err.message });
+//     }
+// });
 
 // Read Likes (đã có)
 app.get('/likes', async (req, res) => {
@@ -425,15 +448,15 @@ app.put('/likes/:id', async (req, res) => {
 });
 
 // Delete Like
-app.delete('/likes/:id', async (req, res) => {
-    try {
-        const like = await Like.findByIdAndDelete(req.params.id);
-        if (!like) return res.status(404).json({ error: 'Like not found' });
-        res.json({ message: 'Like deleted' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
+// app.delete('/likes/:id', async (req, res) => {
+//     try {
+//         const like = await Like.findByIdAndDelete(req.params.id);
+//         if (!like) return res.status(404).json({ error: 'Like not found' });
+//         res.json({ message: 'Like deleted' });
+//     } catch (err) {
+//         res.status(500).json({ error: err.message });
+//     }
+// });
 
 // Like a Post
 app.post('/posts/:id/like', async (req, res) => {
