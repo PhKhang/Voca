@@ -178,7 +178,7 @@ public class AdminActivity extends AppCompatActivity {
             @Override
             public void onPostsFetched(List<PostDTO> fetchedPosts) {
                 posts = fetchedPosts;
-                songAdapter.notifyDataSetChanged();
+                songAdapter.updateDataPost(posts);
             }
 
             @Override

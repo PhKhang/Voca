@@ -10,11 +10,14 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.DocumentsContract;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,6 +27,7 @@ import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.SongDTO;
 import com.example.voca.dto.UserDTO;
 import com.example.voca.service.FileUploader;
+import com.example.voca.service.LoadImage;
 import com.google.android.material.appbar.MaterialToolbar;
 
 public class SongsManagementActivity extends AppCompatActivity {
@@ -33,6 +37,7 @@ public class SongsManagementActivity extends AppCompatActivity {
     private String videoId = "";
     private String Mp3Path = "";
     private EditText mp3LinkEditText;
+    private ImageView imageThumbnail;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,10 +57,33 @@ public class SongsManagementActivity extends AppCompatActivity {
         mp3LinkEditText = findViewById(R.id.mp3_link_edittext);
         EditText youtubeIdEditText = findViewById(R.id.youtube_id_edittext);
         EditText titleEditText = findViewById(R.id.title_edittext);
+        imageThumbnail = findViewById(R.id.imageThumbnail);
+
+        com.google.android.material.textfield.TextInputLayout youtubeIdLayout = findViewById(R.id.youtube_id_layout);
+        youtubeIdEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String input = s.toString().trim();
+                if (input.length() < 11) {
+                    youtubeIdLayout.setError("ID không hợp lệ");
+                } else {
+                    youtubeIdLayout.setError(null);
+                    new LoadImage(imageThumbnail).execute("http://img.youtube.com/vi/" + input + "/0.jpg");
+                }
+            }
+        });
 
         Button submitButton = findViewById(R.id.submit_button);
-        Button returnButton = findViewById(R.id.return_button);
-        returnButton.setOnClickListener(v -> finish());
 
         Button pickButton = findViewById(R.id.pick);
         pickButton.setOnClickListener(view -> openFilePicker()); // Mở trình chọn file
@@ -110,6 +138,20 @@ public class SongsManagementActivity extends AppCompatActivity {
                 }
             });
         });
+
+        Button deleteButton = findViewById(R.id.delete_button);
+        deleteButton.setOnClickListener(v -> {
+            if (!Mp3Path.isEmpty()) {
+                new FileUploader().deleteFileByURL(Mp3Path);
+
+                Mp3Path = "";
+                mp3LinkEditText.setText("");
+                Toast.makeText(this, "Đã xóa file trên cloud", Toast.LENGTH_SHORT).show();
+            } else if (Mp3Path.isEmpty() && (mp3LinkEditText.getText().length() > 0)) {
+                mp3LinkEditText.setText("");
+                Toast.makeText(this, "Không có file nào được tải lên", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void setClickOnNavigationButton() {
@@ -131,7 +173,7 @@ public class SongsManagementActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 1 && resultCode == AppCompatActivity.RESULT_OK) {
+        if (requestCode == 3 && resultCode == RESULT_OK) {
             if (data != null) {
                 Uri audioUri = data.getData();
                 showConfirmAudioDialog(audioUri);
@@ -168,9 +210,11 @@ public class SongsManagementActivity extends AppCompatActivity {
 
                 @Override
                 public void onFailure() {
-                    Log.d("UploadAudioFailed", "Tải lên thất bại!");
-                    dialog.dismiss();
-                    Toast.makeText(SongsManagementActivity.this, "Tải lên thất bại!", Toast.LENGTH_SHORT).show();
+                    runOnUiThread(() -> {
+                        Log.e("UploadAudioFailed", "Tải lên thất bại!");
+                        Toast.makeText(SongsManagementActivity.this, "Tải lên thất bại!", Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                    });
                 }
             });
         });

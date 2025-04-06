@@ -78,6 +78,12 @@ public class SongAdapter extends ArrayAdapter<SongDTO> {
         notifyDataSetChanged();
     }
 
+    public void updateDataPost(List<PostDTO> newPosts) {
+        posts.clear();
+        posts.addAll(newPosts);
+        notifyDataSetChanged();
+    }
+
     private class ViewHolder {
         ImageView thumbnail;
         TextView title;
