@@ -93,6 +93,85 @@ const likeSchema = new mongoose.Schema({
 });
 const Like = mongoose.model('Like', likeSchema);
 
+const roomSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    code: { type: String, required: true, unique: true },
+    is_private: { type: Boolean, default: false },
+    description: { type: String },
+    created_at: { type: Date, default: Date.now },
+    updated_at: { type: Date, default: Date.now },
+    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    queue: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Song' }],
+    current_song: { type: mongoose.Schema.Types.ObjectId, ref: 'Song' },
+    current_song_start_time: { type: Date },
+    chats: [
+        {
+            message_type: { type: String },
+            user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+            message: { type: String, required: true },
+            timestamp: { type: Date, default: Date.now },
+        },
+    ],
+});
+const Room = mongoose.model('Room', roomSchema);
+
+// CRUD APIs for Rooms
+app.post('/rooms', async (req, res) => {
+    try {
+        const room = new Room(req.body);
+        await room.save();
+        res.status(201).json(room);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+app.get('/rooms', async (req, res) => {
+    const rooms = await Room.find().populate('created_by').populate('members').populate('queue').populate('current_song');
+    res.json(rooms);
+});
+
+app.get('/rooms/:id', async (req, res) => {
+    const room = await Room.findById(req.params.id).populate('created_by').populate('members').populate('queue').populate('current_song');
+    room ? res.json(room) : res.status(404).json({ error: 'Room not found' });
+});
+
+app.delete('/rooms/:id', async (req, res) => {
+    await Room.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Room deleted' });
+});
+
+app.get('/rooms/', async (req, res) => {
+    let filter = {};
+
+    if (req.query.name) {
+        filter.name = new RegExp(req.query.name, 'i'); // Case-insensitive search for 'name'
+    }
+
+    if (req.query.code) {
+        filter.code = req.query.code;
+    }
+    const room = req.query.code 
+    ? await Room.findOne(filter).populate('created_by').populate('members').populate('queue').populate('current_song')
+    : await Room.find(filter).populate('created_by').populate('members').populate('queue').populate('current_song');
+    room ? res.json(room) : res.status(404).json({ error: 'Room not found' });
+});
+
+app.delete('/rooms/:id', async (req, res) => {
+    await Room.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Room deleted' });
+});
+
+app.put('/rooms/:id', async (req, res) => {
+    try {
+        const room = await Room.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json(room);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+        
 // CRUD APIs for Users
 app.post('/users', async (req, res) => {
     try {
@@ -140,6 +219,7 @@ app.post('/songs', async (req, res) => {
 });
 
 app.get('/songs', async (req, res) => {
+    console.log("Fetching all songs");
     const songs = await Song.find().populate('uploaded_by');
     res.json(songs);
 });

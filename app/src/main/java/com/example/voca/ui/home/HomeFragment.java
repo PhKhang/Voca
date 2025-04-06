@@ -80,7 +80,7 @@ public class HomeFragment extends Fragment implements FunctionAdapter.OnFunction
 
         functionList = new ArrayList<>();
         functionList.add(new FunctionItem("Hát solo", R.drawable.ic_karaoke_24dp, R.drawable.support_bar_background, R.id.action_homeFragment_to_singFragment));
-        functionList.add(new FunctionItem("Hát chung", R.drawable.ic_room_karaoke_24dp, R.drawable.support_bar_background_2, KaraokeRoom.class));
+        functionList.add(new FunctionItem("Hát chung", R.drawable.ic_room_karaoke_24dp, R.drawable.support_bar_background_2, CreateRoomActivity.class));
 
         adapter = new FunctionAdapter(functionList, this);
         recyclerViewFunctions.setAdapter(adapter);
