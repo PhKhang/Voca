@@ -51,6 +51,110 @@ const likeSchema = new mongoose.Schema({
 });
 const Like = mongoose.model('Like', likeSchema);
 
+const notificationSchema = new mongoose.Schema({
+    recipient_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Người nhận thông báo
+    sender_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },    // Người gửi (người thích)
+    post_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Post', required: true },     // Bài đăng được thích
+    type: { type: String, default: 'like' },                                           // Loại thông báo (có thể mở rộng: comment, follow, v.v.)
+    is_read: { type: Boolean, default: false },                                        // Trạng thái đã đọc
+    created_at: { type: Date, default: Date.now }                                      // Thời gian tạo
+});
+
+const Notification = mongoose.model('Notification', notificationSchema);
+
+// CRUD APIs for Notifications
+app.post('/likes', async (req, res) => {
+    try {
+        // Tạo Like
+        const like = new Like(req.body);
+        await like.save();
+
+        // Tăng số lượt thích trong Post
+        const post = await Post.findById(req.body.post_id);
+        if (!post) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+        post.likes += 1;
+        await post.save();
+
+        // Tạo Notification
+        const notification = new Notification({
+            recipient_id: post.user_id, // Người sở hữu bài đăng
+            sender_id: req.body.user_id, // Người thích
+            post_id: req.body.post_id,
+            type: 'like'
+        });
+        await notification.save();
+
+        const populatedLike = await Like.findById(like._id)
+            .populate('user_id')
+            .populate({
+                path: 'post_id',
+                populate: [
+                    { path: 'user_id' },
+                    { path: 'song_id', populate: { path: 'uploaded_by' } }
+                ]
+            });
+        res.status(201).json(populatedLike);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+app.get('/notifications/:userId', async (req, res) => {
+    try {
+        const notifications = await Notification.find({ recipient_id: req.params.userId })
+            .populate('recipient_id') // Lấy thông tin người nhận
+            .populate('sender_id') // Lấy thông tin người gửi
+            .populate({
+                path: 'post_id',
+                populate: [
+                    { path: 'user_id' },
+                    { path: 'song_id', populate: { path: 'uploaded_by' } }
+                ]
+            })
+            .sort({ created_at: -1 }); // Sắp xếp theo thời gian mới nhất
+        res.json(notifications);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+app.put('/notifications/:id/read', async (req, res) => {
+    try {
+        const notification = await Notification.findByIdAndUpdate(
+            req.params.id,
+            { is_read: true },
+            { new: true }
+        )
+            .populate('recipient_id') // Người nhận thông báo
+            .populate('sender_id')    // Người gửi thông báo
+            .populate({
+                path: 'post_id',
+                populate: [
+                    { path: 'user_id' },
+                    { path: 'song_id', populate: { path: 'uploaded_by' } }
+                ]
+            });
+
+        if (!notification) {
+            return res.status(404).json({ error: 'Notification not found' });
+        }
+        res.json(notification);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+app.delete('/notifications/:id', async (req, res) => {
+    try {
+        await Notification.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Notification deleted' });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 // API Endpoints cho User
 // Create User
 app.post('/users', async (req, res) => {
