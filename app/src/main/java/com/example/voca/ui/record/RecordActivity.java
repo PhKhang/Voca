@@ -180,20 +180,25 @@ public class RecordActivity extends AppCompatActivity {
             stopRecording();
             stopOnlineAudio();
             Toast.makeText(RecordActivity.this, "Đã kết thúc ghi âm", Toast.LENGTH_SHORT).show();
-            playCombinedAudio(new Callback() {
-                @Override
-                public void onSuccess(String filePath) {
-                    Intent intent = new Intent(RecordActivity.this, RecordResultActivity.class);
-                    intent.putExtra("audio_path", filePath);
-                    intent.putExtra("song_name", songName);
-                    startActivity(intent);
-                }
-
-                @Override
-                public void onFailure() {
-                    Toast.makeText(RecordActivity.this, "Không thể phát do lỗi trộn!", Toast.LENGTH_SHORT).show();
-                }
-            });
+            Intent intent1 = new Intent(RecordActivity.this, RecordResultActivity.class);
+            intent1.putExtra("recording_path", new File(getExternalFilesDir(null), "audio_recording.m4a").getAbsolutePath());
+            intent1.putExtra("background_music_path", new File(getExternalFilesDir(null), backgroundMusicPath).getAbsolutePath());
+            intent1.putExtra("song_name", songName);
+            startActivity(intent1);
+            //            combineAudioFiles(new Callback() {
+//                @Override
+//                public void onSuccess(String filePath) {
+//                    Intent intent = new Intent(RecordActivity.this, RecordResultActivity.class);
+//                    intent.putExtra("audio_path", filePath);
+//                    intent.putExtra("song_name", songName);
+//                    startActivity(intent);
+//                }
+//
+//                @Override
+//                public void onFailure() {
+//                    Toast.makeText(RecordActivity.this, "Không thể phát do lỗi trộn!", Toast.LENGTH_SHORT).show();
+//                }
+//            });
         });
 
 //        playButton.setOnClickListener(v -> {
@@ -514,7 +519,7 @@ public class RecordActivity extends AppCompatActivity {
 //            }
 //        });
 //    }
-private void playCombinedAudio(Callback callback) {
+private void combineAudioFiles(Callback callback) {
     if (callback == null) {
         throw new IllegalArgumentException("Callback cannot be null");
     }
