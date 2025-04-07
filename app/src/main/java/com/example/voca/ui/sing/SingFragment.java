@@ -19,6 +19,8 @@ import com.example.voca.dto.SongDTO;
 import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class SingFragment extends Fragment {
@@ -84,9 +86,9 @@ public class SingFragment extends Fragment {
         songBUS.fetchSongs(new SongBUS.OnSongsFetchedListener() {
             @Override
             public void onSongsFetched(List<SongDTO> songs) {
-                songList = filterSongsByTab(songs, tabPosition);
-                fetchPosts();
-                progressDialog.dismiss();
+                songList = songs; // Lưu danh sách bài hát gốc
+                fetchPosts(tabPosition); // Truyền tabPosition vào fetchPosts
+                // Không gọi filterSongsByTab ở đây nữa
             }
 
             @Override
@@ -97,45 +99,77 @@ public class SingFragment extends Fragment {
         });
     }
 
-    private void fetchPosts() {
+    private void fetchPosts(int tabPosition) {
         postBUS.fetchPosts(new PostBUS.OnPostsFetchedListener() {
             @Override
             public void onPostsFetched(List<PostDTO> posts) {
                 postList = posts;
+                // Sau khi có cả songList và postList, giờ mới lọc và cập nhật UI
+                songList = filterSongsByTab(songList, tabPosition);
                 if (context != null) {
                     singAdapter = new SingAdapter(context, postList, songList);
                     listView.setAdapter(singAdapter);
                 }
+                progressDialog.dismiss();
             }
 
             @Override
             public void onError(String error) {
+                progressDialog.dismiss();
                 Toast.makeText(requireContext(), "Error fetching posts: " + error, Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private List<SongDTO> filterSongsByTab(List<SongDTO> songs, int tabPosition) {
-        List<SongDTO> filteredList = new ArrayList<>();
+        List<SongDTO> filteredList = new ArrayList<>(songs); // Sao chép danh sách gốc để không thay đổi nó
+
         switch (tabPosition) {
-            case 0:
-                filteredList.addAll(songs);
-                break;
-            case 1:
-                for (SongDTO song : songs) {
-                    if (true) { // nhiều lượt thích nhất
-                        filteredList.add(song);
+            case 0: // Tab "Tất cả"
+                // Không cần lọc, trả về toàn bộ danh sách
+                return filteredList;
+
+            case 1: // Tab "Nhiều lượt thích nhất"
+                // Sắp xếp theo số lượt thích (tính từ posts)
+                Collections.sort(filteredList, new Comparator<SongDTO>() {
+                    @Override
+                    public int compare(SongDTO song1, SongDTO song2) {
+                        int likes1 = calculateTotalLikes(song1);
+                        int likes2 = calculateTotalLikes(song2);
+                        return Integer.compare(likes2, likes1); // Sắp xếp giảm dần
                     }
-                }
-                break;
-            case 2:
-                for (SongDTO song : songs) {
-                    if (true) { // hát nhiều nhất
-                        filteredList.add(song);
+                });
+                return filteredList;
+
+            case 2: // Tab "Hát nhiều nhất"
+                // Sắp xếp theo số người đã ghi âm (recorded_people)
+                Collections.sort(filteredList, new Comparator<SongDTO>() {
+                    @Override
+                    public int compare(SongDTO song1, SongDTO song2) {
+                        int recorded1 = song1.getRecorded_people();
+                        int recorded2 = song2.getRecorded_people();
+                        return Integer.compare(recorded2, recorded1); // Sắp xếp giảm dần
                     }
-                }
-                break;
+                });
+                return filteredList;
+
+            default:
+                return filteredList; // Trường hợp không xác định, trả về danh sách gốc
         }
-        return filteredList;
+    }
+
+    // Phương thức phụ để tính tổng số lượt thích cho một bài hát
+    private int calculateTotalLikes(SongDTO song) {
+        int totalLikes = 0;
+        if (postList != null && song.get_id() != null) {
+            for (PostDTO post : postList) {
+                if (post != null && post.getSong_id() != null && post.getSong_id().get_id() != null) {
+                    if (post.getSong_id().get_id().equals(song.get_id())) {
+                        totalLikes += post.getLikes();
+                    }
+                }
+            }
+        }
+        return totalLikes;
     }
 }
