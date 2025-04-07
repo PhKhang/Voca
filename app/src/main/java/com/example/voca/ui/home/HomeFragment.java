@@ -134,18 +134,6 @@ public class HomeFragment extends Fragment implements FunctionAdapter.OnFunction
         });
         */
 
-        binding.openSongsManagementPage.setOnClickListener(v -> {
-            String priorityPostId = "post123";
-            Bundle bundle = new Bundle();
-            bundle.putString("priorityPostId", priorityPostId);
-            navController.navigate(R.id.action_homeFragment_to_dashboardFragment, bundle);
-        });
-
-        binding.openSongsManagementPage.setOnClickListener(v -> {
-            Intent intent = new Intent(requireContext(), AdminActivity.class);
-            startActivity(intent);
-        });
-
         View root = binding.getRoot();
         return root;
     }

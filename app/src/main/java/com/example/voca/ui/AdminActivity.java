@@ -1,215 +1,143 @@
-package com.example.voca.ui;
+package com.example.voca.ui; // Thay bằng package của bạn
+
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
-
-import android.app.ProgressDialog;
-import android.content.Intent;
-import android.os.Bundle;
-import android.view.View;
-import android.widget.ListView;
-import android.widget.SearchView;
-import android.widget.Toast;
+import androidx.cardview.widget.CardView;
 
 import com.example.voca.R;
 import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.SongBUS;
+import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.SongDTO;
-import com.example.voca.ui.management.SongAdapter;
-import com.example.voca.ui.management.SongDetailsActivity;
+import com.example.voca.dto.UserDTO;
 import com.example.voca.ui.management.SongsManagementActivity;
-import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+import com.example.voca.ui.management.UsersManagementActivity;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class AdminActivity extends AppCompatActivity {
-    private static final String LOADING_MESSAGE = "Đang lấy dữ liệu bài hát...";
-    private ListView songListView;
-    private List<SongDTO> songs;
-    private List<PostDTO> posts;
-    private SongAdapter songAdapter;
+    private TextView userCount;
+    private TextView postCount;
+    private TextView songCount;
+    private TextView playCount;
+    private TextView roomCount;
+    private TextView greetingTitle;
+    private CardView cardUserManagement;
+    private CardView cardSongManagement;
     private SongBUS songBUS;
+    private UserBUS userBUS;
     private PostBUS postBUS;
-    private ExtendedFloatingActionButton addSongButton;
-    private SearchView searchView;
-    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        hideActionBar();
-        setContentView(R.layout.activity_songs);
-
-        initializeViews();
-        initializeData();
-        setupListeners();
-        loadSongs();
-        setClickOnNavigationButton();
-
-    }
-
-    private void hideActionBar() {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.hide();
         }
-    }
+        setContentView(R.layout.activity_admin);
 
-    private void setClickOnNavigationButton() {
-        MaterialToolbar topAppBar = findViewById(R.id.topAppBar);
-        topAppBar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
-    }
+        userCount = findViewById(R.id.userCount);
+        postCount = findViewById(R.id.postCount);
+        songCount = findViewById(R.id.songCount);
+        playCount = findViewById(R.id.playCount);
+        roomCount = findViewById(R.id.roomCount);
 
-    private void initializeViews() {
-        songListView = findViewById(R.id.listViewSongs);
-        addSongButton = findViewById(R.id.addSong_button);
-        searchView = findViewById(R.id.searchView);
-    }
+        greetingTitle = findViewById(R.id.greetingTitle);
 
-    private void initializeData() {
-        songs = new ArrayList<>();
-        posts = new ArrayList<>();
+        cardUserManagement = findViewById(R.id.cardUserManagement);
+        cardSongManagement = findViewById(R.id.cardSongManagement);
+
         songBUS = new SongBUS();
+        userBUS = new UserBUS();
         postBUS = new PostBUS();
-        songAdapter = new SongAdapter(this, songs, posts);
-        songListView.setAdapter(songAdapter);
+
+        Intent intent = getIntent();
+        String username = intent.getStringExtra("username");
+        if (username != null) {
+            greetingTitle.setText("Xin chào " + username + "!");
+        }
+        updateCountValues();
+
+        setupCardClickListeners();
     }
 
-    private void setupListeners() {
-        addSongButton.setOnClickListener(v -> navigateToSongManagement());
-        setupSearchViewListener();
-        setupRootViewClickListener();
-        setupSongItemClickListener();
-    }
-
-    private void setupSearchViewListener() {
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+    private void updateCountValues() {
+        userBUS.fetchUsers(new UserBUS.OnUsersFetchedListener() {
             @Override
-            public boolean onQueryTextSubmit(String query) {
-                searchSongsByTitle(query);
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                if (newText.isEmpty()) {
-                    songAdapter.updateData(songs);
-                }
-                return true;
-            }
-        });
-    }
-
-    private void setupRootViewClickListener() {
-        findViewById(R.id.root_layout).setOnClickListener(v -> {
-            searchView.clearFocus();
-            searchView.setQuery("", false);
-            songAdapter.updateData(songs);
-        });
-    }
-
-    private void setupSongItemClickListener() {
-        songListView.setOnItemClickListener((parent, view, position, id) -> {
-            SongDTO selectedSong = songAdapter.getItem(position);
-            navigateToSongDetails(selectedSong);
-        });
-    }
-
-    private void navigateToSongManagement() {
-        Intent intent = new Intent(this, SongsManagementActivity.class);
-        startActivity(intent);
-    }
-
-    private void navigateToSongDetails(SongDTO song) {
-        Intent intent = new Intent(this, SongDetailsActivity.class);
-        intent.putExtra("song_id", song.get_id());
-        intent.putExtra("youtube_id", song.getYoutube_id());
-        intent.putExtra("title", song.getTitle());
-        intent.putExtra("mp3_file", song.getMp3_file());
-        intent.putExtra("thumbnail", song.getThumbnail());
-        intent.putExtra("uploaded_by", song.getUploaded_by().getUsername());
-        intent.putExtra("created_at", song.getCreated_at());
-        intent.putExtra("recorded_people", song.getRecorded_people());
-        startActivity(intent);
-    }
-
-    @Override
-    protected void onRestart() {
-        super.onRestart();
-        loadSongs();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        searchView.setQuery("", false);
-        findViewById(R.id.root_layout).requestFocus();
-    }
-
-    private void loadSongs() {
-        showLoadingDialog();
-        songBUS.fetchSongs(new SongBUS.OnSongsFetchedListener() {
-            @Override
-            public void onSongsFetched(List<SongDTO> fetchedSongs) {
-                songs = fetchedSongs;
-                songAdapter.updateData(songs);
-                loadPosts();
-                progressDialog.dismiss();
+            public void onUsersFetched(List<UserDTO> users) {
+                int totalUsers = users.size();
+                userCount.setText(String.valueOf(totalUsers));
             }
 
             @Override
             public void onError(String error) {
-                progressDialog.dismiss();
-                showToast("Error fetching songs: " + error);
+                userCount.setText("0");
+                Toast.makeText(AdminActivity.this, error, Toast.LENGTH_SHORT).show();
             }
         });
-    }
 
-    private void loadPosts() {
         postBUS.fetchPosts(new PostBUS.OnPostsFetchedListener() {
             @Override
-            public void onPostsFetched(List<PostDTO> fetchedPosts) {
-                posts = fetchedPosts;
-                songAdapter.updateDataPost(posts);
+            public void onPostsFetched(List<PostDTO> posts) {
+                int totalPosts = posts.size();
+                postCount.setText(String.valueOf(totalPosts));
             }
 
             @Override
             public void onError(String error) {
-                showToast("Error fetching posts: " + error);
+                postCount.setText("0");
+                Toast.makeText(AdminActivity.this, error, Toast.LENGTH_SHORT).show();
             }
         });
-    }
 
-    private void searchSongsByTitle(String query) {
-        songBUS.searchSongsByTitle(query, new SongBUS.OnSongsFetchedListener() {
+        songBUS.fetchSongs(new SongBUS.OnSongsFetchedListener() {
             @Override
             public void onSongsFetched(List<SongDTO> songs) {
-                songAdapter.updateData(songs);
+                int totalSongs = songs.size();
+                songCount.setText(String.valueOf(totalSongs));
+
+                int totalRecordedPeople = 0;
+                for (SongDTO song : songs) {
+                    totalRecordedPeople += song.getRecorded_people();
+                }
+                playCount.setText(String.valueOf(totalRecordedPeople));
             }
 
             @Override
-            public void onError(String errorMessage) {
-                showToast(errorMessage);
+            public void onError(String error) {
+                songCount.setText("0");
+                playCount.setText("0");
+                Toast.makeText(AdminActivity.this, error, Toast.LENGTH_SHORT).show();
             }
         });
+
+        roomCount.setText("0");
     }
 
-    private void showLoadingDialog() {
-        progressDialog = new ProgressDialog(this);
-        progressDialog.setMessage(LOADING_MESSAGE);
-        progressDialog.setCancelable(false);
-        progressDialog.show();
-    }
+    private void setupCardClickListeners() {
+        cardUserManagement.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(AdminActivity.this, UsersManagementActivity.class);
+                startActivity(intent);
+            }
+        });
 
-    private void showToast(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        cardSongManagement.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(AdminActivity.this, SongsManagementActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 }

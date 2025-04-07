@@ -232,6 +232,8 @@ public class LoginActivity extends AppCompatActivity {
                     intent = new Intent(LoginActivity.this, MainActivity.class);
                 } else {
                     intent = new Intent(LoginActivity.this, AdminActivity.class);
+                    intent.putExtra("username", currentUser.getUsername());
+                    startActivity(intent);
                 }
                 startActivity(intent);
                 finish();

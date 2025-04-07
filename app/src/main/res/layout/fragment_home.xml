@@ -65,12 +65,12 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/listViewPosts"/>
 
-        <Button
+        <!--Button
             android:id="@+id/openSongsManagementPage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Mở trang quản lý bài hát"
-            android:layout_marginTop="8dp"/>
+            android:layout_marginTop="8dp"/-->
 
     </LinearLayout>
 

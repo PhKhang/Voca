@@ -20,6 +20,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:background="@drawable/shape_bg_search"
+            app:queryBackground="@android:color/transparent"
+            android:queryBackground="@android:color/transparent"
             android:iconifiedByDefault="false"
             android:padding="0dp"
             android:queryHint="Tìm kiếm"

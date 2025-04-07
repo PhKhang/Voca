@@ -72,10 +72,13 @@
             android:name=".ui.ForgotPassActivity"
             android:exported="true"></activity>
         <activity
-            android:name=".ui.ProfileActivity"
+            android:name=".ui.ProfileViewActivity"
             android:exported="true"></activity>
         <activity
-            android:name=".ui.ProfileViewActivity"
+            android:name=".ui.management.UsersManagementActivity"
+            android:exported="true"></activity>
+        <activity
+            android:name=".ui.management.SongAddActivity"
             android:exported="true"></activity>
     </application>
 

@@ -1,43 +1,38 @@
 package com.example.voca.ui.management;
 
 import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.DocumentsContract;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.TextView;
+import android.widget.ListView;
+import android.widget.SearchView;
 import android.widget.Toast;
 
 import com.example.voca.R;
+import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.SongBUS;
-import com.example.voca.bus.UserBUS;
+import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.SongDTO;
-import com.example.voca.dto.UserDTO;
-import com.example.voca.service.FileUploader;
-import com.example.voca.service.LoadImage;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class SongsManagementActivity extends AppCompatActivity {
-    private SongBUS songBus;
-    private UserBUS userBus;
-    private Uri fileUri;
-    private String videoId = "";
-    private String Mp3Path = "";
-    private EditText mp3LinkEditText;
-    private ImageView imageThumbnail;
+    private static final String LOADING_MESSAGE = "Đang lấy dữ liệu bài hát...";
+    private ListView songListView;
+    private List<SongDTO> songs;
+    private List<PostDTO> posts;
+    private SongAdapter songAdapter;
+    private SongBUS songBUS;
+    private PostBUS postBUS;
+    private ExtendedFloatingActionButton addSongButton;
+    private SearchView searchView;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,112 +41,21 @@ public class SongsManagementActivity extends AppCompatActivity {
         if (actionBar != null) {
             actionBar.hide();
         }
-        setContentView(R.layout.activity_songsmanagement);
+        setContentView(R.layout.activity_songs);
 
-        songBus = new SongBUS();
-        userBus = new UserBUS();
-
-        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        String userId = prefs.getString("userId", null);
-
-        mp3LinkEditText = findViewById(R.id.mp3_link_edittext);
-        EditText youtubeIdEditText = findViewById(R.id.youtube_id_edittext);
-        EditText titleEditText = findViewById(R.id.title_edittext);
-        imageThumbnail = findViewById(R.id.imageThumbnail);
-
-        com.google.android.material.textfield.TextInputLayout youtubeIdLayout = findViewById(R.id.youtube_id_layout);
-        youtubeIdEditText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                String input = s.toString().trim();
-                if (input.length() < 11) {
-                    youtubeIdLayout.setError("ID không hợp lệ");
-                } else {
-                    youtubeIdLayout.setError(null);
-                    new LoadImage(imageThumbnail).execute("http://img.youtube.com/vi/" + input + "/0.jpg");
-                }
-            }
-        });
-
-        Button submitButton = findViewById(R.id.submit_button);
-
-        Button pickButton = findViewById(R.id.pick);
-        pickButton.setOnClickListener(view -> openFilePicker()); // Mở trình chọn file
+        initializeViews();
+        initializeData();
+        setupListeners();
+        loadSongs();
         setClickOnNavigationButton();
-        submitButton.setOnClickListener(v -> {
-            String inputMp3Link = mp3LinkEditText.getText().toString().trim();
-            String inputVideoId = youtubeIdEditText.getText().toString().trim();
-            String inputTitleVideo = titleEditText.getText().toString().trim();
 
-            if (!inputMp3Link.isEmpty()) {
-                Mp3Path = inputMp3Link;
-            }
+    }
 
-            if (!inputVideoId.isEmpty()) {
-                videoId = inputVideoId;
-            }
-            String thumbnailUrl = "http://img.youtube.com/vi/" + videoId + "/0.jpg";
-
-            userBus.fetchUserById(userId, new UserBUS.OnUserFetchedListener() {
-                @Override
-                public void onUserFetched(UserDTO user) {
-                    if (user != null) {
-                        Log.d("UserModule", "Tìm thấy người dùng: " + user.getUsername());
-
-                        SongDTO newSong = new SongDTO(null, videoId, inputTitleVideo, Mp3Path,
-                                thumbnailUrl, user, null, 0);
-
-                        songBus.createSong(newSong, new SongBUS.OnSongCreatedListener() {
-                            @Override
-                            public void onSongCreated(SongDTO song) {
-                                Toast.makeText(SongsManagementActivity.this, "Bài hát mới được tạo: " + song.getTitle() + " với ID: " + song.get_id(), Toast.LENGTH_SHORT).show();
-                                finish();
-                            }
-
-                            @Override
-                            public void onError(String error) {
-                                Toast.makeText(SongsManagementActivity.this, "Lỗi khi tạo bài hát", Toast.LENGTH_SHORT).show();
-                                Log.e("SongModule", "Lỗi khi tạo bài hát: " + error);
-                            }
-                        });
-
-                    } else {
-                        Toast.makeText(SongsManagementActivity.this, "Lỗi khi tạo bài hát", Toast.LENGTH_SHORT).show();
-                        Log.e("UserModule", "Không tìm thấy người dùng với ID: " + userId);
-                    }
-                }
-
-                @Override
-                public void onError(String error) {
-                    Toast.makeText(SongsManagementActivity.this, "Lỗi khi tạo bài hát", Toast.LENGTH_SHORT).show();
-                    Log.e("UserModule", "Lỗi khi tìm người dùng: " + error);
-                }
-            });
-        });
-
-        Button deleteButton = findViewById(R.id.delete_button);
-        deleteButton.setOnClickListener(v -> {
-            if (!Mp3Path.isEmpty()) {
-                new FileUploader().deleteFileByURL(Mp3Path);
-
-                Mp3Path = "";
-                mp3LinkEditText.setText("");
-                Toast.makeText(this, "Đã xóa file trên cloud", Toast.LENGTH_SHORT).show();
-            } else if (Mp3Path.isEmpty() && (mp3LinkEditText.getText().length() > 0)) {
-                mp3LinkEditText.setText("");
-                Toast.makeText(this, "Không có file nào được tải lên", Toast.LENGTH_SHORT).show();
-            }
-        });
+    private void hideActionBar() {
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.hide();
+        }
     }
 
     private void setClickOnNavigationButton() {
@@ -164,61 +68,148 @@ public class SongsManagementActivity extends AppCompatActivity {
         });
     }
 
-    private void openFilePicker() {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("audio/*");
-        startActivityForResult(intent, 3); // Request code là 3
+    private void initializeViews() {
+        songListView = findViewById(R.id.listViewSongs);
+        addSongButton = findViewById(R.id.addSong_button);
+        searchView = findViewById(R.id.searchView);
+    }
+
+    private void initializeData() {
+        songs = new ArrayList<>();
+        posts = new ArrayList<>();
+        songBUS = new SongBUS();
+        postBUS = new PostBUS();
+        songAdapter = new SongAdapter(this, songs, posts);
+        songListView.setAdapter(songAdapter);
+    }
+
+    private void setupListeners() {
+        addSongButton.setOnClickListener(v -> navigateToSongAdd());
+        setupSearchViewListener();
+        setupRootViewClickListener();
+        setupSongItemClickListener();
+    }
+
+    private void setupSearchViewListener() {
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                searchSongsByTitle(query);
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                if (newText.isEmpty()) {
+                    songAdapter.updateData(songs);
+                }
+                return true;
+            }
+        });
+    }
+
+    private void setupRootViewClickListener() {
+        findViewById(R.id.root_layout).setOnClickListener(v -> {
+            searchView.clearFocus();
+            searchView.setQuery("", false);
+            songAdapter.updateData(songs);
+        });
+    }
+
+    private void setupSongItemClickListener() {
+        songListView.setOnItemClickListener((parent, view, position, id) -> {
+            SongDTO selectedSong = songAdapter.getItem(position);
+            navigateToSongDetails(selectedSong);
+        });
+    }
+
+    private void navigateToSongAdd() {
+        Intent intent = new Intent(this, SongAddActivity.class);
+        startActivity(intent);
+    }
+
+    private void navigateToSongDetails(SongDTO song) {
+        Intent intent = new Intent(this, SongDetailsActivity.class);
+        intent.putExtra("song_id", song.get_id());
+        intent.putExtra("youtube_id", song.getYoutube_id());
+        intent.putExtra("title", song.getTitle());
+        intent.putExtra("mp3_file", song.getMp3_file());
+        intent.putExtra("thumbnail", song.getThumbnail());
+        intent.putExtra("uploaded_by", song.getUploaded_by().getUsername());
+        intent.putExtra("created_at", song.getCreated_at());
+        intent.putExtra("recorded_people", song.getRecorded_people());
+        startActivity(intent);
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 3 && resultCode == RESULT_OK) {
-            if (data != null) {
-                Uri audioUri = data.getData();
-                showConfirmAudioDialog(audioUri);
-            }
-        }
+    protected void onRestart() {
+        super.onRestart();
+        loadSongs();
     }
 
-    private void showConfirmAudioDialog(Uri audioUri) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        LayoutInflater inflater = getLayoutInflater();
-        View dialogView = inflater.inflate(R.layout.dialog_confirm_audio, null);
-        builder.setView(dialogView);
+    @Override
+    protected void onResume() {
+        super.onResume();
+        searchView.setQuery("", false);
+        findViewById(R.id.root_layout).requestFocus();
+    }
 
-        TextView audioName = dialogView.findViewById(R.id.audio_name);
-        Button btnConfirm = dialogView.findViewById(R.id.btn_confirm);
-        Button btnCancel = dialogView.findViewById(R.id.btn_cancel);
+    private void loadSongs() {
+        showLoadingDialog();
+        songBUS.fetchSongs(new SongBUS.OnSongsFetchedListener() {
+            @Override
+            public void onSongsFetched(List<SongDTO> fetchedSongs) {
+                songs = fetchedSongs;
+                songAdapter.updateData(songs);
+                loadPosts();
+                progressDialog.dismiss();
+            }
 
-        audioName.setText(audioUri.getLastPathSegment());
-
-        AlertDialog dialog = builder.create();
-        dialog.show();
-
-        btnConfirm.setOnClickListener(v -> {
-            new FileUploader().run(this, audioUri, new FileUploader.OnUploadCompleteListener() {
-                @Override
-                public void onSuccess(String url) {
-                    runOnUiThread(() -> {
-                        Mp3Path = url;
-                        mp3LinkEditText.setText(url);
-                        Toast.makeText(SongsManagementActivity.this, "Tải lên thành công!", Toast.LENGTH_SHORT).show();
-                        dialog.dismiss();
-                    });
-                }
-
-                @Override
-                public void onFailure() {
-                    runOnUiThread(() -> {
-                        Log.e("UploadAudioFailed", "Tải lên thất bại!");
-                        Toast.makeText(SongsManagementActivity.this, "Tải lên thất bại!", Toast.LENGTH_SHORT).show();
-                        dialog.dismiss();
-                    });
-                }
-            });
+            @Override
+            public void onError(String error) {
+                progressDialog.dismiss();
+                showToast("Error fetching songs: " + error);
+            }
         });
+    }
 
-        btnCancel.setOnClickListener(v -> dialog.dismiss());
+    private void loadPosts() {
+        postBUS.fetchPosts(new PostBUS.OnPostsFetchedListener() {
+            @Override
+            public void onPostsFetched(List<PostDTO> fetchedPosts) {
+                posts = fetchedPosts;
+                songAdapter.updateDataPost(posts);
+            }
+
+            @Override
+            public void onError(String error) {
+                showToast("Error fetching posts: " + error);
+            }
+        });
+    }
+
+    private void searchSongsByTitle(String query) {
+        songBUS.searchSongsByTitle(query, new SongBUS.OnSongsFetchedListener() {
+            @Override
+            public void onSongsFetched(List<SongDTO> songs) {
+                songAdapter.updateData(songs);
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                showToast(errorMessage);
+            }
+        });
+    }
+
+    private void showLoadingDialog() {
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage(LOADING_MESSAGE);
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }

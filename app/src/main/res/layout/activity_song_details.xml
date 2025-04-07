@@ -116,7 +116,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="end"
                     android:text="Tải lên nhạc nền"
-                    app:icon="@drawable/ic_plus_24dp"
+                    app:icon="@drawable/ic_upload_24dp"
                     android:layout_marginLeft="10dp"/>
             </LinearLayout>
 

@@ -21,7 +21,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="?attr/actionBarSize"
-            app:title="Quản lý bài hát"
+            app:title="Quản lý người dùng"
             app:titleCentered="true"
             app:navigationIcon="@drawable/ic_back_24dp"/>
 
@@ -47,14 +47,14 @@
             android:iconifiedByDefault="false"
             app:iconifiedByDefault="false"
             android:padding="0dp"
-            android:queryHint="Nhập tên bài hát"
+            android:queryHint="Nhập tên người dùng"
             android:focusable="false"
             android:layout_marginTop="10dp"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
-        <ListView
+        <!--ListView
             android:id="@+id/listViewSongs"
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -63,29 +63,7 @@
             android:layout_marginTop="10dp"
             app:layout_constraintTop_toBottomOf="@id/searchView"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintEnd_toEndOf="parent" /-->
     </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <androidx.coordinatorlayout.widget.CoordinatorLayout
-        android:id="@+id/layout_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-            android:id="@+id/addSong_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="16dp"
-            android:text="Thêm bài hát"
-            android:textColor="@color/red"
-            app:backgroundTint="?android:attr/windowBackground"
-            app:icon="@drawable/ic_plus_24dp"
-            app:iconTint="@color/red" />
-
-    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
