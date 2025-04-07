@@ -34,7 +34,7 @@
             android:name=".ui.MusicPlayer"
             android:exported="false" />
         <activity
-            android:name=".KaraokeRoom"
+            android:name=".ui.room.KaraokeRoom"
             android:exported="false" />
         <activity
             android:name=".ui.MainActivity"

@@ -1,6 +1,5 @@
 package com.example.voca.ui.home;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
@@ -14,24 +13,19 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.example.voca.KaraokeRoom;
+import com.example.voca.ui.room.KaraokeRoom;
 import com.example.voca.R;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.dao.RoomDAO;
 import com.example.voca.dto.RoomDTO;
-import com.example.voca.dto.RoomMessageDTO;
-import com.example.voca.dto.SongDTO;
 import com.example.voca.dto.UserDTO;
-import com.google.android.material.materialswitch.MaterialSwitch;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import retrofit2.Call;

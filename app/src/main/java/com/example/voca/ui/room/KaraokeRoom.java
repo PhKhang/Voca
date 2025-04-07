@@ -1,6 +1,7 @@
-package com.example.voca;
+package com.example.voca.ui.room;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
@@ -11,6 +12,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.voca.R;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions;
@@ -18,6 +21,7 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTube
 
 public class KaraokeRoom extends AppCompatActivity {
 
+    Boolean isPlaying = false;
     private String videoId = "WCXDr38Rq20";
     private YouTubePlayer youTubePlayerInstance;
 
@@ -34,6 +38,8 @@ public class KaraokeRoom extends AppCompatActivity {
         });
 
         getSupportActionBar().setTitle("Karaoke Room");
+
+        ImageButton playButton = findViewById(R.id.play);
 
         YouTubePlayerView youTubePlayerView = findViewById(R.id.youtube_player_view);
         getLifecycle().addObserver(youTubePlayerView);
@@ -53,15 +59,30 @@ public class KaraokeRoom extends AppCompatActivity {
                 youTubePlayer.cueVideo(videoId, 0);
                 youTubePlayerInstance = youTubePlayer;
 //                youTubePlayer.mute();
+                youTubePlayerInstance.addListener(new AbstractYouTubePlayerListener() {
+                                                      @Override
+                                                      public void onStateChange(@NonNull YouTubePlayer youTubePlayer, @NonNull PlayerConstants.PlayerState state) {
+                                                          super.onStateChange(youTubePlayer, state);
+                                                          if (state == PlayerConstants.PlayerState.PAUSED || state == PlayerConstants.PlayerState.ENDED) {
+                                                              playButton.setImageResource(R.drawable.play_arrow_24dp_e3e3e3_fill0_wght400_grad0_opsz24);
+                                                              isPlaying = false;
+                                                          } else if (state == PlayerConstants.PlayerState.PLAYING) {
+                                                              playButton.setImageResource(R.drawable.pause_24dp_e3e3e3_fill0_wght400_grad0_opsz24);
+                                                              isPlaying = true;
+                                                          }
+                                                      }
+                                                  }
+                );
             }
         }, true, options);
 
-        ImageButton playButton = findViewById(R.id.play);
         playButton.setOnClickListener(v -> {
             if (youTubePlayerInstance != null) {
-                youTubePlayerInstance.play();
-            }
-            else {
+                if (isPlaying)
+                    youTubePlayerInstance.pause();
+                else
+                    youTubePlayerInstance.play();
+            } else {
                 Toast.makeText(this, "Player not ready", Toast.LENGTH_SHORT).show();
             }
         });
