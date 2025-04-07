@@ -99,6 +99,8 @@ app.post('/likes', async (req, res) => {
                     { path: 'song_id', populate: { path: 'uploaded_by' } }
                 ]
             });
+        console.log(populatedLike);
+        // Trả về Like đã được populate
         res.status(201).json(populatedLike);
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -125,6 +127,8 @@ app.delete('/likes/:id', async (req, res) => {
         if (post.likes < 0) {
             await Post.findByIdAndUpdate(like.post_id, { likes: 0 });
         }
+
+        cachestory.deleteLike(like._id); // Xóa thông báo trong cache (nếu có)
 
         res.json({ message: 'Like deleted', post_likes: post.likes });
     } catch (err) {
