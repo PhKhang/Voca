@@ -163,7 +163,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                     likeBUS.deleteLike(likeId, new LikeBUS.OnLikeDeletedListener() {
                         @Override
                         public void onLikeDeleted() {
-                            post.setLikes(post.getLikes() - 1);
+                            //post.setLikes(post.getLikes() - 1);
                             postBUS.updatePost(post.get_id(), post, new PostBUS.OnPostUpdatedListener(){
                                 @Override
                                 public void onPostUpdated(PostDTO post) {
@@ -194,7 +194,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                         likeBUS.createLike(newLike, new LikeBUS.OnLikeCreatedListener() {
                             @Override
                             public void onLikeCreated(LikeDTO like) {
-                                post.setLikes(post.getLikes() + 1);
+                                // post.setLikes(post.getLikes() + 1);
                                 postBUS.updatePost(post.get_id(), post, new PostBUS.OnPostUpdatedListener(){
 
                                     @Override

@@ -99,10 +99,7 @@ public class LoginActivity extends AppCompatActivity {
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null) {
                             updateCurrentUser(user.getUid());
-                            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                            intent.putExtra("userEmail", email);
-                            startActivity(intent);
-                            finish();
+                            goToMainActivity(user.getUid());
                         }
                     } else {
                         Log.e("LoginError", "Đăng nhập thất bại", task.getException());
@@ -159,7 +156,7 @@ public class LoginActivity extends AppCompatActivity {
                     showUsernamePrompt(user, usersRef);
                 } else {
                     // Người dùng đã có trong database -> Chuyển đến MainActivity
-                    goToMainActivity();
+                    goToMainActivity(uid);
                 }
             }
 
@@ -191,7 +188,7 @@ public class LoginActivity extends AppCompatActivity {
                 usersRef.child(user.getUid()).setValue(newUser)
                         .addOnCompleteListener(task -> {
                             if (task.isSuccessful()) {
-                                goToMainActivity();
+                                goToMainActivity(user.getUid());
                             } else {
                                 Toast.makeText(this, "Lưu thất bại", Toast.LENGTH_SHORT).show();
                             }
@@ -224,8 +221,26 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
     }
-    private void goToMainActivity() {
-        startActivity(new Intent(LoginActivity.this, MainActivity.class));
-        finish();
+    private void goToMainActivity(String userFirebaseUID) {
+        // Kiêm tra vai trò của người dùng và chuyển hướng đến màn hình chính tương ứng
+        userBUS.fetchUserByFirebaseUID(userFirebaseUID, new UserBUS.OnUserFetchedByFirebaseUIDListener() {
+            @Override
+            public void onUserFetched(List<UserDTO> user) {
+                UserDTO currentUser = user.get(0);
+                Intent intent;
+                if (currentUser.getRole().equals("user")){
+                    intent = new Intent(LoginActivity.this, MainActivity.class);
+                } else {
+                    intent = new Intent(LoginActivity.this, AdminActivity.class);
+                }
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void onError(String error) {
+
+            }
+        });
     }
 }
