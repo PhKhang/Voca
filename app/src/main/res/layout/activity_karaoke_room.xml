@@ -250,7 +250,7 @@
 
             <EditText
                 android:id="@+id/editTextText"
-                android:layout_width="wrap_content"
+                android:layout_width="266dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:ems="10"
@@ -264,11 +264,11 @@
 
             <ImageButton
                 android:id="@+id/imageButton6"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_weight="1"
                 android:background="@drawable/circular_button"
-                app:srcCompat="@android:drawable/ic_menu_send" />
+                app:srcCompat="@drawable/send_24dp_e3e3e3_fill0_wght400_grad0_opsz24" />
 
             <Space
                 android:layout_width="wrap_content"
@@ -277,11 +277,11 @@
 
             <ImageButton
                 android:id="@+id/imageButton8"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_weight="1"
                 android:background="@drawable/circular_button"
-                app:srcCompat="@android:drawable/ic_menu_send" />
+                app:srcCompat="@drawable/send_24dp_e3e3e3_fill0_wght400_grad0_opsz24" />
 
         </LinearLayout>
 
