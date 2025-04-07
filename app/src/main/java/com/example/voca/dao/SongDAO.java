@@ -52,4 +52,8 @@ public class SongDAO {
         Call<Void> call = songApi.deleteSong(id);
         call.enqueue(callback);
     }
+    public void recordSong(String id, Callback<SongDTO> callback) {
+        Call<SongDTO> call = songApi.recordSong(id);
+        call.enqueue(callback);
+    }
 }

@@ -83,6 +83,8 @@ public class RecordActivity extends AppCompatActivity {
     private String mySdPath;
     private boolean isRecording;
     MaterialToolbar topAppBar;
+    private SongBUS songBUS;
+    private String songId = ""; // Thêm biến songId
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -90,10 +92,12 @@ public class RecordActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         getSupportActionBar().hide();
         setContentView(R.layout.record_room_layout);
+        songBUS = new SongBUS(); // Khởi tạo SongBUS
 
         Intent intent = getIntent();
         songName = intent.getStringExtra("song_name");
         videoId = intent.getStringExtra("youtube_id");
+        songId = intent.getStringExtra("song_id");
 
         downloadedMp3Path = intent.getStringExtra("mp3_file");
         topAppBar = findViewById(R.id.topAppBar);
@@ -180,11 +184,24 @@ public class RecordActivity extends AppCompatActivity {
             stopRecording();
             stopOnlineAudio();
             Toast.makeText(RecordActivity.this, "Đã kết thúc ghi âm", Toast.LENGTH_SHORT).show();
-            Intent intent1 = new Intent(RecordActivity.this, RecordResultActivity.class);
-            intent1.putExtra("recording_path", new File(getExternalFilesDir(null), "audio_recording.m4a").getAbsolutePath());
-            intent1.putExtra("background_music_path", new File(getExternalFilesDir(null), backgroundMusicPath).getAbsolutePath());
-            intent1.putExtra("song_name", songName);
-            startActivity(intent1);
+
+            songBUS.recordSong(songId, new SongBUS.OnSongRecordedListener() {
+                @Override
+                public void onSongRecorded(SongDTO song) {
+                    Intent intent1 = new Intent(RecordActivity.this, RecordResultActivity.class);
+                    intent1.putExtra("recording_path", new File(getExternalFilesDir(null), "audio_recording.m4a").getAbsolutePath());
+                    intent1.putExtra("background_music_path", new File(getExternalFilesDir(null), backgroundMusicPath).getAbsolutePath());
+                    intent1.putExtra("song_name", songName);
+                    intent1.putExtra("song_id", songId); // Truyền songId về nếu cần
+                    startActivity(intent1);
+                    Toast.makeText(RecordActivity.this, "Đã cập nhật số người ghi âm!", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onError(String error) {
+                    Toast.makeText(RecordActivity.this, "Lỗi khi cập nhật ghi âm: " + error, Toast.LENGTH_SHORT).show();
+                }
+            });
             //            combineAudioFiles(new Callback() {
 //                @Override
 //                public void onSuccess(String filePath) {

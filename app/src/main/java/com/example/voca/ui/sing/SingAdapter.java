@@ -93,6 +93,7 @@ public class SingAdapter extends BaseAdapter {
             intent.putExtra("song_name", song.getTitle());
             intent.putExtra("youtube_id", song.getYoutube_id());
             intent.putExtra("mp3_file", song.getMp3_file());
+            intent.putExtra("song_id", song.get_id());
             context.startActivity(intent);
         });
 

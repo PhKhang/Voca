@@ -31,4 +31,7 @@ public interface SongApi {
 
     @DELETE("songs/{id}")
     Call<Void> deleteSong(@Path("id") String id);
+
+    @POST("songs/{id}/record")
+    Call<SongDTO> recordSong(@Path("id") String id);
 }

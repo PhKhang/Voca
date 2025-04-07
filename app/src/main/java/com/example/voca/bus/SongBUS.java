@@ -130,6 +130,24 @@ public class SongBUS {
         });
     }
 
+    public void recordSong(String id, final OnSongRecordedListener listener) {
+        songDAO.recordSong(id, new Callback<SongDTO>() {
+            @Override
+            public void onResponse(Call<SongDTO> call, Response<SongDTO> response) {
+                if (response.isSuccessful()) {
+                    listener.onSongRecorded(response.body());
+                } else {
+                    listener.onError("Lỗi khi ghi âm bài hát: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<SongDTO> call, Throwable t) {
+                listener.onError(t.getMessage());
+            }
+        });
+    }
+
     // Các interface listener
     public interface OnSongsFetchedListener {
         void onSongsFetched(List<SongDTO> songs);
@@ -153,6 +171,11 @@ public class SongBUS {
 
     public interface OnSongDeletedListener {
         void onSongDeleted();
+        void onError(String error);
+    }
+
+    public interface OnSongRecordedListener {
+        void onSongRecorded(SongDTO song);
         void onError(String error);
     }
 }
