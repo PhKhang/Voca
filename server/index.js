@@ -69,13 +69,17 @@ app.post('/likes', async (req, res) => {
         const like = new Like(req.body);
         await like.save();
 
-        // Tăng số lượt thích trong Post
-        const post = await Post.findById(req.body.post_id);
+        // Tăng số lượt thích trong Post bằng $inc
+        const post = await Post.findByIdAndUpdate(
+            req.body.post_id,
+            { $inc: { likes: 1 } }, // Tăng likes lên 1
+            { new: true } // Trả về document sau khi cập nhật
+        );
         if (!post) {
+            // Nếu không tìm thấy post, xóa like vừa tạo để tránh dữ liệu không nhất quán
+            await Like.findByIdAndDelete(like._id);
             return res.status(404).json({ error: 'Post not found' });
         }
-        post.likes += 1;
-        await post.save();
 
         // Tạo Notification
         const notification = new Notification({
@@ -109,14 +113,18 @@ app.delete('/likes/:id', async (req, res) => {
             return res.status(404).json({ error: 'Like not found' });
         }
 
-        // Giảm số lượt thích trong Post
-        const post = await Post.findById(like.post_id);
+        const post = await Post.findByIdAndUpdate(
+            like.post_id,
+            { $inc: { likes: -1 } }, // Giảm likes đi 1
+            { new: true } // Trả về document sau khi cập nhật
+        );
         if (!post) {
             return res.status(404).json({ error: 'Post not found' });
         }
-        post.likes -= 1;
-        if (post.likes < 0) post.likes = 0; // Đảm bảo không có số likes âm
-        await post.save();
+        // Đảm bảo likes không âm (nếu cần)
+        if (post.likes < 0) {
+            await Post.findByIdAndUpdate(like.post_id, { likes: 0 });
+        }
 
         res.json({ message: 'Like deleted', post_likes: post.likes });
     } catch (err) {
