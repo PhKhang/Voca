@@ -59,8 +59,8 @@ public class ProfileViewActivity extends AppCompatActivity {
 
                 Glide.with(ProfileViewActivity.this)
                         .load(user.getAvatar())
-                        .placeholder(R.drawable.default_account_avatar) // Ảnh mặc định nếu tải chậm
-                        .error(R.drawable.default_account_avatar) // Ảnh nếu lỗi tải
+                        .placeholder(R.drawable.ic_profile_2_24dp) // Ảnh mặc định nếu tải chậm
+                        .error(R.drawable.ic_profile_2_24dp) // Ảnh nếu lỗi tải
                         .into(avatar);
 
                 curUser = user;

@@ -114,11 +114,6 @@ public class UsersManagementActivity extends AppCompatActivity {
     private void navigateToUserDetails(UserDTO user) {
         Intent intent = new Intent(this, UserDetailsActivity.class);
         intent.putExtra("user_id", user.get_id());
-        intent.putExtra("username", user.getUsername());
-        intent.putExtra("email", user.getEmail());
-        intent.putExtra("avatar", user.getAvatar());
-        intent.putExtra("created_at", user.getCreated_at());
-        intent.putExtra("updated_at", user.getUpdated_at());
         startActivity(intent);
     }
 

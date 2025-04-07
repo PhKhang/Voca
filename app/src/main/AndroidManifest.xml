@@ -78,6 +78,9 @@
             android:name=".ui.management.UsersManagementActivity"
             android:exported="true"></activity>
         <activity
+            android:name=".ui.management.UserDetailsActivity"
+            android:exported="true"></activity>
+        <activity
             android:name=".ui.management.SongAddActivity"
             android:exported="true"></activity>
     </application>

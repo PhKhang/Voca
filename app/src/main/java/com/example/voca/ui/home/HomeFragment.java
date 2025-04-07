@@ -40,7 +40,7 @@ public class HomeFragment extends Fragment implements FunctionAdapter.OnFunction
     private List<SongDTO> songList;
     private List<PostDTO> postList;
     private SingAdapter singAdapter;
-    private PostAdapter postAdapter;
+    private PostHomeAdapter postAdapter;
     private SongBUS songBUS;
     private PostBUS postBUS;
     private ListView listViewSing;
@@ -168,7 +168,7 @@ public class HomeFragment extends Fragment implements FunctionAdapter.OnFunction
                         }
 
                         if (context != null)
-                            postAdapter = new PostAdapter(context, postList);
+                            postAdapter = new PostHomeAdapter(context, postList);
                         listViewPost.setAdapter(postAdapter);
                         progressDialog.dismiss();
                     }

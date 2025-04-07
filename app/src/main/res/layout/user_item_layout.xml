@@ -26,7 +26,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
-                android:src="@drawable/ic_dashboard_black_24dp"/>
+                android:src="@drawable/ic_profile_2_24dp"/>
         </androidx.cardview.widget.CardView>
 
         <LinearLayout
@@ -55,6 +55,7 @@
                     android:layout_width="16dp"
                     android:layout_height="20dp"
                     android:src="@drawable/ic_email_24dp"
+                    app:tint="#838383"
                     android:layout_marginRight="2dp"/>
 
                 <TextView
@@ -95,6 +96,7 @@
                         android:ellipsize="end" />
 
                     <ImageView
+                        android:id="@+id/iconPost"
                         android:layout_width="15dp"
                         android:layout_height="15dp"
                         android:src="@drawable/ic_karaoke_24dp"

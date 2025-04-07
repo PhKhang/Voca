@@ -78,8 +78,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         holder.postContent.setText(post.getCaption());
         Glide.with(context)
                 .load(post.getUser_id().getAvatar())
-                .placeholder(R.drawable.default_account_avatar)
-                .error(R.drawable.default_account_avatar)
+                .placeholder(R.drawable.ic_profile_2_24dp)
+                .error(R.drawable.ic_profile_2_24dp)
                 .into(holder.userAvatar);
 
         if (post.getSong_id() != null) {

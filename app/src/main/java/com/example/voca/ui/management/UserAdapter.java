@@ -42,6 +42,7 @@ public class UserAdapter extends ArrayAdapter<UserDTO> {
             holder.avatar = convertView.findViewById(R.id.avatar);
             holder.username = convertView.findViewById(R.id.textUsername);
             holder.email = convertView.findViewById(R.id.textEmail);
+            holder.iconPost = convertView.findViewById(R.id.iconPost);
             holder.postCount = convertView.findViewById(R.id.postCount);
             holder.role = convertView.findViewById(R.id.textRole);
 
@@ -62,17 +63,25 @@ public class UserAdapter extends ArrayAdapter<UserDTO> {
         holder.email.setText(user.getEmail());
         holder.role.setText(user.getRole());
 
-        int userPostCount = 0;
-        for (PostDTO post : posts) {
-            if (post == null || post.getUser_id() == null || post.getUser_id().get_id() == null) {
-                continue;
-            }
+        if (user.getRole() != null && user.getRole().equals("admin")) {
+            holder.iconPost.setVisibility(View.GONE);
+            holder.postCount.setVisibility(View.GONE);
+        } else {
+            holder.iconPost.setVisibility(View.VISIBLE);
+            holder.postCount.setVisibility(View.VISIBLE);
 
-            if (user.get_id() != null && post.getUser_id().get_id().equals(user.get_id())) {
-                userPostCount++;
+            int userPostCount = 0;
+            for (PostDTO post : posts) {
+                if (post == null || post.getUser_id() == null || post.getUser_id().get_id() == null) {
+                    continue;
+                }
+
+                if (user.get_id() != null && post.getUser_id().get_id().equals(user.get_id())) {
+                    userPostCount++;
+                }
             }
+            holder.postCount.setText(String.valueOf(userPostCount));
         }
-        holder.postCount.setText(String.valueOf(userPostCount));
 
         return convertView;
     }
@@ -93,6 +102,7 @@ public class UserAdapter extends ArrayAdapter<UserDTO> {
         ImageView avatar;
         TextView username;
         TextView email;
+        ImageView iconPost;
         TextView postCount;
         TextView role;
     }
