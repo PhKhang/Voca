@@ -55,7 +55,7 @@ public class SingAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         ViewHolder holder;
         if (convertView == null) {
-            LayoutInflater inflater = LayoutInflater.from(context);
+                LayoutInflater inflater = LayoutInflater.from(context);
             convertView = inflater.inflate(R.layout.sing_item_layout, parent, false);
 
             holder = new ViewHolder();

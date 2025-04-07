@@ -33,6 +33,8 @@ public class KaraokeRoom extends AppCompatActivity {
             return insets;
         });
 
+        getSupportActionBar().setTitle("Karaoke Room");
+
         YouTubePlayerView youTubePlayerView = findViewById(R.id.youtube_player_view);
         getLifecycle().addObserver(youTubePlayerView);
 

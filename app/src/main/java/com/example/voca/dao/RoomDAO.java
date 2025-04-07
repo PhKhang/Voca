@@ -12,8 +12,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import java.util.List;
 
 public class RoomDAO {
-       private static final String BASE_URL = "https://voca-spda.onrender.com/";
-    // private static final String BASE_URL = "http://10.0.2.2:3000/";
+//       private static final String BASE_URL = "https://voca-spda.onrender.com/";
+     private static final String BASE_URL = "http://10.0.2.2:3000/";
     private RoomApi roomApi;
 
     public RoomDAO() {
@@ -55,6 +55,11 @@ public class RoomDAO {
 
     public void deleteRoom(String id, Callback<Void> callback) {
         Call<Void> call = roomApi.deleteRoom(id);
+        call.enqueue(callback);
+    }
+
+    public void getRoomByUserId(String id, Callback<List<RoomDTO>> callback) {
+        Call<List<RoomDTO>> call = roomApi.getRoomByUserId(id);
         call.enqueue(callback);
     }
 }

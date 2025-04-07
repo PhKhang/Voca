@@ -14,16 +14,18 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 public interface RoomApi {
-    @GET("songs")
+    @GET("rooms")
     Call<List<RoomDTO>> getRooms();
 
-    @GET("songs/{id}")
+    @GET("rooms/{id}")
     Call<RoomDTO> getRoomById(@Path("id") String id);
+    @GET("rooms")
+    Call<List<RoomDTO>> getRoomByUserId(@Query("user_id") String id);
 
-    @GET("api/rooms")
+    @GET("rooms")
     Call<RoomDTO> getRoomByCode(@Query("code") String code);
 
-    @GET("api/rooms")
+    @GET("rooms")
     Call<List<RoomDTO>> searchRooms( @Query("name") String name);
 
     @POST("rooms")

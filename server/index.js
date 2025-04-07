@@ -5,6 +5,7 @@ const multer = require('multer');
 const multerS3 = require('multer-s3');
 const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { fromEnv } = require('@aws-sdk/credential-providers');
+const crypto = require('crypto');
 dotenv.config();
 
 const app = express();
@@ -95,12 +96,12 @@ const Like = mongoose.model('Like', likeSchema);
 
 const roomSchema = new mongoose.Schema({
     name: { type: String, required: true },
-    code: { type: String, required: true, unique: true },
+    code: { type: String, unique: true },
     is_private: { type: Boolean, default: false },
     description: { type: String },
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date, default: Date.now },
-    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     queue: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Song' }],
     current_song: { type: mongoose.Schema.Types.ObjectId, ref: 'Song' },
@@ -109,27 +110,69 @@ const roomSchema = new mongoose.Schema({
         {
             message_type: { type: String },
             user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-            message: { type: String, required: true },
+            message: { type: String },
             timestamp: { type: Date, default: Date.now },
         },
     ],
 });
+// Pre-save hook to generate code
+roomSchema.pre('save', async function(next) {
+    if (!this.code) {
+        // Generate a 6-character alphanumeric code
+        let generatedCode = generateRandomCode();
+
+        // Ensure that the generated code is unique
+        while (await Room.findOne({ code: generatedCode })) {
+            generatedCode = generateRandomCode();  // Regenerate the code if it's already taken
+        }
+
+        this.code = generatedCode;
+    }
+    next();
+});
+
+// Random 6-character alphanumeric code
+function generateRandomCode() {
+    return crypto.randomBytes(3).toString('hex').toUpperCase();  // 6 characters
+}
+
 const Room = mongoose.model('Room', roomSchema);
 
 // CRUD APIs for Rooms
 app.post('/rooms', async (req, res) => {
     try {
-        const room = new Room(req.body);
-        await room.save();
+        var room = new Room(req.body);
+        await room.save()
+        // .then(room => room.populate('created_by').populate('members').populate('queue').populate('current_song'));
+        room = await Room.findById(room._id).populate('created_by').populate('members').populate('queue').populate('current_song');
         res.status(201).json(room);
+        console.log("Room created:", room);
     } catch (err) {
         res.status(400).json({ error: err.message });
+        console.error("Error creating room:", err.message);
     }
 });
 
-app.get('/rooms', async (req, res) => {
-    const rooms = await Room.find().populate('created_by').populate('members').populate('queue').populate('current_song');
-    res.json(rooms);
+app.get('/rooms/', async (req, res) => {
+    let filter = {};
+
+    if (req.query.name) {
+        filter.name = new RegExp(req.query.name, 'i'); 
+    }
+
+    if (req.query.code) {
+        filter.code = req.query.code;
+    }
+    
+    if (req.query.user_id) {
+        filter.created_by = new mongoose.Types.ObjectId(req.query.user_id);
+    }
+    
+    const room = req.query.code 
+    ? await Room.findOne(filter).populate('created_by').populate('members').populate('queue').populate('current_song')
+    : await Room.find(filter).populate('created_by').populate('members').populate('queue').populate('current_song');
+    console.log("Rooms found:", room);
+    room ? res.json(room) : res.status(404).json({ error: 'Room not found' });
 });
 
 app.get('/rooms/:id', async (req, res) => {
@@ -140,22 +183,6 @@ app.get('/rooms/:id', async (req, res) => {
 app.delete('/rooms/:id', async (req, res) => {
     await Room.findByIdAndDelete(req.params.id);
     res.json({ message: 'Room deleted' });
-});
-
-app.get('/rooms/', async (req, res) => {
-    let filter = {};
-
-    if (req.query.name) {
-        filter.name = new RegExp(req.query.name, 'i'); // Case-insensitive search for 'name'
-    }
-
-    if (req.query.code) {
-        filter.code = req.query.code;
-    }
-    const room = req.query.code 
-    ? await Room.findOne(filter).populate('created_by').populate('members').populate('queue').populate('current_song')
-    : await Room.find(filter).populate('created_by').populate('members').populate('queue').populate('current_song');
-    room ? res.json(room) : res.status(404).json({ error: 'Room not found' });
 });
 
 app.delete('/rooms/:id', async (req, res) => {
