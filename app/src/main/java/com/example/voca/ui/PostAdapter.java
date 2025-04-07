@@ -2,6 +2,7 @@ package com.example.voca.ui;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -72,32 +73,30 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     public void onBindViewHolder(@NonNull PostViewHolder holder, int position) {
         PostDTO post = postList.get(position);
 
-
         holder.username.setText(post.getUser_id().getUsername());
         holder.postTime.setText(DashboardFragment.TimeFormatter.formatTime(post.getCreated_at()));
         holder.postContent.setText(post.getCaption());
         Glide.with(context)
                 .load(post.getUser_id().getAvatar())
-                .placeholder(R.drawable.default_account_avatar) // Ảnh mặc định nếu tải chậm
-                .error(R.drawable.default_account_avatar) // Ảnh nếu lỗi tải
+                .placeholder(R.drawable.default_account_avatar)
+                .error(R.drawable.default_account_avatar)
                 .into(holder.userAvatar);
 
         if (post.getSong_id() != null) {
             Glide.with(context)
                     .load(post.getSong_id().getThumbnail())
-                    .placeholder(R.drawable.default_thumbnail) // Ảnh mặc định nếu tải chậm
-                    .error(R.drawable.default_thumbnail) // Ảnh nếu lỗi tải
+                    .placeholder(R.drawable.default_thumbnail)
+                    .error(R.drawable.default_thumbnail)
                     .into(holder.songThumbnail);
             holder.songName.setText(post.getSong_id().getTitle());
         }
 
-        if (context instanceof MainActivity){
+        if (context instanceof MainActivity) {
             holder.userAvatar.setOnClickListener(v -> {
                 Intent intent = new Intent(context, ProfileViewActivity.class);
                 intent.putExtra("user_id", post.getUser_id().get_id());
                 context.startActivity(intent);
             });
-
         }
 
         holder.likeNumber.setText(Integer.toString(post.getLikes()));
@@ -105,7 +104,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         SharedPreferences prefs = context.getSharedPreferences("UserPrefs", MODE_PRIVATE);
         String userId = prefs.getString("userId", null);
 
-        if (post.getUser_id().get_id().equals(userId)){
+        if (post.getUser_id().get_id().equals(userId)) {
             holder.btnEditPost.setVisibility(View.VISIBLE);
 
             holder.btnEditPost.setOnClickListener(v -> {
@@ -126,13 +125,11 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                                     postBUS.deletePost(post.get_id(), new PostBUS.OnPostDeletedListener() {
                                         @Override
                                         public void onPostDeleted() {
-                                            for (int i = 0; i < postList.size(); i++) {
-                                                if (postList.get(i).get_id().equals(post.get_id())) {
-                                                    postList.remove(i);
-                                                    Toast.makeText(context, "Xóa thành công!", Toast.LENGTH_SHORT).show();
-                                                    notifyItemChanged(i);
-                                                    return;
-                                                }
+                                            int currentPosition = holder.getAdapterPosition();
+                                            if (currentPosition != RecyclerView.NO_POSITION) {
+                                                postList.remove(currentPosition);
+                                                notifyItemRemoved(currentPosition);
+                                                Toast.makeText(context, "Xóa thành công!", Toast.LENGTH_SHORT).show();
                                             }
                                         }
 
@@ -141,7 +138,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                                             Toast.makeText(context, "Xóa bài thất bại: " + error, Toast.LENGTH_SHORT).show();
                                         }
                                     });
-
                                 })
                                 .setNegativeButton("Hủy", null)
                                 .show();
@@ -155,36 +151,46 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         }
 
         holder.likeBtn.setOnClickListener(v -> {
-            //Toast.makeText(getContext(), "Likebtnpressed", Toast.LENGTH_SHORT).show();
-            if (holder.likeBtn.getTag() != null && holder.likeBtn.getTag().equals("liked")){
+            if (holder.likeBtn.getTag() != null && holder.likeBtn.getTag().equals("liked")) {
+                // Unlike
                 holder.likeBtn.setImageResource(R.drawable.ic_heart_24dp);
                 holder.likeBtn.setTag("unliked");
                 likeBUS.checkLike(post.get_id(), userId, (isLiked, likeId) -> {
-                    likeBUS.deleteLike(likeId, new LikeBUS.OnLikeDeletedListener() {
-                        @Override
-                        public void onLikeDeleted() {
-                            //post.setLikes(post.getLikes() - 1);
-                            postBUS.updatePost(post.get_id(), post, new PostBUS.OnPostUpdatedListener(){
-                                @Override
-                                public void onPostUpdated(PostDTO post) {
-                                    holder.likeNumber.setText(Integer.toString(post.getLikes()));
-                                }
+                    if (isLiked && likeId != null) {
+                        likeBUS.deleteLike(likeId, new LikeBUS.OnLikeDeletedListener() {
+                            @Override
+                            public void onLikeDeleted() {
+                                postBUS.fetchPostById(post.get_id(), new PostBUS.OnPostFetchedListener() {
+                                    @Override
+                                    public void onPostFetched(PostDTO updatedPost) {
+                                        int currentPosition = holder.getAdapterPosition();
+                                        if (currentPosition != RecyclerView.NO_POSITION) {
+                                            postList.get(currentPosition).setLikes(updatedPost.getLikes());
+                                            holder.likeNumber.setText(Integer.toString(updatedPost.getLikes()));
+                                            notifyItemChanged(currentPosition);
+                                        }
+                                    }
 
-                                @Override
-                                public void onError(String error) {
-                                    Log.d("PostUpdateFailed", error);
-                                }
-                            });
-                        }
-                        @Override
-                        public void onError(String error) {
-                            Log.d("LikePostError", error);
-                            holder.likeBtn.setImageResource(R.drawable.ic_heart_filled_24dp);
-                            holder.likeBtn.setTag("liked");
-                        }
-                    });
+                                    @Override
+                                    public void onError(String error) {
+                                        Log.d("FetchPostError", error);
+                                        holder.likeBtn.setImageResource(R.drawable.ic_heart_filled_24dp);
+                                        holder.likeBtn.setTag("liked");
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                Log.d("UnlikeError", error);
+                                holder.likeBtn.setImageResource(R.drawable.ic_heart_filled_24dp);
+                                holder.likeBtn.setTag("liked");
+                            }
+                        });
+                    }
                 });
             } else {
+                // Like
                 holder.likeBtn.setImageResource(R.drawable.ic_heart_filled_24dp);
                 holder.likeBtn.setTag("liked");
                 userBUS.fetchUserById(userId, new UserBUS.OnUserFetchedListener() {
@@ -194,24 +200,29 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                         likeBUS.createLike(newLike, new LikeBUS.OnLikeCreatedListener() {
                             @Override
                             public void onLikeCreated(LikeDTO like) {
-                                // post.setLikes(post.getLikes() + 1);
-                                postBUS.updatePost(post.get_id(), post, new PostBUS.OnPostUpdatedListener(){
-
+                                postBUS.fetchPostById(post.get_id(), new PostBUS.OnPostFetchedListener() {
                                     @Override
-                                    public void onPostUpdated(PostDTO post) {
-                                        holder.likeNumber.setText(Integer.toString(post.getLikes()));
+                                    public void onPostFetched(PostDTO updatedPost) {
+                                        int currentPosition = holder.getAdapterPosition();
+                                        if (currentPosition != RecyclerView.NO_POSITION) {
+                                            postList.get(currentPosition).setLikes(updatedPost.getLikes());
+                                            holder.likeNumber.setText(Integer.toString(updatedPost.getLikes()));
+                                            notifyItemChanged(currentPosition);
+                                        }
                                     }
 
                                     @Override
                                     public void onError(String error) {
-                                        Log.d("PostUpdateFailed", error);
+                                        Log.d("FetchPostError", error);
+                                        holder.likeBtn.setImageResource(R.drawable.ic_heart_24dp);
+                                        holder.likeBtn.setTag("unliked");
                                     }
                                 });
                             }
 
                             @Override
                             public void onError(String error) {
-                                Log.d("LikePostError", error);
+                                Log.d("LikeError", error);
                                 holder.likeBtn.setImageResource(R.drawable.ic_heart_24dp);
                                 holder.likeBtn.setTag("unliked");
                             }
@@ -220,7 +231,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
                     @Override
                     public void onError(String error) {
-
+                        Log.d("FetchUserError", error);
                     }
                 });
             }
@@ -241,26 +252,20 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             holder.playButton.setVisibility(View.VISIBLE);
 
             holder.playButton.setOnClickListener(v -> {
-
                 if (currentViewHolder != null && currentViewHolder != holder) {
                     stopVideo(currentViewHolder);
                 }
                 currentViewHolder = holder;
 
-//                    Toast.makeText(requireContext(), post.getAudio_url(), Toast.LENGTH_SHORT).show();
                 player.setMediaItem(MediaItem.fromUri(Uri.parse(post.getAudio_url())));
                 player.prepare();
                 player.play();
 
-                // Cập nhật UI
                 holder.playButton.setVisibility(View.GONE);
                 holder.playerView.setVisibility(View.VISIBLE);
                 holder.playerView.setPlayer(player);
-
             });
 
-
-            // Khi video chạy hết, reset lại trạng thái ban đầu
             player.addListener(new Player.Listener() {
                 @Override
                 public void onPlaybackStateChanged(int state) {
@@ -272,7 +277,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                     }
                 }
             });
-
         } else {
             holder.playerView.setVisibility(View.GONE);
         }
