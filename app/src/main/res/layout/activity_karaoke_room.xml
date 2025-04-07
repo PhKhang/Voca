@@ -165,8 +165,8 @@
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:background="@drawable/circular_button"
-                android:src="@drawable/quantum_ic_volume_off_white_36"
-                app:srcCompat="@drawable/quantum_ic_volume_off_white_36" />
+                android:src="@drawable/mic_24dp_e3e3e3_fill0_wght400_grad0_opsz24"
+                app:srcCompat="@drawable/mic_24dp_e3e3e3_fill0_wght400_grad0_opsz24" />
 
             <Space
                 android:layout_width="0dp"
@@ -185,8 +185,8 @@
                     android:layout_width="50dp"
                     android:layout_height="50dp"
                     android:background="@drawable/circular_button"
-                    android:src="@android:drawable/ic_media_previous"
-                    app:srcCompat="@android:drawable/ic_media_previous" />
+                    android:src="@drawable/skip_previous_24dp_e3e3e3_fill0_wght400_grad0_opsz24"
+                    app:srcCompat="@drawable/skip_previous_24dp_e3e3e3_fill0_wght400_grad0_opsz24" />
 
                 <Space
                     android:layout_width="12dp"
@@ -198,8 +198,8 @@
                     android:layout_width="60dp"
                     android:layout_height="60dp"
                     android:background="@drawable/circular_button"
-                    android:src="@drawable/cast_ic_expanded_controller_play"
-                    app:srcCompat="@android:drawable/ic_media_play" />
+                    android:src="@drawable/play_arrow_24dp_e3e3e3_fill0_wght400_grad0_opsz24"
+                    app:srcCompat="@drawable/play_arrow_24dp_e3e3e3_fill0_wght400_grad0_opsz24" />
 
                 <Space
                     android:layout_width="12dp"
@@ -210,8 +210,8 @@
                     android:layout_width="50dp"
                     android:layout_height="50dp"
                     android:background="@drawable/circular_button"
-                    android:src="@android:drawable/ic_media_next"
-                    app:srcCompat="@android:drawable/ic_media_next" />
+                    android:src="@drawable/skip_next_24dp_e3e3e3_fill0_wght400_grad0_opsz24"
+                    app:srcCompat="@drawable/skip_next_24dp_e3e3e3_fill0_wght400_grad0_opsz24" />
 
             </LinearLayout>
 
@@ -226,8 +226,8 @@
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:background="@drawable/circular_button"
-                android:src="@drawable/ic_home_black_24dp"
-                app:srcCompat="@android:drawable/ic_notification_clear_all" />
+                android:src="@drawable/queue_music_24dp_e3e3e3_fill0_wght400_grad0_opsz24"
+                app:srcCompat="@drawable/queue_music_24dp_e3e3e3_fill0_wght400_grad0_opsz24" />
 
         </LinearLayout>
 

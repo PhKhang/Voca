@@ -22,7 +22,7 @@ public class PostBUS {
     }
 
     // Lấy danh sách bài đăng
-    public void fetchPosts(final OnPostsFetchedListener listener) {
+public void fetchPosts(final OnPostsFetchedListener listener) {
         postDAO.getPosts(new Callback<List<PostDTO>>() {
             @Override
             public void onResponse(Call<List<PostDTO>> call, Response<List<PostDTO>> response) {
