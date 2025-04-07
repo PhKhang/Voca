@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SongsManagementActivity extends AppCompatActivity {
-    private static final String LOADING_MESSAGE = "Đang lấy dữ liệu bài hát...";
+    private static final String LOADING_MESSAGE = "Đang tải bài hát...";
     private ListView songListView;
     private List<SongDTO> songs;
     private List<PostDTO> posts;
@@ -49,13 +49,6 @@ public class SongsManagementActivity extends AppCompatActivity {
         loadSongs();
         setClickOnNavigationButton();
 
-    }
-
-    private void hideActionBar() {
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            actionBar.hide();
-        }
     }
 
     private void setClickOnNavigationButton() {

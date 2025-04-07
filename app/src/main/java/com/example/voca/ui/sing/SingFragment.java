@@ -79,7 +79,7 @@ public class SingFragment extends Fragment {
 
     private void fetchSongs(int tabPosition) {
         progressDialog = new ProgressDialog(requireContext());
-        progressDialog.setMessage("Loading songs...");
+        progressDialog.setMessage("Đang tải bài hát...");
         progressDialog.setCancelable(false);
         progressDialog.show();
 

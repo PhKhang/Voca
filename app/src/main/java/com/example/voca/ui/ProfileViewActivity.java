@@ -4,6 +4,7 @@ import android.os.Bundle;
 
 import android.util.Log;
 
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,6 +18,8 @@ import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
 import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.material.appbar.MaterialToolbar;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +47,7 @@ public class ProfileViewActivity extends AppCompatActivity {
         postList = new ArrayList<>();
         postAdapter = new PostAdapter(new ArrayList<>(), this, player);
         recyclerView.setAdapter(postAdapter);
+        setClickOnNavigationButton();
 
         userBUS.fetchUserById(userId, new UserBUS.OnUserFetchedListener() {
             @Override
@@ -68,9 +72,15 @@ public class ProfileViewActivity extends AppCompatActivity {
                 Log.d("UserProfileError", error);
             }
         });
+    }
 
-        findViewById(R.id.back_arrow).setOnClickListener(v ->  {
-            finish();
+    private void setClickOnNavigationButton() {
+        MaterialToolbar topAppBar = findViewById(R.id.topAppBar);
+        topAppBar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
         });
     }
 

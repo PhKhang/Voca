@@ -6,32 +6,29 @@
     android:layout_height="match_parent"
     android:background="@color/white">
 
-    <!-- Thanh tiêu đề -->
-    <RelativeLayout
-        android:id="@+id/header"
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingBottom="10dp"
-        android:background="@color/white"
-        android:elevation="4dp"
-        android:paddingHorizontal="15dp"
-        app:layout_constraintTop_toTopOf="parent">
+        android:fitsSystemWindows="true"
+        app:layout_constraintTop_toTopOf="parent"
+        style="@style/Widget.MaterialComponents.AppBarLayout.Primary">
 
-        <ImageView
-            android:id="@+id/back_arrow"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@drawable/backward_arrow"
-            android:contentDescription="Back"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"/>
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/topAppBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="?attr/actionBarSize"
+            app:subtitle=""
+            app:titleCentered="true"
+            app:navigationIcon="@drawable/ic_back_24dp"/>
 
-    </RelativeLayout>
+    </com.google.android.material.appbar.AppBarLayout>
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/header"
+        app:layout_constraintTop_toBottomOf="@id/appBarLayout"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <LinearLayout
@@ -57,7 +54,7 @@
                         android:id="@+id/avatarImage"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:src="@drawable/default_account_avatar"/>
+                        android:src="@drawable/ic_profile_2_24dp"/>
                 </androidx.cardview.widget.CardView>
             </RelativeLayout>
 

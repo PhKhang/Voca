@@ -42,6 +42,8 @@ import com.example.voca.dto.UserDTO;
 import com.example.voca.service.FileUploader;
 import com.example.voca.ui.dashboard.SharedPostViewModel;
 import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
@@ -191,53 +193,49 @@ public class ProfileFragment extends Fragment {
 
         view.findViewById(R.id.edit_usernameBtn).setOnClickListener(v -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-            builder.setTitle("Chỉnh sửa tên người dùng");
+            LayoutInflater inflater = getLayoutInflater();
+            View dialogView = inflater.inflate(R.layout.dialog_change_username, null);
+            builder.setView(dialogView);
 
-            final EditText input = new EditText(requireContext());
-            input.setText(curUser.getUsername());
-            input.setSelection(curUser.getUsername().length()); // Đưa con trỏ đến cuối
-            input.setFilters(new InputFilter[]{new InputFilter.LengthFilter(50)}); // Giới hạn 50 ký tự
+            EditText edtUsername = dialogView.findViewById(R.id.edtUsername);
+            Button btnConfirm = dialogView.findViewById(R.id.btnConfirm);
+            Button btnCancel = dialogView.findViewById(R.id.btnCancel);
 
-            builder.setView(input);
-
-            builder.setPositiveButton("Xác nhận", null);
-            builder.setNegativeButton("Hủy", (dialog, which) -> dialog.dismiss());
+            // Đặt username hiện tại làm giá trị mặc định
+            edtUsername.setText(curUser.getUsername());
+            edtUsername.setSelection(curUser.getUsername().length()); // Đưa con trỏ đến cuối
 
             AlertDialog dialog = builder.create();
             dialog.show();
 
-            Button confirmButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            confirmButton.setEnabled(false); // Mặc định vô hiệu hóa
+            btnConfirm.setOnClickListener(v1 -> {
+                String newUsername = edtUsername.getText().toString().trim();
 
-            // Lắng nghe từng input nhập vào để cho phép bấm nút "xác nhận"(chỉ khi username mới khác username cũ)
-            input.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void afterTextChanged(Editable s) {
-                    String newUsername = s.toString().trim();
-                    boolean isValid = !newUsername.isEmpty() && !newUsername.equals(curUser.getUsername());
-                    confirmButton.setEnabled(isValid);
+                if (newUsername.isEmpty()) {
+                    Toast.makeText(requireContext(), "Vui lòng nhập tên người dùng!", Toast.LENGTH_SHORT).show();
+                    return;
                 }
 
-                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-            });
+                if (newUsername.equals(curUser.getUsername())) {
+                    Toast.makeText(requireContext(), "Tên người dùng mới phải khác tên hiện tại!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
 
-            confirmButton.setOnClickListener(v1 -> {
-                String newUsername = input.getText().toString().trim();
                 if (newUsername.length() > 50) {
-                    input.setError("Tên không quá 50 ký tự");
+                    edtUsername.setError("Tên không quá 50 ký tự");
                     return;
                 }
 
                 // Cập nhật username lên MongoDB
                 curUser.setUsername(newUsername);
-                userBUS.updateUser(curUser.get_id(), curUser, new UserBUS.OnUserUpdatedListener(){
+                userBUS.updateUser(curUser.get_id(), curUser, new UserBUS.OnUserUpdatedListener() {
                     @Override
                     public void onUserUpdated(UserDTO user) {
                         Toast.makeText(getContext(), "Thay đổi tên thành công!", Toast.LENGTH_SHORT).show();
                         TextView username = view.findViewById(R.id.txt_username);
                         username.setText(newUsername);
                         loadUserPosts();
+                        dialog.dismiss();
                     }
 
                     @Override
@@ -245,8 +243,32 @@ public class ProfileFragment extends Fragment {
                         Toast.makeText(getContext(), "Thay đổi tên thất bại!", Toast.LENGTH_SHORT).show();
                     }
                 });
-                dialog.dismiss();
             });
+
+            btnCancel.setOnClickListener(v1 -> dialog.dismiss());
+        });
+
+        view.findViewById(R.id.signOutBtn).setOnClickListener(v -> {
+            Toast.makeText(requireContext(), "Đăng xuất", Toast.LENGTH_SHORT).show();
+            FirebaseAuth mAuth = FirebaseAuth.getInstance();
+            if (user == null) {
+                Toast.makeText(requireContext(), "Không có người dùng nào đăng nhập!", Toast.LENGTH_SHORT).show();
+            }
+
+            if (user != null) {
+                for (UserInfo profile : user.getProviderData()) {
+                    String providerId = profile.getProviderId();
+
+                    if (providerId.equals("google.com")) {
+                        GoogleSignIn.getClient(requireContext(), GoogleSignInOptions.DEFAULT_SIGN_IN).signOut();
+                    }
+                }
+            }
+            mAuth.signOut();
+
+            Intent intent = new Intent(requireContext(), LoginActivity.class);
+            startActivity(intent);
+            requireActivity().finish();
         });
     }
 
