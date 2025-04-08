@@ -13,20 +13,21 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.text.Editable;
-import android.text.TextWatcher;
+import android.text.TextWatcher; // Needed for caption dialog
 import android.util.Log;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.EditText; // Needed for caption dialog
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
+//import android.widget.Toast;
+import android.widget.SeekBar.OnSeekBarChangeListener;
 
-import androidx.annotation.Nullable; // Import if needed
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat; // Import if using resources
+import androidx.annotation.NonNull; // For NonNull annotation if needed
 
 import com.arthenica.ffmpegkit.FFmpegKit;
 import com.arthenica.ffmpegkit.ReturnCode;
+import com.arthenica.ffmpegkit.Session; // Import Session if using its methods directly
 import com.arthenica.ffmpegkit.SessionState;
 import com.example.voca.R; // Ensure this matches your R file
 import com.example.voca.bus.PostBUS;
@@ -39,26 +40,32 @@ import com.example.voca.service.FileUploader;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.DecimalFormat; // For formatting delay display
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Objects; // For Objects.requireNonNull if used
 
 public class RecordResultActivity extends AppCompatActivity {
     private static final String TAG = "RecordResultActivity_FFmpeg";
 
     // UI Elements
     private SeekBar seekBarTime, seekBarVolume, seekBarEcho, seekBarDelay, seekBarBass, seekBarTreble;
-    private TextView tvCurrentTime, tvSongNameResult; // Added TextView for song name
-    private Button btnPlayPause, btnPreviewEffects, saveButton, btnCreatePost; // Renamed btnApplyEffects, Removed btnConfirmAndCombine
+    private TextView tvCurrentTime, tvSongNameResult;
+    private Button btnPlayPause, btnConfirmAndMix, saveButton, btnCreatePost;
+    // Sync delay controls
+    private SeekBar seekBarSyncDelay;
+    private TextView tvSyncDelayValue;
+
     // File Paths
-    private String originalRecordingPath; // Path to the user's raw voice recording (M4A)
-    private String backgroundMusicPath; // Path to the background music (MP3/M4A etc.)
-    private String processedAndMixedPath; // Path to the temporary file containing voice+effects+music (MP3)
-    private String songName; // To display and use in saved filename
-    private String songId; // Thêm songId để liên kết với bài hát
+    private String originalRecordingPath;
+    private String backgroundMusicPath;
+    private String finalMixedAudioPath; // Path to the FINAL mixed file
+    private String songName;
+    private String songId;
+
     // Media Player
     private MediaPlayer mediaPlayer;
     private Handler progressHandler = new Handler(Looper.getMainLooper());
@@ -70,56 +77,64 @@ public class RecordResultActivity extends AppCompatActivity {
     private int currentEchoDelay = 0;
     private int currentBassGain = 0;
     private int currentTrebleGain = 0;
+    private int voiceDelayMs = 0; // Updated by seekBarSyncDelay (still in ms for FFmpeg)
 
+    // Business Logic Handlers
     private UserBUS userBUS;
     private SongBUS songBUS;
     private PostBUS postBUS;
 
+    // Constants for Sync Delay SeekBar (UPDATED FOR +/- 2 seconds)
+    private static final int SYNC_DELAY_MAX_PROGRESS = 40;  // Total steps (0 to 40 for -2s to +2s)
+    private static final int SYNC_DELAY_ZERO_OFFSET = 20;   // Middle point (0.0s -> progress 20)
+    private static final float SYNC_DELAY_STEP = 0.1f;      // Step interval (0.1 seconds)
+
+    // Format for displaying delay value (e.g., "+1.2 s")
+    private DecimalFormat delayFormatter = new DecimalFormat("+#,##0.0 s;-#,##0.0 s");
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Hide action bar if present
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
         }
         setContentView(R.layout.record_result_layout);
+
+        // Initialize BUS objects
         userBUS = new UserBUS();
         songBUS = new SongBUS();
         postBUS = new PostBUS();
 
-        // --- Get Intent Extras ---
-        originalRecordingPath = getIntent().getStringExtra("recording_path");
-        backgroundMusicPath = getIntent().getStringExtra("background_music_path");
-        songName = getIntent().getStringExtra("song_name"); // Get song name
-        songId = getIntent().getStringExtra("song_id"); // Lấy songId từ Intent
-        // --- Basic Validation ---
-        if (originalRecordingPath == null || backgroundMusicPath == null || songName == null) {
-            Log.e(TAG, "Missing required paths or song name in Intent");
-            Toast.makeText(this, "Lỗi: Thiếu thông tin bài hát hoặc file âm thanh!", Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
-        File originalFile = new File(originalRecordingPath);
-        File musicFile = new File(backgroundMusicPath);
-        if (!originalFile.exists()) {
-            Log.e(TAG, "Original recording file does not exist: " + originalRecordingPath);
-            Toast.makeText(this, "Lỗi: File ghi âm gốc không tồn tại!", Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
-        if (!musicFile.exists()) {
-            Log.e(TAG, "Background music file does not exist: " + backgroundMusicPath);
-            // Allow proceeding without music? Or force exit? Let's allow preview without music for now.
-            // Toast.makeText(this, "Cảnh báo: File nhạc nền không tồn tại!", Toast.LENGTH_SHORT).show();
-            // Forcing exit if music is essential:
-            Toast.makeText(this, "Lỗi: File nhạc nền không tồn tại!", Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
+        // --- Get Intent Extras and Validation (Robust) ---
+        try {
+            originalRecordingPath = getIntent().getStringExtra("recording_path");
+            backgroundMusicPath = getIntent().getStringExtra("background_music_path");
+            songName = getIntent().getStringExtra("song_name");
+            songId = getIntent().getStringExtra("song_id");
 
+            if (originalRecordingPath == null || backgroundMusicPath == null || songName == null || songId == null) {
+                throw new IllegalArgumentException("Missing required intent extras");
+            }
+
+            File originalFile = new File(originalRecordingPath);
+            File musicFile = new File(backgroundMusicPath);
+            if (!originalFile.exists() || !originalFile.isFile()) {
+                throw new IOException("Original recording file invalid: " + originalRecordingPath);
+            }
+            if (!musicFile.exists() || !musicFile.isFile()) {
+                throw new IOException("Background music file invalid: " + backgroundMusicPath);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting/validating intent extras", e);
+            //Toast.makeText(this, "Lỗi tải dữ liệu. Vui lòng thử lại.", Toast.LENGTH_LONG).show();
+            finish(); // Exit activity if essential data is missing/invalid
+            return;
+        }
 
         // --- Initialize UI Elements ---
-        findViews();
-        tvSongNameResult.setText(songName); // Display song name
+        findViews(); // Ensure views are found before use
+        tvSongNameResult.setText(songName);
 
         // --- Setup Listeners ---
         setupSeekBarListeners();
@@ -130,182 +145,300 @@ public class RecordResultActivity extends AppCompatActivity {
         setupMediaPlayerListeners();
 
         // --- Set Initial State ---
-        btnPlayPause.setEnabled(false);
-        saveButton.setEnabled(false);
-        seekBarTime.setEnabled(false);
-        // btnPreviewEffects is enabled by default
-
-        updateEffectParametersFromSeekBars(); // Set initial values
+        setPlaybackControlsEnabled(false); // Playback controls disabled initially
+        btnConfirmAndMix.setEnabled(true); // Confirm button enabled initially
+        updateEffectParametersFromSeekBars(); // Read initial effect SeekBar values
+        // Set initial sync delay display based on default progress
+        if (seekBarSyncDelay != null) { // Ensure SeekBar exists before getting progress
+            updateSyncDelayDisplay(seekBarSyncDelay.getProgress());
+        }
     }
 
     private void findViews() {
-        seekBarTime = findViewById(R.id.seekBarTime);
-        seekBarVolume = findViewById(R.id.seekBarVolume);
-        seekBarEcho = findViewById(R.id.seekBarEcho);
-        seekBarDelay = findViewById(R.id.seekBarDelay);
-        seekBarBass = findViewById(R.id.seekBarBass);
-        seekBarTreble = findViewById(R.id.seekBarTreble);
-        tvCurrentTime = findViewById(R.id.tvCurrentTime);
-        tvSongNameResult = findViewById(R.id.tvSongNameResult); // Find the TextView
-        btnPlayPause = findViewById(R.id.btnPlayPause);
-        // **IMPORTANT:** Make sure the button ID in your layout matches R.id.btnPreviewEffects
-        btnPreviewEffects = findViewById(R.id.btnApplyEffects); // Assuming ID is still btnApplyEffects
-        saveButton = findViewById(R.id.save_button);
-        btnCreatePost = findViewById(R.id.btn_create_post);
-        // Remove or comment out the findView for the removed button
-        // btnConfirmAndCombine = findViewById(R.id.btnConfirmAndCombine);
+        try {
+            seekBarTime = findViewById(R.id.seekBarTime);
+            seekBarVolume = findViewById(R.id.seekBarVolume);
+            seekBarEcho = findViewById(R.id.seekBarEcho); // Echo Decay %
+            seekBarDelay = findViewById(R.id.seekBarDelay); // Echo Delay Time (ms)
+            seekBarBass = findViewById(R.id.seekBarBass);
+            seekBarTreble = findViewById(R.id.seekBarTreble);
+            tvCurrentTime = findViewById(R.id.tvCurrentTime);
+            tvSongNameResult = findViewById(R.id.tvSongNameResult);
+            btnPlayPause = findViewById(R.id.btnPlayPause);
+            btnConfirmAndMix = findViewById(R.id.btnApplyEffects); // Assumed ID in XML
+            saveButton = findViewById(R.id.save_button);
+            btnCreatePost = findViewById(R.id.btn_create_post);
+            seekBarSyncDelay = findViewById(R.id.seekBarSyncDelay); // Sync Delay SeekBar
+            tvSyncDelayValue = findViewById(R.id.tvSyncDelayValue); // Sync Delay TextView
+
+            // Add null checks for all essential views
+            Objects.requireNonNull(seekBarTime, "seekBarTime is null");
+            Objects.requireNonNull(seekBarVolume, "seekBarVolume is null");
+            Objects.requireNonNull(seekBarEcho, "seekBarEcho is null");
+            Objects.requireNonNull(seekBarDelay, "seekBarDelay is null");
+            Objects.requireNonNull(seekBarBass, "seekBarBass is null");
+            Objects.requireNonNull(seekBarTreble, "seekBarTreble is null");
+            Objects.requireNonNull(tvCurrentTime, "tvCurrentTime is null");
+            Objects.requireNonNull(tvSongNameResult, "tvSongNameResult is null");
+            Objects.requireNonNull(btnPlayPause, "btnPlayPause is null");
+            Objects.requireNonNull(btnConfirmAndMix, "btnConfirmAndMix is null");
+            Objects.requireNonNull(saveButton, "saveButton is null");
+            Objects.requireNonNull(btnCreatePost, "btnCreatePost is null");
+            Objects.requireNonNull(seekBarSyncDelay, "seekBarSyncDelay is null");
+            Objects.requireNonNull(tvSyncDelayValue, "tvSyncDelayValue is null");
+
+            btnConfirmAndMix.setText("Xác nhận & Trộn");
+
+        } catch (NullPointerException e) {
+            Log.e(TAG, "Fatal Error: One or more essential views not found in layout.", e);
+            //Toast.makeText(this, "Lỗi nghiêm trọng: Giao diện không tải đúng.", Toast.LENGTH_LONG).show();
+            finish(); // Exit if UI is broken
+        }
     }
 
+    // Reads current progress from effect SeekBars and updates corresponding variables
     private void updateEffectParametersFromSeekBars() {
-        currentVolume = seekBarVolume.getProgress() / 100.0f;
-        currentEchoDecay = seekBarEcho.getProgress() / 100.0f;
-        currentEchoDelay = seekBarDelay.getProgress();
-        currentBassGain = seekBarBass.getProgress() - 10;
-        currentTrebleGain = seekBarTreble.getProgress() - 10;
+        // Add null checks before accessing progress (although findViews should catch this)
+        if (seekBarVolume != null) currentVolume = seekBarVolume.getProgress() / 100.0f;
+        if (seekBarEcho != null) currentEchoDecay = seekBarEcho.getProgress() / 100.0f;
+        if (seekBarDelay != null) currentEchoDelay = seekBarDelay.getProgress();
+        if (seekBarBass != null) currentBassGain = seekBarBass.getProgress() - 10;
+        if (seekBarTreble != null) currentTrebleGain = seekBarTreble.getProgress() - 10;
     }
 
+    // Attaches listeners to all SeekBars
     private void setupSeekBarListeners() {
-        SeekBar.OnSeekBarChangeListener effectChangeListener = new SeekBar.OnSeekBarChangeListener() {
+        // Listener for effect SeekBars (Volume, Echo, Bass, Treble)
+        OnSeekBarChangeListener effectChangeListener = new OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser) {
                     updateEffectParametersFromSeekBars();
+                    // No immediate action needed, effects applied on confirm
                 }
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
             @Override public void onStopTrackingTouch(SeekBar seekBar) {}
         };
+        // Add null checks before setting listeners
+        if (seekBarVolume != null) seekBarVolume.setOnSeekBarChangeListener(effectChangeListener);
+        if (seekBarEcho != null) seekBarEcho.setOnSeekBarChangeListener(effectChangeListener); // Echo Decay
+        if (seekBarDelay != null) seekBarDelay.setOnSeekBarChangeListener(effectChangeListener); // Echo Delay Time
+        if (seekBarBass != null) seekBarBass.setOnSeekBarChangeListener(effectChangeListener);
+        if (seekBarTreble != null) seekBarTreble.setOnSeekBarChangeListener(effectChangeListener);
 
-        seekBarVolume.setOnSeekBarChangeListener(effectChangeListener);
-        seekBarEcho.setOnSeekBarChangeListener(effectChangeListener);
-        seekBarDelay.setOnSeekBarChangeListener(effectChangeListener);
-        seekBarBass.setOnSeekBarChangeListener(effectChangeListener);
-        seekBarTreble.setOnSeekBarChangeListener(effectChangeListener);
+        // Listener for playback time SeekBar (seekBarTime)
+        if (seekBarTime != null) {
+            seekBarTime.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+                int seekPosition = 0;
+                boolean wasPlaying = false;
 
-        seekBarTime.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            int seekPosition = 0;
-            boolean wasPlaying = false; // Track if playing before seeking
-
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser) {
-                    seekPosition = progress;
-                    // Update time display immediately while scrubbing
-                    String current = formatTime(progress);
-                    String total = (mediaPlayer != null && mediaPlayer.getDuration() > 0)
-                            ? formatTime(mediaPlayer.getDuration()) : "00:00";
-                    tvCurrentTime.setText(String.format("%s / %s", current, total));
-                }
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                if (mediaPlayer != null) {
-                    wasPlaying = mediaPlayer.isPlaying(); // Store current playing state
-                    if (wasPlaying) {
-                        mediaPlayer.pause(); // Pause while seeking if playing
-                        stopUpdatingProgress(); // Stop auto-updates
-                        btnPlayPause.setText("Play"); // Update button text
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    if (fromUser) {
+                        seekPosition = progress;
+                        // Update time display immediately while scrubbing
+                        String current = formatTime(progress);
+                        String total = (mediaPlayer != null && isMediaPlayerPrepared())
+                                ? formatTime(mediaPlayer.getDuration()) : "00:00";
+                        if (tvCurrentTime != null) tvCurrentTime.setText(String.format("%s / %s", current, total));
                     }
                 }
-            }
 
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                if (mediaPlayer != null && mediaPlayer.getDuration() > 0) { // Check if duration is valid
-                    if(seekPosition >= mediaPlayer.getDuration()){
-                        seekPosition = mediaPlayer.getDuration() - 100; // Seek slightly before end
-                        if(seekPosition < 0) seekPosition = 0;
-                    }
-                    mediaPlayer.seekTo(seekPosition);
-                    // Update time display after seek
-                    String current = formatTime(seekPosition);
-                    String total = formatTime(mediaPlayer.getDuration());
-                    tvCurrentTime.setText(String.format("%s / %s", current, total));
-
-                    if (wasPlaying) {
-                        mediaPlayer.start(); // Resume playing if it was playing before
-                        startUpdatingProgress(); // Resume auto-updates
-                        btnPlayPause.setText("Pause"); // Update button text
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+                    if (mediaPlayer != null && isMediaPlayerPrepared()) {
+                        try {
+                            wasPlaying = mediaPlayer.isPlaying();
+                            if (wasPlaying) {
+                                mediaPlayer.pause(); // Pause playback while seeking
+                                stopUpdatingProgress();
+                                if (btnPlayPause != null) btnPlayPause.setText("Play");
+                            }
+                        } catch (IllegalStateException e) {
+                            Log.w(TAG, "MediaPlayer state error on startTrackingTouch", e);
+                            wasPlaying = false; // Assume not playing if state is invalid
+                        }
+                    } else {
+                        wasPlaying = false;
                     }
                 }
-            }
-        });
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+                    if (mediaPlayer != null && isMediaPlayerPrepared()) {
+                        try {
+                            int duration = mediaPlayer.getDuration();
+                            // Ensure seek position is valid
+                            if (seekPosition >= duration) {
+                                seekPosition = duration > 100 ? duration - 100 : 0; // Seek near end or start
+                            }
+                            if (seekPosition < 0) seekPosition = 0;
+
+                            mediaPlayer.seekTo(seekPosition);
+                            // Update display after seeking
+                            String current = formatTime(seekPosition);
+                            String total = formatTime(duration);
+                            if (tvCurrentTime != null) tvCurrentTime.setText(String.format("%s / %s", current, total));
+
+                            // Resume playback if it was playing before
+                            if (wasPlaying) {
+                                mediaPlayer.start();
+                                startUpdatingProgress();
+                                if (btnPlayPause != null) btnPlayPause.setText("Pause");
+                            }
+                        } catch (IllegalStateException e) {
+                            Log.e(TAG, "IllegalStateException during seekTo after stopTrackingTouch", e);
+                            // Handle error, e.g., reset player or show message
+                            resetMediaPlayer();
+                            setPlaybackControlsEnabled(false);
+                            //Toast.makeText(RecordResultActivity.this, "Lỗi khi tua, vui lòng thử lại", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
+            });
+        }
+
+        // Listener for the Sync Delay SeekBar (seekBarSyncDelay)
+        if (seekBarSyncDelay != null) {
+            seekBarSyncDelay.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    if (fromUser) {
+                        // Update the internal variable and the display TextView
+                        updateSyncDelayDisplay(progress);
+                    }
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+                } // Value updated in onProgressChanged
+            });
+        }
     }
 
+    // Updates the voiceDelayMs variable and the tvSyncDelayValue TextView
+    // based on the progress of the seekBarSyncDelay
+    private void updateSyncDelayDisplay(int progress) {
+        // Map progress (0-40 for +/- 2s) to delay in seconds
+        float voiceDelaySeconds = (progress - SYNC_DELAY_ZERO_OFFSET) * SYNC_DELAY_STEP;
+
+        // Convert seconds to milliseconds for FFmpeg, rounding appropriately
+        voiceDelayMs = Math.round(voiceDelaySeconds * 1000);
+
+        // Format the string for display (e.g., "+1.2 s", "0.0 s", "-0.8 s")
+        // Use the pre-initialized delayFormatter
+        String delayString = delayFormatter.format(voiceDelaySeconds);
+
+        // Update the TextView safely
+        if (tvSyncDelayValue != null) {
+            tvSyncDelayValue.setText(delayString);
+        }
+        // Optional Log for debugging
+        // Log.d(TAG, "Sync Progress: " + progress + " -> Delay: " + voiceDelaySeconds + " s (" + voiceDelayMs + " ms)");
+    }
+
+    // Helper to check if MediaPlayer is in a prepared or playing state
+    private boolean isMediaPlayerPrepared() {
+        if (mediaPlayer == null) return false;
+        try {
+            // Calling getDuration() throws IllegalStateException if not prepared/valid
+            mediaPlayer.getDuration();
+            return true;
+        } catch (IllegalStateException e) {
+            return false; // Expected if not prepared
+        } catch (Exception e) { // Catch any other unexpected errors
+            Log.w(TAG, "Unexpected error checking media player state", e);
+            return false;
+        }
+    }
+
+    // Attaches OnClickListeners to buttons
     private void setupButtonListeners() {
-        // Button to apply effects AND mix with background music for preview
-        btnPreviewEffects.setOnClickListener(v -> applyEffectsAndMixForPreview());
-
-        // Play/Pause button for the preview file
-        btnPlayPause.setOnClickListener(v -> togglePlayback());
-
-        // Save the generated preview file
-        saveButton.setOnClickListener(v -> {
-            if (processedAndMixedPath != null && new File(processedAndMixedPath).exists()) {
-                try {
-                    saveToRecordings(processedAndMixedPath); // Save the mixed file
-                    Toast.makeText(this, "Đã lưu bản thu", Toast.LENGTH_SHORT).show();
-                } catch (IOException e) {
-                    Log.e(TAG, "Error saving processed file", e);
-                    Toast.makeText(this, "Lỗi khi lưu file", Toast.LENGTH_SHORT).show();
+        // Add null checks before setting listeners
+        if (btnConfirmAndMix != null) {
+            btnConfirmAndMix.setOnClickListener(v -> createFinalMixedAudio());
+        }
+        if (btnPlayPause != null) {
+            btnPlayPause.setOnClickListener(v -> togglePlayback());
+        }
+        if (saveButton != null) {
+            saveButton.setOnClickListener(v -> {
+                if (finalMixedAudioPath != null && new File(finalMixedAudioPath).exists()) {
+                    saveFinalAudio(); // Call dedicated save method
+                } else {
+                    //Toast.makeText(this, "Chưa có bản thu hoàn chỉnh để lưu", Toast.LENGTH_SHORT).show();
                 }
-            } else {
-                Toast.makeText(this, "Chưa tạo bản xem trước để lưu", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        btnCreatePost.setOnClickListener(v -> {
-            if (processedAndMixedPath != null && new File(processedAndMixedPath).exists()) {
-                showCreatePostDialog();
-            } else {
-                Toast.makeText(this, "Chưa tạo bản xem trước để đăng", Toast.LENGTH_SHORT).show();
-            }
-        });
-        // Remove listener for btnConfirmAndCombine
+            });
+        }
+        if (btnCreatePost != null) {
+            btnCreatePost.setOnClickListener(v -> {
+                if (finalMixedAudioPath != null && new File(finalMixedAudioPath).exists()) {
+                    showCreatePostDialog();
+                } else {
+                    //Toast.makeText(this, "Chưa có bản thu hoàn chỉnh để đăng", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 
+    // Shows dialog for entering post caption
     private void showCreatePostDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Tạo bài đăng mới");
 
-        EditText inputCaption = new EditText(this);
-        inputCaption.setHint("Nhập tiêu đề bài đăng...");
-        builder.setView(inputCaption);
+        final EditText inputCaption = new EditText(this);
+        inputCaption.setHint("Nhập tiêu đề bài đăng (tối đa 150 ký tự)...");
+        int paddingDp = 16;
+        float density = getResources().getDisplayMetrics().density;
+        int paddingPixel = (int)(paddingDp * density);
+        inputCaption.setPadding(paddingPixel, paddingPixel, paddingPixel, paddingPixel);
+        // inputCaption.setFilters(new InputFilter[] { new InputFilter.LengthFilter(150) }); // Optional length limit
 
-        builder.setPositiveButton("Đăng", null); // Sẽ override trong dialog.show()
+        builder.setView(inputCaption);
+        builder.setPositiveButton("Đăng", null); // Override listener later
         builder.setNegativeButton("Hủy", (dialog, which) -> dialog.dismiss());
 
         AlertDialog dialog = builder.create();
+
+        dialog.setOnShowListener(dialogInterface -> {
+            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            positiveButton.setEnabled(false); // Initially disable
+
+            inputCaption.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override public void afterTextChanged(Editable s) {
+                    positiveButton.setEnabled(s != null && s.toString().trim().length() > 0);
+                }
+            });
+
+            positiveButton.setOnClickListener(v -> {
+                String caption = inputCaption.getText().toString().trim();
+                if (!caption.isEmpty()) {
+                    if (finalMixedAudioPath != null && new File(finalMixedAudioPath).exists()) {
+                        uploadAndCreatePost(finalMixedAudioPath, caption);
+                        dialog.dismiss();
+                    } else {
+                        //Toast.makeText(RecordResultActivity.this, "Lỗi: File âm thanh không còn tồn tại.", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    //Toast.makeText(RecordResultActivity.this, "Vui lòng nhập tiêu đề", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
         dialog.show();
-
-        Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-        positiveButton.setEnabled(false);
-
-        inputCaption.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                positiveButton.setEnabled(s.length() > 0);
-            }
-        });
-
-        positiveButton.setOnClickListener(v -> {
-            String caption = inputCaption.getText().toString().trim();
-            uploadAndCreatePost(processedAndMixedPath, caption);
-            dialog.dismiss();
-        });
     }
 
+    // Handles uploading the audio file and creating the post via BUS layers
     private void uploadAndCreatePost(String filePath, String caption) {
         File file = new File(filePath);
-        if (!file.exists()) {
-            Toast.makeText(this, "File không tồn tại!", Toast.LENGTH_SHORT).show();
+        if (!file.exists() || !file.isFile()) {
+            //Toast.makeText(this, "Lỗi: File âm thanh không tìm thấy để tải lên.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -318,316 +451,361 @@ public class RecordResultActivity extends AppCompatActivity {
         fileUploader.run(this, Uri.fromFile(file), new FileUploader.OnUploadCompleteListener() {
             @Override
             public void onSuccess(String audioUrl) {
-                SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-                String userId = prefs.getString("userId", null);
-
-                userBUS.fetchUserById(userId, new UserBUS.OnUserFetchedListener() {
-                    @Override
-                    public void onUserFetched(UserDTO user) {
-                        songBUS.fetchSongById(songId, new SongBUS.OnSongFetchedListener() {
-                            @Override
-                            public void onSongFetched(SongDTO song) {
-                                PostDTO newPost = new PostDTO(null, user, song, audioUrl, caption, 0, null);
-                                postBUS.createPost(newPost, new PostBUS.OnPostCreatedListener() {
-                                    @Override
-                                    public void onPostCreated(PostDTO post) {
-                                        runOnUiThread(() -> {
-                                            progressDialog.dismiss();
-                                            Toast.makeText(RecordResultActivity.this, "Đã tạo bài đăng thành công!", Toast.LENGTH_SHORT).show();
-                                            finish();
-                                        });
-                                    }
-
-                                    @Override
-                                    public void onError(String error) {
-                                        runOnUiThread(() -> {
-                                            progressDialog.dismiss();
-                                            Toast.makeText(RecordResultActivity.this, "Lỗi khi tạo bài đăng: " + error, Toast.LENGTH_SHORT).show();
-                                        });
-                                    }
-                                });
-                            }
-
-                            @Override
-                            public void onError(String error) {
-                                runOnUiThread(() -> {
-                                    progressDialog.dismiss();
-                                    Toast.makeText(RecordResultActivity.this, "Lỗi khi lấy thông tin bài hát: " + error, Toast.LENGTH_SHORT).show();
-                                });
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        runOnUiThread(() -> {
-                            progressDialog.dismiss();
-                            Toast.makeText(RecordResultActivity.this, "Lỗi khi lấy thông tin người dùng: " + error, Toast.LENGTH_SHORT).show();
-                        });
-                    }
-                });
+                fetchUserAndSongThenCreatePost(audioUrl, caption, progressDialog);
             }
 
             @Override
             public void onFailure() {
-                runOnUiThread(() -> {
-                    progressDialog.dismiss();
-                    Toast.makeText(RecordResultActivity.this, "Lỗi khi tải file lên!", Toast.LENGTH_SHORT).show();
-                });
+                handlePostCreationError("Lỗi khi tải file âm thanh lên!", progressDialog);
             }
         });
     }
+
+    // Helper method to chain the async calls for user/song fetch and post creation
+    private void fetchUserAndSongThenCreatePost(String audioUrl, String caption, ProgressDialog progressDialog) {
+        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        String userId = prefs.getString("userId", null);
+        if (userId == null) {
+            handlePostCreationError("Không tìm thấy ID người dùng.", progressDialog);
+            return;
+        }
+
+        userBUS.fetchUserById(userId, new UserBUS.OnUserFetchedListener() {
+            @Override
+            public void onUserFetched(UserDTO user) {
+                songBUS.fetchSongById(songId, new SongBUS.OnSongFetchedListener() {
+                    @Override
+                    public void onSongFetched(SongDTO song) {
+                        createPostNow(user, song, audioUrl, caption, progressDialog);
+                    }
+                    @Override
+                    public void onError(String error) {
+                        handlePostCreationError("Lỗi lấy thông tin bài hát: " + error, progressDialog);
+                    }
+                });
+            }
+            @Override
+            public void onError(String error) {
+                handlePostCreationError("Lỗi lấy thông tin người dùng: " + error, progressDialog);
+            }
+        });
+    }
+
+    // Performs the actual post creation API call
+    private void createPostNow(UserDTO user, SongDTO song, String audioUrl, String caption, ProgressDialog progressDialog) {
+        PostDTO newPost = new PostDTO(null, user, song, audioUrl, caption, 0, null);
+        postBUS.createPost(newPost, new PostBUS.OnPostCreatedListener() {
+            @Override
+            public void onPostCreated(PostDTO post) {
+                runOnUiThread(() -> {
+                    if (progressDialog != null && progressDialog.isShowing()) {
+                        progressDialog.dismiss();
+                    }
+                    //Toast.makeText(RecordResultActivity.this, "Đã tạo bài đăng thành công!", Toast.LENGTH_SHORT).show();
+                    finish(); // Close this activity
+                });
+            }
+            @Override
+            public void onError(String error) {
+                handlePostCreationError("Lỗi khi tạo bài đăng: " + error, progressDialog);
+            }
+        });
+    }
+
+    // Centralized error handler for the post creation process
+    private void handlePostCreationError(String errorMessage, ProgressDialog progressDialog) {
+        runOnUiThread(() -> {
+            if (progressDialog != null && progressDialog.isShowing()) {
+                progressDialog.dismiss();
+            }
+            Log.e(TAG, "Post Creation Error: " + errorMessage);
+            //Toast.makeText(RecordResultActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+        });
+    }
+
+
+    // Increments the recorded_people count for the song
+
+
+    // Sets up MediaPlayer listeners for prepared, completion, and error events
     private void setupMediaPlayerListeners() {
+        // Ensure mediaPlayer is not null
+        if (mediaPlayer == null) {
+            mediaPlayer = new MediaPlayer();
+            Log.w(TAG, "MediaPlayer was null in setupMediaPlayerListeners, re-initialized.");
+        }
+
         mediaPlayer.setOnPreparedListener(mp -> {
             Log.d(TAG, "MediaPlayer prepared. Duration: " + mp.getDuration());
             if (mp.getDuration() <= 0) {
-                Log.w(TAG, "MediaPlayer prepared with invalid duration (0 or less). Resetting.");
-                Toast.makeText(this, "Lỗi: File âm thanh không hợp lệ.", Toast.LENGTH_SHORT).show();
+                Log.w(TAG, "MediaPlayer prepared with invalid duration. Resetting.");
+                //Toast.makeText(this, "Lỗi: File âm thanh không hợp lệ.", Toast.LENGTH_SHORT).show();
                 resetMediaPlayer();
-                setPreviewControlsEnabled(false); // Disable controls
+                setPlaybackControlsEnabled(false);
                 return;
             }
-            seekBarTime.setMax(mp.getDuration());
-            setPreviewControlsEnabled(true); // Enable controls now
-
+            if (seekBarTime != null) seekBarTime.setMax(mp.getDuration());
+            setPlaybackControlsEnabled(true);
             String total = formatTime(mp.getDuration());
-            tvCurrentTime.setText(String.format("00:00 / %s", total));
-
-            mp.start();
-            btnPlayPause.setText("Pause");
-            startUpdatingProgress();
+            if (tvCurrentTime != null) tvCurrentTime.setText(String.format("00:00 / %s", total));
+            try {
+                mp.start();
+                if (btnPlayPause != null) btnPlayPause.setText("Pause");
+                startUpdatingProgress();
+            } catch (IllegalStateException e) {
+                Log.e(TAG, "IllegalStateException on MediaPlayer start", e);
+                resetMediaPlayer();
+                setPlaybackControlsEnabled(false);
+            }
         });
 
         mediaPlayer.setOnCompletionListener(mp -> {
             Log.d(TAG, "MediaPlayer completion.");
-            if (mp != null && mp.getDuration() > 0) { // Check duration before using it
-                btnPlayPause.setText("Play");
-                seekBarTime.setProgress(seekBarTime.getMax()); // Go to end
-                tvCurrentTime.setText(String.format("%s / %s", formatTime(mp.getDuration()), formatTime(mp.getDuration())));
+            if (mp != null && isMediaPlayerPrepared()) {
+                if (btnPlayPause != null) btnPlayPause.setText("Play");
+                try {
+                    int duration = mp.getDuration();
+                    if (seekBarTime != null) seekBarTime.setProgress(duration);
+                    if (tvCurrentTime != null) tvCurrentTime.setText(String.format("%1$s / %1$s", formatTime(duration)));
+                } catch (IllegalStateException e) {
+                    Log.w(TAG, "IllegalStateException on completion, resetting UI", e);
+                    if (seekBarTime != null) seekBarTime.setProgress(0);
+                    if (tvCurrentTime != null) tvCurrentTime.setText("00:00 / 00:00");
+                }
             } else {
-                // Handle case where duration might be invalid on completion
-                btnPlayPause.setText("Play");
-                seekBarTime.setProgress(0);
-                tvCurrentTime.setText("00:00 / 00:00");
+                if (btnPlayPause != null) btnPlayPause.setText("Play");
+                if (seekBarTime != null) seekBarTime.setProgress(0);
+                if (tvCurrentTime != null) tvCurrentTime.setText("00:00 / 00:00");
             }
             stopUpdatingProgress();
         });
 
         mediaPlayer.setOnErrorListener((mp, what, extra) -> {
             Log.e(TAG, "MediaPlayer Error: what=" + what + ", extra=" + extra);
-            Toast.makeText(this, "Lỗi phát nhạc: " + what, Toast.LENGTH_SHORT).show();
+            String errorMsg = "Lỗi không xác định khi phát nhạc (what=" + what + ", extra=" + extra +")";
+            // ... (More detailed error messages based on 'what' and 'extra' codes - see previous example) ...
+            switch (what) {
+                case MediaPlayer.MEDIA_ERROR_SERVER_DIED: errorMsg = "Lỗi kết nối máy chủ media."; break;
+                case MediaPlayer.MEDIA_ERROR_UNKNOWN: errorMsg = "Lỗi không xác định khi phát nhạc."; break;
+            }
+            switch (extra) {
+                case MediaPlayer.MEDIA_ERROR_IO: errorMsg = "Lỗi đọc file âm thanh."; break;
+                case MediaPlayer.MEDIA_ERROR_MALFORMED: errorMsg = "File âm thanh bị lỗi hoặc không hỗ trợ."; break;
+                case MediaPlayer.MEDIA_ERROR_UNSUPPORTED: errorMsg = "Định dạng âm thanh không được hỗ trợ."; break;
+                case MediaPlayer.MEDIA_ERROR_TIMED_OUT: errorMsg = "Quá thời gian chờ khi phát."; break;
+            }
+
+            //Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show();
             resetMediaPlayer();
-            setPreviewControlsEnabled(false); // Disable controls on error
-            return true;
+            setPlaybackControlsEnabled(false);
+            return true; // Error handled
         });
     }
 
-    // --- FFmpeg Execution ---
+    // Core function to run FFmpeg for mixing audio
+    private void createFinalMixedAudio() {
+        // voiceDelayMs is updated by the SeekBar listener
 
-    private void applyEffectsAndMixForPreview() {
+        // --- Input File Validation ---
         if (originalRecordingPath == null || backgroundMusicPath == null) {
-            Toast.makeText(this, "Thiếu file ghi âm hoặc nhạc nền", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "Lỗi: Đường dẫn file đầu vào không hợp lệ.", Toast.LENGTH_SHORT).show();
             return;
         }
+        File originalFile = new File(originalRecordingPath);
         File musicFile = new File(backgroundMusicPath);
-        if (!musicFile.exists()) {
-            Toast.makeText(this, "File nhạc nền không tồn tại", Toast.LENGTH_SHORT).show();
-            return; // Stop if music is missing
+        if (!originalFile.exists() || !musicFile.exists()) {
+            //Toast.makeText(this, "Lỗi: Một hoặc cả hai file âm thanh không tồn tại.", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        updateEffectParametersFromSeekBars(); // Get latest effect values
+        // Get latest effect parameters
+        updateEffectParametersFromSeekBars();
 
-        // Generate a unique filename for the temporary preview file (MP3 is often good for mixing)
-        String outputFileName = "preview_" + System.currentTimeMillis() + ".mp3";
-        File outputFile = new File(getExternalFilesDir(null), outputFileName);
+        // --- Output File Setup ---
+        String outputFileName = "final_mix_" + System.currentTimeMillis() + ".mp3";
+        File externalFilesDir = getExternalFilesDir(null);
+        if (externalFilesDir == null) {
+            //Toast.makeText(this, "Lỗi: Không thể truy cập bộ nhớ tạm.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        File outputFile = new File(externalFilesDir, outputFileName);
         String outputFilePath = outputFile.getAbsolutePath();
 
-        // Build the complex filter graph
+        // --- Build FFmpeg Filter Complex Graph ---
         StringBuilder filterGraph = new StringBuilder();
-        String voiceInput = "[0:a]"; // Input stream from the first file (voice)
-        String musicInput = "[1:a]"; // Input stream from the second file (music)
-        String lastVoiceFilterOutput = voiceInput; // Track the output of the last voice effect
+        String voiceInput = "[0:a]";
+        String musicInput = "[1:a]";
+        String lastVoiceFilterOutput = voiceInput;
 
         // 1. Apply Voice Effects
-        // Volume
-        filterGraph.append(String.format(Locale.US, "%svolume=%.2f[vol];", lastVoiceFilterOutput, currentVolume));
+        filterGraph.append(String.format(Locale.US, "%svolume=volume=%.2f[vol];", lastVoiceFilterOutput, currentVolume));
         lastVoiceFilterOutput = "[vol]";
-
-        // Bass
         if (Math.abs(currentBassGain) > 0.1) {
             filterGraph.append(String.format(Locale.US, "%sbass=g=%d:f=100:w=0.5[bass];", lastVoiceFilterOutput, currentBassGain));
             lastVoiceFilterOutput = "[bass]";
         }
-
-        // Treble
         if (Math.abs(currentTrebleGain) > 0.1) {
             filterGraph.append(String.format(Locale.US, "%streble=g=%d:f=3000:w=0.5[treble];", lastVoiceFilterOutput, currentTrebleGain));
             lastVoiceFilterOutput = "[treble]";
         }
-
-        // Echo
         if (currentEchoDelay > 0 && currentEchoDecay > 0.01) {
-            filterGraph.append(String.format(Locale.US, "%saecho=0.8:0.6:%d:%.2f[echo];", lastVoiceFilterOutput, currentEchoDelay, currentEchoDecay));
+            filterGraph.append(String.format(Locale.US, "%saecho=input_gain=0.8:output_gain=0.6:delays=%d:decays=%.2f[echo];", lastVoiceFilterOutput, currentEchoDelay, currentEchoDecay));
             lastVoiceFilterOutput = "[echo]";
         }
 
-        // 2. Mix Effected Voice with Background Music
-        // Use amix. duration=first makes the output length match the first input (effected voice).
-        // dropout_transition helps smooth the end if music is longer.
-        filterGraph.append(String.format(Locale.US, "%s%samix=inputs=2:duration=first:dropout_transition=3[aout]",
-                lastVoiceFilterOutput, musicInput));
+        String finalVoiceStream = "[final_voice]";
+        filterGraph.append(String.format(Locale.US, "%s anull %s;", lastVoiceFilterOutput, finalVoiceStream));
+        String finalMusicStream = "[final_music]";
+        filterGraph.append(String.format(Locale.US, "%s anull %s;", musicInput, finalMusicStream));
 
-        // Construct the full FFmpeg command
-        // -i voice_rec.m4a -i music.mp3 -filter_complex "..." -map "[aout]" -c:a libmp3lame -q:a 2 output.mp3
+        // 2. Apply Synchronization Delay (adelay)
+        String streamToMix1;
+        String streamToMix2;
+        if (voiceDelayMs > 0) { // Voice late -> Delay voice
+            filterGraph.append(String.format(Locale.US, "%s adelay=%d|%d [delayed_voice];", finalVoiceStream, voiceDelayMs, voiceDelayMs));
+            streamToMix1 = "[delayed_voice]";
+            streamToMix2 = finalMusicStream;
+        } else if (voiceDelayMs < 0) { // Voice early -> Delay music
+            int musicDelayMs = Math.abs(voiceDelayMs);
+            filterGraph.append(String.format(Locale.US, "%s adelay=%d|%d [delayed_music];", finalMusicStream, musicDelayMs, musicDelayMs));
+            streamToMix1 = finalVoiceStream;
+            streamToMix2 = "[delayed_music]";
+        } else { // No delay
+            streamToMix1 = finalVoiceStream;
+            streamToMix2 = finalMusicStream;
+        }
+
+        // 3. Mix the final streams
+        filterGraph.append(String.format(Locale.US, "%s %s amix=inputs=2:duration=first:dropout_transition=3 [aout]",
+                streamToMix1, streamToMix2));
+
+        // --- Construct FFmpeg Command ---
         String ffmpegCommand = String.format(Locale.US,
                 "-y -i \"%s\" -i \"%s\" -filter_complex \"%s\" -map \"[aout]\" -c:a libmp3lame -q:a 2 \"%s\"",
-                originalRecordingPath,
-                backgroundMusicPath,
-                filterGraph.toString(),
-                outputFilePath
+                originalRecordingPath, backgroundMusicPath, filterGraph.toString(), outputFilePath
         );
+        Log.i(TAG, "Executing FFmpeg command with delay (" + voiceDelayMs + "ms):\n" + ffmpegCommand);
 
-        Log.d(TAG, "Executing FFmpeg command: " + ffmpegCommand);
-
-        // --- Execute FFmpeg Async ---
+        // --- Execute FFmpeg Asynchronously ---
         ProgressDialog progressDialog = new ProgressDialog(this);
-        progressDialog.setMessage("Đang xử lý và trộn âm thanh...");
+        progressDialog.setMessage("Đang hoàn thiện bản thu...");
         progressDialog.setCancelable(false);
         progressDialog.show();
-
-        // Disable buttons during processing
         setExecutionInProgress(true);
 
         FFmpegKit.executeAsync(ffmpegCommand, session -> {
             final SessionState state = session.getState();
             final ReturnCode returnCode = session.getReturnCode();
-
             runOnUiThread(() -> {
-                progressDialog.dismiss();
-                setExecutionInProgress(false); // Re-enable buttons
-
+                if (progressDialog.isShowing()) { progressDialog.dismiss(); }
+                setExecutionInProgress(false);
                 if (ReturnCode.isSuccess(returnCode)) {
-                    Log.d(TAG, "FFmpeg process completed successfully.");
+                    Log.i(TAG, "FFmpeg final mix completed successfully.");
                     File resultFile = new File(outputFilePath);
                     if (resultFile.exists() && resultFile.length() > 0) {
-                        Toast.makeText(RecordResultActivity.this, "Xem trước hiệu ứng và nhạc nền", Toast.LENGTH_SHORT).show();
-
-                        // Delete previous preview file if it exists
-                        deletePreviousPreviewFile();
-
-                        // Store the path to the NEW preview file
-                        processedAndMixedPath = outputFilePath;
-
-                        // Prepare and play the NEW mixed file
-                        prepareAndPlayMediaPlayer(processedAndMixedPath);
-                        // Controls (Play/Pause, Save, Seek) will be enabled in onPreparedListener
-
+                        //Toast.makeText(RecordResultActivity.this, "Hoàn tất trộn âm thanh!", Toast.LENGTH_SHORT).show();
+                        deletePreviousFinalFile();
+                        finalMixedAudioPath = outputFilePath;
+                        prepareAndPlayMediaPlayer(finalMixedAudioPath);
                     } else {
-                        Log.e(TAG, "FFmpeg succeeded but output file is missing or empty: " + outputFilePath);
-                        Toast.makeText(RecordResultActivity.this, "Lỗi: Không tạo được file xem trước", Toast.LENGTH_LONG).show();
-                        processedAndMixedPath = null;
-                        setPreviewControlsEnabled(false);
+                        Log.e(TAG, "FFmpeg success but output file invalid: " + outputFilePath);
+                        //.makeText(RecordResultActivity.this, "Lỗi: Không tạo được file cuối cùng.", Toast.LENGTH_LONG).show();
+                        finalMixedAudioPath = null;
+                        setPlaybackControlsEnabled(false);
                     }
-
                 } else {
-                    Log.e(TAG, String.format("FFmpeg process failed! State: %s, Return Code: %s", state, returnCode));
-                    Log.e(TAG, "FFmpeg Logs: " + session.getAllLogsAsString());
-                    Toast.makeText(RecordResultActivity.this, "Lỗi khi xử lý âm thanh: " + returnCode, Toast.LENGTH_LONG).show();
-                    processedAndMixedPath = null; // Reset path on failure
-                    resetMediaPlayer(); // Ensure player is reset
-                    setPreviewControlsEnabled(false); // Disable playback controls
+                    Log.e(TAG, String.format("FFmpeg process failed! State: %s, RC: %s", state, returnCode));
+                    Log.e(TAG, "FFmpeg Full Output Logs:\n" + session.getAllLogsAsString());
+                    String errorDetail = returnCode != null ? returnCode.toString() : "Unknown Error";
+                    //Toast.makeText(RecordResultActivity.this, "Lỗi xử lý âm thanh (" + errorDetail + ").", Toast.LENGTH_LONG).show();
+                    finalMixedAudioPath = null;
+                    resetMediaPlayer();
+                    setPlaybackControlsEnabled(false);
                 }
             });
         });
     }
 
-    private void deletePreviousPreviewFile() {
-        if (processedAndMixedPath != null) {
-            File previousFile = new File(processedAndMixedPath);
+    // Deletes the previously generated final mixed audio file
+    private void deletePreviousFinalFile() {
+        if (finalMixedAudioPath != null) {
+            File previousFile = new File(finalMixedAudioPath);
             if (previousFile.exists() && previousFile.isFile()) {
                 if (previousFile.delete()) {
-                    Log.d(TAG, "Deleted previous preview file: " + processedAndMixedPath);
+                    Log.i(TAG, "Deleted previous final mixed file: " + finalMixedAudioPath);
                 } else {
-                    Log.w(TAG, "Failed to delete previous preview file: " + processedAndMixedPath);
+                    Log.w(TAG, "Failed to delete previous final mixed file: " + finalMixedAudioPath);
                 }
             }
-            processedAndMixedPath = null; // Clear the path regardless
+            finalMixedAudioPath = null; // Clear ref
         }
     }
 
     // --- Media Player Controls ---
-
     private void togglePlayback() {
-        if (mediaPlayer == null || processedAndMixedPath == null) {
-            Toast.makeText(this, "Chưa có bản xem trước để phát", Toast.LENGTH_SHORT).show();
+        if (mediaPlayer == null || finalMixedAudioPath == null) {
+           // Toast.makeText(this, "Chưa có bản thu hoàn chỉnh.", Toast.LENGTH_SHORT).show();
             return;
         }
-
         try {
+            if (!isMediaPlayerPrepared()) {
+                if(new File(finalMixedAudioPath).exists()){
+                    Log.w(TAG, "Player not prepared, attempting prepare...");
+                    prepareAndPlayMediaPlayer(finalMixedAudioPath);
+                } else {
+                   // Toast.makeText(this, "File âm thanh không tồn tại.", Toast.LENGTH_SHORT).show();
+                }
+                return;
+            }
             if (mediaPlayer.isPlaying()) {
                 pauseMediaPlayer();
             } else {
-                // Check if player needs preparing or just resuming
-                // Get duration check prevents errors if reset occurred
-                if (mediaPlayer.getDuration() > 0 && !mediaPlayer.isPlaying()){ // Was paused or stopped but prepared
-                    mediaPlayer.start();
-                    btnPlayPause.setText("Pause");
-                    startUpdatingProgress();
-                } else { // Needs preparation
-                    prepareAndPlayMediaPlayer(processedAndMixedPath); // Prepare and auto-plays on prepared
-                }
+                mediaPlayer.start();
+                if (btnPlayPause != null) btnPlayPause.setText("Pause");
+                startUpdatingProgress();
             }
         } catch (IllegalStateException e) {
             Log.e(TAG, "MediaPlayer state error during togglePlayback", e);
-            Toast.makeText(this, "Lỗi trình phát, đang thử lại...", Toast.LENGTH_SHORT).show();
-            prepareAndPlayMediaPlayer(processedAndMixedPath); // Attempt to recover by preparing again
+           // Toast.makeText(this, "Lỗi trình phát, đang thử lại...", Toast.LENGTH_SHORT).show();
+            prepareAndPlayMediaPlayer(finalMixedAudioPath);
         }
     }
 
-
-    private void prepareAndPlayMediaPlayer(String filePath) {
-        if (filePath == null || filePath.isEmpty()) {
-            Log.e(TAG, "prepareAndPlayMediaPlayer: filePath is null or empty");
-            return;
-        }
+    private void prepareAndPlayMediaPlayer(@NonNull String filePath) {
+        Objects.requireNonNull(filePath, "filePath cannot be null");
         File file = new File(filePath);
-        if (!file.exists() || file.length() == 0) {
-            Log.e(TAG, "prepareAndPlayMediaPlayer: File does not exist or is empty: " + filePath);
-            Toast.makeText(this, "File xem trước không hợp lệ!", Toast.LENGTH_SHORT).show();
-            setPreviewControlsEnabled(false);
+        if (!file.exists() || !file.isFile() || file.length() == 0) {
+            Log.e(TAG, "prepareAndPlayMediaPlayer: File is invalid: " + filePath);
+            //Toast.makeText(this, "File âm thanh không hợp lệ!", Toast.LENGTH_SHORT).show();
+            finalMixedAudioPath = null;
+            setPlaybackControlsEnabled(false);
             return;
         }
-
-        Log.d(TAG, "Preparing MediaPlayer for: " + filePath);
-        resetMediaPlayer(); // Reset before preparing new file
+        Log.i(TAG, "Preparing MediaPlayer for: " + filePath);
+        resetMediaPlayer();
         try {
             mediaPlayer.setDataSource(filePath);
-            mediaPlayer.prepareAsync(); // Prepare asynchronously
-            btnPlayPause.setText("Loading...");
-            setPreviewControlsEnabled(false); // Disable controls until prepared
-        } catch (IOException e) {
-            Log.e(TAG, "IOException setting data source", e);
-            Toast.makeText(this, "Lỗi tải file âm thanh", Toast.LENGTH_SHORT).show();
+            mediaPlayer.prepareAsync();
+            if (btnPlayPause != null) btnPlayPause.setText("Loading...");
+            setPlaybackControlsEnabled(false);
+        } catch (IOException | IllegalStateException | IllegalArgumentException e) {
+            Log.e(TAG, "Error setting data source or preparing", e);
+            //Toast.makeText(this, "Lỗi tải file âm thanh: " + e.getMessage(), Toast.LENGTH_LONG).show();
             resetMediaPlayer();
-            setPreviewControlsEnabled(false);
-        } catch (IllegalStateException e) {
-            Log.e(TAG, "IllegalStateException setting data source", e);
-            Toast.makeText(this, "Lỗi trạng thái trình phát", Toast.LENGTH_SHORT).show();
-            resetMediaPlayer();
-            setPreviewControlsEnabled(false);
+            setPlaybackControlsEnabled(false);
         }
     }
 
     private void pauseMediaPlayer() {
-        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+        if (mediaPlayer != null && isMediaPlayerPrepared() && mediaPlayer.isPlaying()) {
             try {
                 mediaPlayer.pause();
-                btnPlayPause.setText("Play");
+                if (btnPlayPause != null) btnPlayPause.setText("Play");
                 stopUpdatingProgress();
             } catch (IllegalStateException e) {
                 Log.e(TAG, "IllegalStateException during pause", e);
-                resetMediaPlayer(); // Reset if state is invalid
-                setPreviewControlsEnabled(false);
+                resetMediaPlayer();
+                setPlaybackControlsEnabled(false);
             }
         }
     }
@@ -636,70 +814,74 @@ public class RecordResultActivity extends AppCompatActivity {
         if (mediaPlayer != null) {
             stopUpdatingProgress();
             try {
-                if (mediaPlayer.isPlaying()) {
-                    mediaPlayer.stop();
-                }
-                mediaPlayer.reset(); // Reset to Idle state
+                if (mediaPlayer.isPlaying()) mediaPlayer.stop();
+                mediaPlayer.reset();
                 Log.d(TAG, "MediaPlayer reset.");
-            } catch (IllegalStateException e){
-                Log.e(TAG,"IllegalStateException during reset, recreating MediaPlayer.", e);
-                mediaPlayer.release();
-                mediaPlayer = new MediaPlayer(); // Create a new instance
-                setupMediaPlayerListeners(); // Re-attach listeners
+            } catch (IllegalStateException e) {
+                Log.e(TAG, "IllegalStateException during reset/stop. Releasing/recreating.", e);
+                try { mediaPlayer.release(); } catch (Exception ignored) {}
+                mediaPlayer = new MediaPlayer();
+                setupMediaPlayerListeners();
+            } catch (Exception e) {
+                Log.e(TAG, "Unexpected error during MediaPlayer reset/stop", e);
             }
+        } else {
+            mediaPlayer = new MediaPlayer();
+            setupMediaPlayerListeners();
         }
-        // Reset UI related to playback
-        seekBarTime.setProgress(0);
-        tvCurrentTime.setText("00:00 / 00:00");
-        btnPlayPause.setText("Play");
-        // Controls are typically disabled here and re-enabled on prepare/success
-        setPreviewControlsEnabled(false);
+        // Reset UI
+        if (seekBarTime != null) seekBarTime.setProgress(0);
+        if (tvCurrentTime != null) tvCurrentTime.setText("00:00 / 00:00");
+        if (btnPlayPause != null) btnPlayPause.setText("Play");
+        setPlaybackControlsEnabled(false);
     }
 
     private void releaseMediaPlayer() {
         if (mediaPlayer != null) {
             stopUpdatingProgress();
             try {
-                mediaPlayer.release(); // Release resources
+                // Check state before release is generally not needed, but can prevent rare issues
+                // if (isMediaPlayerPrepared() || mediaPlayer.isPlaying()) {
+                //     mediaPlayer.stop();
+                // }
+                mediaPlayer.release();
             } catch (Exception e) {
                 Log.e(TAG,"Exception during MediaPlayer release", e);
             }
             mediaPlayer = null;
-            Log.d(TAG, "MediaPlayer released.");
+            Log.i(TAG, "MediaPlayer released.");
         }
     }
 
     // --- Progress Update ---
-
     private void startUpdatingProgress() {
         if (mediaPlayer == null || progressHandler == null) return;
-        stopUpdatingProgress(); // Ensure no duplicates
-
+        stopUpdatingProgress();
         progressRunnable = new Runnable() {
             @Override
             public void run() {
                 try {
-                    if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                    if (mediaPlayer != null && isMediaPlayerPrepared() && mediaPlayer.isPlaying()) {
                         int currentPosition = mediaPlayer.getCurrentPosition();
                         int duration = mediaPlayer.getDuration();
-                        // Basic validation for duration
-                        if(duration <= 0) {
-                            stopUpdatingProgress();
-                            return;
-                        }
-                        if (currentPosition > duration) {
-                            currentPosition = duration; // Cap position at duration
-                        }
-                        seekBarTime.setProgress(currentPosition);
+                        if (duration <= 0) { stopUpdatingProgress(); return; }
+                        currentPosition = Math.max(0, Math.min(currentPosition, duration)); // Clamp position
+
+                        if (seekBarTime != null) seekBarTime.setProgress(currentPosition);
                         String current = formatTime(currentPosition);
                         String total = formatTime(duration);
-                        tvCurrentTime.setText(String.format("%s / %s", current, total));
+                        if (tvCurrentTime != null) tvCurrentTime.setText(String.format("%s / %s", current, total));
 
-                        progressHandler.postDelayed(this, 500); // Update every 500ms
+                        progressHandler.postDelayed(this, 500);
+                    } else {
+                        stopUpdatingProgress();
                     }
                 } catch (IllegalStateException e) {
-                    Log.e(TAG,"Error updating progress: " + e.getMessage());
-                    stopUpdatingProgress(); // Stop updates on error
+                    Log.w(TAG, "Error updating progress (MediaPlayer state): " + e.getMessage());
+                    stopUpdatingProgress();
+                } catch (Exception e) {
+                    Log.e(TAG, "Unexpected error updating progress", e);
+                    stopUpdatingProgress();
                 }
             }
         };
@@ -713,7 +895,6 @@ public class RecordResultActivity extends AppCompatActivity {
     }
 
     // --- Utility Functions ---
-
     private String formatTime(int milliseconds) {
         if (milliseconds < 0) milliseconds = 0;
         int totalSeconds = milliseconds / 1000;
@@ -722,58 +903,83 @@ public class RecordResultActivity extends AppCompatActivity {
         return String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds);
     }
 
-    // Helper to enable/disable buttons during FFmpeg processing
+    // Enables/disables playback-related controls
+    private void setPlaybackControlsEnabled(boolean enabled) {
+        boolean canEnable = enabled && (finalMixedAudioPath != null && new File(finalMixedAudioPath).exists());
+
+        if (btnPlayPause != null) btnPlayPause.setEnabled(canEnable);
+        if (saveButton != null) saveButton.setEnabled(canEnable);
+        if (btnCreatePost != null) btnCreatePost.setEnabled(canEnable);
+        if (seekBarTime != null) seekBarTime.setEnabled(canEnable);
+
+        if (canEnable && mediaPlayer != null && isMediaPlayerPrepared()) {
+            try {
+                if (btnPlayPause != null) btnPlayPause.setText(mediaPlayer.isPlaying() ? "Pause" : "Play");
+            } catch (IllegalStateException e) {
+                if (btnPlayPause != null) btnPlayPause.setText("Play");
+            }
+        } else if (!canEnable && btnPlayPause != null) {
+            btnPlayPause.setText("Play");
+        }
+    }
+
+    // Enables/disables controls during FFmpeg execution
     private void setExecutionInProgress(boolean inProgress) {
-        btnPreviewEffects.setEnabled(!inProgress);
-        // Disable playback controls while processing
-        if(inProgress){
-            setPreviewControlsEnabled(false);
-            if(mediaPlayer != null && mediaPlayer.isPlaying()){
-                pauseMediaPlayer(); // Pause if playing when processing starts
+        if (btnConfirmAndMix != null) btnConfirmAndMix.setEnabled(!inProgress);
+        if (seekBarSyncDelay != null) seekBarSyncDelay.setEnabled(!inProgress);
+        // Disable effect SeekBars during processing
+        if (seekBarVolume != null) seekBarVolume.setEnabled(!inProgress);
+        if (seekBarEcho != null) seekBarEcho.setEnabled(!inProgress);
+        if (seekBarDelay != null) seekBarDelay.setEnabled(!inProgress);
+        if (seekBarBass != null) seekBarBass.setEnabled(!inProgress);
+        if (seekBarTreble != null) seekBarTreble.setEnabled(!inProgress);
+
+        if (inProgress) {
+            setPlaybackControlsEnabled(false);
+            if (mediaPlayer != null && isMediaPlayerPrepared() && mediaPlayer.isPlaying()) {
+                pauseMediaPlayer();
             }
         }
-        // Note: Playback controls are re-enabled selectively upon successful processing
     }
 
-    // Helper to enable/disable PLAYBACK controls (Play/Pause, Seek, Save)
-    private void setPreviewControlsEnabled(boolean enabled) {
-        // Only enable if a valid preview file exists
-        boolean canEnable = enabled && (processedAndMixedPath != null && new File(processedAndMixedPath).exists());
-
-        btnPlayPause.setEnabled(canEnable);
-        saveButton.setEnabled(canEnable);
-        seekBarTime.setEnabled(canEnable);
-        // Update button text based on state if enabling
-        if(canEnable && mediaPlayer != null){
-            btnPlayPause.setText(mediaPlayer.isPlaying() ? "Pause" : "Play");
-        } else if (!canEnable) {
-            btnPlayPause.setText("Play"); // Reset text if disabling
+    // --- File Saving ---
+    private void saveFinalAudio() {
+        if (finalMixedAudioPath == null || !new File(finalMixedAudioPath).exists()) {
+            //Toast.makeText(this, "Lỗi: Không tìm thấy file âm thanh để lưu.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        try {
+            saveToRecordings(finalMixedAudioPath);
+            //Toast.makeText(this, "Đã lưu bản thu thành công!", Toast.LENGTH_SHORT).show();
+        } catch (IOException e) {
+            Log.e(TAG, "Error saving final mixed file", e);
+            //Toast.makeText(this, "Lỗi khi lưu file: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        } catch (SecurityException e) {
+            Log.e(TAG, "Permission error saving file", e);
+            //Toast.makeText(this, "Lỗi quyền truy cập bộ nhớ khi lưu file.", Toast.LENGTH_LONG).show();
         }
     }
 
-
-    // Save the MIXED file to Recordings
-    private void saveToRecordings(String sourceFilePath) throws IOException {
+    private void saveToRecordings(@NonNull String sourceFilePath) throws IOException, SecurityException {
+        Objects.requireNonNull(sourceFilePath, "sourceFilePath cannot be null");
         File sourceFile = new File(sourceFilePath);
-        if (!sourceFile.exists()) {
-            throw new IOException("Source file not found: " + sourceFilePath);
+        if (!sourceFile.exists() || !sourceFile.isFile()) {
+            throw new IOException("Source file invalid: " + sourceFilePath);
         }
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
         String timestamp = dateFormat.format(new Date());
-        // Use the songName passed via intent for a more descriptive filename
         String baseName = (songName != null && !songName.isEmpty()) ? songName : "VocaRecording";
-        baseName = baseName.replaceAll("[^a-zA-Z0-9.-]", "_"); // Sanitize filename
-        // Output was MP3, so save as MP3
+        baseName = baseName.replaceAll("[^a-zA-Z0-9.\\-_]", "_");
         String uniqueFileName = baseName + "_Mix_" + timestamp + ".mp3";
 
         ContentValues values = new ContentValues();
         values.put(MediaStore.Audio.Media.DISPLAY_NAME, uniqueFileName);
-        values.put(MediaStore.Audio.Media.MIME_TYPE, "audio/mpeg"); // MIME type for MP3
+        values.put(MediaStore.Audio.Media.MIME_TYPE, "audio/mpeg");
         values.put(MediaStore.Audio.Media.IS_PENDING, 1);
 
         Uri collectionUri;
-        String relativePath = null; // Standard recordings folder
+        String relativePath = null;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             relativePath = Environment.DIRECTORY_RECORDINGS;
         }
@@ -784,8 +990,10 @@ public class RecordResultActivity extends AppCompatActivity {
         } else {
             File recordingsDir = Environment.getExternalStoragePublicDirectory(relativePath);
             if (!recordingsDir.exists() && !recordingsDir.mkdirs()) {
-                Log.e(TAG, "Failed to create Recordings directory");
-                throw new IOException("Failed to create Recordings directory");
+                throw new IOException("Cannot create Recordings directory: " + recordingsDir.getAbsolutePath());
+            }
+            if (!recordingsDir.isDirectory() || !recordingsDir.canWrite()) {
+                throw new IOException("Recordings directory invalid or not writable: " + recordingsDir.getAbsolutePath());
             }
             File targetFile = new File(recordingsDir, uniqueFileName);
             values.put(MediaStore.Audio.Media.DATA, targetFile.getAbsolutePath());
@@ -802,51 +1010,42 @@ public class RecordResultActivity extends AppCompatActivity {
             }
             out = getContentResolver().openOutputStream(itemUri);
             if (out == null) {
+                if (itemUri != null) try { getContentResolver().delete(itemUri, null, null); } catch (Exception ignored) {}
                 throw new IOException("Failed to open output stream for URI: " + itemUri);
             }
             in = new FileInputStream(sourceFile);
-
-            byte[] buffer = new byte[4096]; // 4KB buffer
+            byte[] buffer = new byte[8192];
             int bytesRead;
             while ((bytesRead = in.read(buffer)) != -1) {
                 out.write(buffer, 0, bytesRead);
             }
-            out.flush(); // Ensure all data is written
+            out.flush();
 
-            // File write successful, clear IS_PENDING flag
             values.clear();
             values.put(MediaStore.Audio.Media.IS_PENDING, 0);
             getContentResolver().update(itemUri, values, null, null);
+            Log.i(TAG, "Successfully saved recording to MediaStore: " + itemUri);
 
-            Log.d(TAG,"Successfully saved recording to: " + itemUri);
-
-        } catch (IOException e) {
-            // An error occurred, attempt to delete the incomplete MediaStore entry
+        } catch (IOException | SecurityException e) {
             if (itemUri != null) {
-                try {
-                    getContentResolver().delete(itemUri, null, null);
-                    Log.w(TAG,"Deleted incomplete MediaStore entry due to error: " + itemUri);
-                } catch (Exception deleteEx) {
-                    Log.e(TAG, "Error deleting incomplete MediaStore entry: " + itemUri, deleteEx);
-                }
+                try { getContentResolver().delete(itemUri, null, null); }
+                catch (Exception deleteEx) { Log.e(TAG, "Error deleting incomplete MediaStore entry", deleteEx); }
             }
-            throw e; // Re-throw the original exception
+            Log.e(TAG, "Error saving file to MediaStore", e);
+            if (e instanceof SecurityException){ throw (SecurityException)e; }
+            else { throw new IOException("Error saving file: " + e.getMessage(), e); }
         } finally {
-            // Close streams safely
             try { if (in != null) in.close(); } catch (IOException ignored) {}
             try { if (out != null) out.close(); } catch (IOException ignored) {}
         }
     }
 
-
-    // --- Lifecycle ---
-
+    // --- Activity Lifecycle Methods ---
     @Override
     protected void onPause() {
         super.onPause();
-        // Pause playback when the activity is paused, but don't release yet
-        // because the user might come back immediately.
-        if(mediaPlayer != null && mediaPlayer.isPlaying()){
+        // Pause playback when activity is paused
+        if (mediaPlayer != null && isMediaPlayerPrepared() && mediaPlayer.isPlaying()) {
             pauseMediaPlayer();
         }
     }
@@ -854,17 +1053,18 @@ public class RecordResultActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        // If the app is truly stopped (not just paused), consider releasing resources.
-        // However, releasing here might cause issues if the user quickly switches back.
-        // onDestroy is a safer place for full release.
+        // Consider releasing resources here if memory is critical,
+        // but onDestroy is generally preferred for final cleanup.
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        releaseMediaPlayer(); // Always release MediaPlayer
-        stopUpdatingProgress(); // Stop handler callbacks
-        deletePreviousPreviewFile(); // Clean up the temporary preview file
-        Log.d(TAG,"RecordResultActivity destroyed.");
+        Log.d(TAG, "RecordResultActivity onDestroy called.");
+        // Release resources to prevent leaks
+        releaseMediaPlayer();
+        stopUpdatingProgress();
+        // Clean up the temporary mixed audio file created by FFmpeg
+        deletePreviousFinalFile();
     }
 }
