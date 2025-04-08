@@ -111,14 +111,14 @@ public class QueueFragment extends Fragment {
             }
         });
 
-        ask = view.findViewById(R.id.ask);
-        ask.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                onGetAllSongInQueue.onGetAllSongInQueue();
-                requireActivity().onBackPressed();
-            }
-        });
+//        ask = view.findViewById(R.id.ask);
+//        ask.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                onGetAllSongInQueue.onGetAllSongInQueue();
+//                requireActivity().onBackPressed();
+//            }
+//        });
 
         songs = view.findViewById(R.id.songs);
 
