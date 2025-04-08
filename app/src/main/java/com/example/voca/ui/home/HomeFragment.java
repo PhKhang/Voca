@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
@@ -24,6 +25,7 @@ import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.SongDTO;
 import com.example.voca.databinding.FragmentHomeBinding;
 import com.example.voca.ui.sing.SingAdapter;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.FirebaseApp;
 
 import java.util.ArrayList;
