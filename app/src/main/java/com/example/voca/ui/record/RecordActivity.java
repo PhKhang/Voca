@@ -22,7 +22,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
+//import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -105,7 +105,7 @@ public class RecordActivity extends AppCompatActivity {
         setClickOnNavigationButton();
 
         if (TextUtils.isEmpty(songName) || TextUtils.isEmpty(videoId) || TextUtils.isEmpty(downloadedMp3Path)) {
-            Toast.makeText(this, "Vui lòng chọn một bài hát khác", Toast.LENGTH_LONG).show();
+            //Toast.makeText(this, "Vui lòng chọn một bài hát khác", Toast.LENGTH_LONG).show();
             finish();
             return;
         }
@@ -148,7 +148,7 @@ public class RecordActivity extends AppCompatActivity {
                 File musicFile = new File(getExternalFilesDir(null), backgroundMusicPath);
                 if (!musicFile.exists()) {
                     saveBackgroundMusic();
-                    Toast.makeText(RecordActivity.this, "Đang tải nhạc nền, vui lòng thử lại...", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(RecordActivity.this, "Đang tải nhạc nền, vui lòng thử lại...", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -159,14 +159,14 @@ public class RecordActivity extends AppCompatActivity {
                         startRecording();
                         playLocalFile(musicFile);
                         recordButton.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_pause_24dp));
-                        Toast.makeText(RecordActivity.this, "Đang ghi âm...", Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(RecordActivity.this, "Đang ghi âm...", Toast.LENGTH_SHORT).show();
                     } else {
                         isRecording = true;
                         youTubePlayerInstance.play();
                         resumeRecording();
                         resumeOnlineAudio();
                         recordButton.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_pause_24dp)); // Khi tiếp tục hát -> ic_pause_24dp
-                        Toast.makeText(RecordActivity.this, "Tiếp tục ghi âm...", Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(RecordActivity.this, "Tiếp tục ghi âm...", Toast.LENGTH_SHORT).show();
                     }
                 } else {
                     isRecording = false;
@@ -174,7 +174,7 @@ public class RecordActivity extends AppCompatActivity {
                     pauseRecording();
                     pauseOnlineAudio();
                     recordButton.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_play_pink_24dp)); // Khi tạm dừng -> ic_record_24dp
-                    Toast.makeText(RecordActivity.this, "Tạm dừng ghi âm...", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(RecordActivity.this, "Tạm dừng ghi âm...", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -183,7 +183,7 @@ public class RecordActivity extends AppCompatActivity {
             youTubePlayerInstance.pause();
             stopRecording();
             stopOnlineAudio();
-            Toast.makeText(RecordActivity.this, "Đã kết thúc ghi âm", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(RecordActivity.this, "Đã kết thúc ghi âm", Toast.LENGTH_SHORT).show();
 
             songBUS.recordSong(songId, new SongBUS.OnSongRecordedListener() {
                 @Override
@@ -194,12 +194,12 @@ public class RecordActivity extends AppCompatActivity {
                     intent1.putExtra("song_name", songName);
                     intent1.putExtra("song_id", songId); // Truyền songId về nếu cần
                     startActivity(intent1);
-                    Toast.makeText(RecordActivity.this, "Đã cập nhật số người ghi âm!", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(RecordActivity.this, "Đã cập nhật số người ghi âm!", Toast.LENGTH_SHORT).show();
                 }
 
                 @Override
                 public void onError(String error) {
-                    Toast.makeText(RecordActivity.this, "Lỗi khi cập nhật ghi âm: " + error, Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(RecordActivity.this, "Lỗi khi cập nhật ghi âm: " + error, Toast.LENGTH_SHORT).show();
                 }
             });
             //            combineAudioFiles(new Callback() {
@@ -258,7 +258,7 @@ public class RecordActivity extends AppCompatActivity {
                 stopOnlineAudio();
                 isRecording = false;
             }
-            Toast.makeText(RecordActivity.this, "Đã trở về đầu", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(RecordActivity.this, "Đã trở về đầu", Toast.LENGTH_SHORT).show();
         });
 
         //returnHomeButton.setOnClickListener(v -> finish());
@@ -287,14 +287,14 @@ public class RecordActivity extends AppCompatActivity {
             onlineMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
             onlineMediaPlayer.prepare(); // Using synchronous prepare since file is local
             onlineMediaPlayer.start();
-            Toast.makeText(RecordActivity.this, "Đang phát nhạc...", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(RecordActivity.this, "Đang phát nhạc...", Toast.LENGTH_SHORT).show();
 
             onlineMediaPlayer.setOnCompletionListener(mp -> {
                 mp.release();
                 onlineMediaPlayer = null;
             });
         } catch (IOException e) {
-            Toast.makeText(RecordActivity.this, "Không thể phát nhạc!", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(RecordActivity.this, "Không thể phát nhạc!", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -313,13 +313,13 @@ public class RecordActivity extends AppCompatActivity {
         try {
             mediaRecorder.prepare();
             mediaRecorder.start();
-            Toast.makeText(this, "Đang ghi âm...", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "Đang ghi âm...", Toast.LENGTH_SHORT).show();
         } catch (IOException e) {
             releaseMediaRecorder();
-            Toast.makeText(this, "Lỗi khi bắt đầu ghi âm", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "Lỗi khi bắt đầu ghi âm", Toast.LENGTH_SHORT).show();
         } catch (IllegalStateException e) {
             releaseMediaRecorder();
-            Toast.makeText(this, "Lỗi khi thiết lập ghi âm", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "Lỗi khi thiết lập ghi âm", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -336,7 +336,7 @@ public class RecordActivity extends AppCompatActivity {
             mediaRecorder.stop();
             mediaRecorder.release();
             mediaRecorder = null;
-            Toast.makeText(this, "Đã dừng ghi âm", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "Đã dừng ghi âm", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -392,10 +392,10 @@ public class RecordActivity extends AppCompatActivity {
                     onlineMediaPlayer.reset();
                     onlineMediaPlayer.release(); // Giải phóng tài nguyên
                     onlineMediaPlayer = null; // Set null để có thể tạo instance mới
-                    Toast.makeText(RecordActivity.this, "Đã dừng phát nhạc", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(RecordActivity.this, "Đã dừng phát nhạc", Toast.LENGTH_SHORT).show();
                 }
             } catch (IllegalStateException e) {
-                Toast.makeText(RecordActivity.this, "Lỗi khi dừng nhạc!", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(RecordActivity.this, "Lỗi khi dừng nhạc!", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -404,9 +404,9 @@ public class RecordActivity extends AppCompatActivity {
         if (onlineMediaPlayer != null && onlineMediaPlayer.isPlaying()) {
             try {
                 onlineMediaPlayer.pause();
-                Toast.makeText(RecordActivity.this, "Đã tạm dừng", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(RecordActivity.this, "Đã tạm dừng", Toast.LENGTH_SHORT).show();
             } catch (IllegalStateException e) {
-                Toast.makeText(RecordActivity.this, "Lỗi khi tạm dừng!", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(RecordActivity.this, "Lỗi khi tạm dừng!", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -415,14 +415,14 @@ public class RecordActivity extends AppCompatActivity {
         if (onlineMediaPlayer != null && !onlineMediaPlayer.isPlaying()) {
             try {
                 onlineMediaPlayer.start();
-                Toast.makeText(RecordActivity.this, "Tiếp tục phát", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(RecordActivity.this, "Tiếp tục phát", Toast.LENGTH_SHORT).show();
             } catch (IllegalStateException e) {
                 // Nếu MediaPlayer đã bị reset hoặc release, tạo lại và phát từ đầu
                 File musicFile = new File(getExternalFilesDir(null), backgroundMusicPath);
                 if (musicFile.exists()) {
                     playLocalFile(musicFile);
                 } else {
-                    Toast.makeText(RecordActivity.this, "Không tìm thấy file nhạc!", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(RecordActivity.this, "Không tìm thấy file nhạc!", Toast.LENGTH_SHORT).show();
                 }
             }
         }
@@ -547,7 +547,7 @@ private void combineAudioFiles(Callback callback) {
     String outputFilePath = outputFile.getAbsolutePath();
 
     if (!recordingFile.exists() || !musicFile.exists()) {
-        Toast.makeText(this, "File không tồn tại!", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "File không tồn tại!", Toast.LENGTH_SHORT).show();
         callback.onFailure();
         return;
     }
@@ -568,12 +568,12 @@ private void combineAudioFiles(Callback callback) {
                     combinedPath = outputFile.getName();
                     callback.onSuccess(outputFilePath);
                 } else {
-                    Toast.makeText(this, "File đầu ra không hợp lệ!", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(this, "File đầu ra không hợp lệ!", Toast.LENGTH_SHORT).show();
                     callback.onFailure();
                 }
             } else {
                 Log.e("FFmpegKit", "Command failed: " + session.getState() + ", Code: " + session.getReturnCode().getValue());
-                Toast.makeText(this, "Lỗi khi trộn âm thanh: " + session.getReturnCode().getValue(), Toast.LENGTH_SHORT).show();
+                //Toast.makeText(this, "Lỗi khi trộn âm thanh: " + session.getReturnCode().getValue(), Toast.LENGTH_SHORT).show();
                 callback.onFailure();
             }
         });

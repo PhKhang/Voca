@@ -35,7 +35,7 @@
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="250dp">
+            android:layout_height="220dp">
 
             <!-- YouTube Player View -->
             <com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
@@ -87,7 +87,7 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/return_button"
                 style="@style/Widget.Material3.Button.TextButton.Icon"
-                android:layout_width="80dp"
+                android:layout_width="85dp"
                 android:layout_height="wrap_content"
                 android:text="Restart"
                 android:textColor="?attr/colorPrimary"
@@ -96,20 +96,18 @@
                 app:iconGravity="top"
                 app:iconSize="30dp" />
 
-            <com.google.android.material.button.MaterialButton
+            <Button
                 android:id="@+id/record_button"
-                style="@style/Widget.Material3.Button.TextButton.Icon"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                app:icon="@drawable/ic_record_24dp"
-                android:padding="0dp"
-                app:iconGravity="top"
-                app:iconSize="50dp" />
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                style="?attr/materialIconButtonStyle"
+                app:iconSize="43dp"
+                app:icon="@drawable/ic_record_24dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/stop_record_button"
                 style="@style/Widget.Material3.Button.TextButton.Icon"
-                android:layout_width="80dp"
+                android:layout_width="85dp"
                 android:layout_height="wrap_content"
                 android:text="Finish"
                 android:textColor="?attr/colorPrimary"

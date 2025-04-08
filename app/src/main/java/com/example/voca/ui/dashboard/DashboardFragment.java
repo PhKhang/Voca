@@ -241,7 +241,7 @@ public class DashboardFragment extends Fragment {
 
             Glide.with(requireContext())
                     .load(user.getAvatar())
-                    .placeholder(R.drawable.default_account_avatar)
+                    .placeholder(R.drawable.ic_profile_2_24dp)
                     .into(holder.imgAvatar);
 
             holder.itemView.setOnClickListener(v -> {
