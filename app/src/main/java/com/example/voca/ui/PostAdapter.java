@@ -307,7 +307,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         FrameLayout videoContainer;
         ImageButton playButton;
         ImageButton likeBtn;
-        ImageButton btnEditPost;
+        Button btnEditPost;
 
         ImageView songThumbnail;
         TextView songName;
