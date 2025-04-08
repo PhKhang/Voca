@@ -51,6 +51,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserInfo;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ProfileFragment extends Fragment {
@@ -85,7 +86,9 @@ public class ProfileFragment extends Fragment {
         sharedPostViewModel.fetchUserPosts(userId);
         sharedPostViewModel.getUserPostsLiveData().observe(getViewLifecycleOwner(), posts -> {
             if (posts != null) {
-                postAdapter.updateData(posts);
+                List<PostDTO> reversedPosts = new ArrayList<>(posts);
+                Collections.reverse(reversedPosts);
+                postAdapter.updateData(reversedPosts);
             }
         });
 

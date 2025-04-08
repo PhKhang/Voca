@@ -97,7 +97,10 @@ public class DashboardFragment extends Fragment {
         sharedPostViewModel.getAllPostsLiveData().observe(getViewLifecycleOwner(), posts -> {
             Log.d("DashboardFragment", "LiveData updated, size: " + (posts != null ? posts.size() : 0));
             if (posts != null) {
-                postAdapter.updateData(posts);
+                List<PostDTO> reversedPosts = new ArrayList<>(posts);
+                Collections.reverse(reversedPosts);
+
+                postAdapter.updateData(reversedPosts);
             }
         });
 

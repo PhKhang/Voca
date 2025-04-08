@@ -21,6 +21,7 @@ import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.material.appbar.MaterialToolbar;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ProfileViewActivity extends AppCompatActivity {
@@ -89,7 +90,9 @@ public class ProfileViewActivity extends AppCompatActivity {
             @Override
             public void onPostsFetched(List<PostDTO> posts) {
                 postList = posts;
-                postAdapter.updateData(postList);
+                List<PostDTO> reversedPosts = new ArrayList<>(posts);
+                Collections.reverse(reversedPosts);
+                postAdapter.updateData(reversedPosts);
             }
 
             @Override
