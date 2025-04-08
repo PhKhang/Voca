@@ -618,7 +618,7 @@ app.delete('/posts/:id/unlike', async (req, res) => {
         }
         console.log('Post unliked:', postId);
         res.json({ message: 'Post unliked successfully', likes: post.likes });
-    } Trung tâm đào tạo lái xe ô tô tại Hà Nộicatch (err) {
+    } catch (err) {
         console.error('Error unliking post:', err);
         res.status(400).json({ error: 'Failed to unlike post', details: err.message });
     }
