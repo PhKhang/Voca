@@ -1,17 +1,24 @@
-package com.example.voca;
+package com.example.voca.ui;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.EditText;
 
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.voca.R;
+import com.example.voca.bus.UserBUS;
+import com.example.voca.dto.UserDTO;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -28,16 +35,24 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-public class LoginActivity extends Activity {
+import java.util.List;
+
+public class LoginActivity extends AppCompatActivity {
     private EditText emailInput, passwordInput;
     private Button loginBtn;
     private FirebaseAuth mAuth; // Firebase Authentication
     private GoogleSignInClient mGoogleSignInClient;
     private static final int RC_SIGN_IN = 100;
 
+    UserBUS userBUS = new UserBUS();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.hide();
+        }
         setContentView(R.layout.login);
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -69,6 +84,12 @@ public class LoginActivity extends Activity {
             startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
         });
 
+        TextView forgotPasswordTextView = findViewById(R.id.forgotPasswordTextView);
+        forgotPasswordTextView.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, ForgotPassActivity.class);
+            startActivity(intent);
+        });
+
     }
 
     private void loginUser(String email, String password) {
@@ -77,10 +98,8 @@ public class LoginActivity extends Activity {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null) {
-                            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                            intent.putExtra("userEmail", email);
-                            startActivity(intent);
-                            finish();
+                            updateCurrentUser(user.getUid());
+                            goToMainActivity(user.getUid());
                         }
                     } else {
                         Log.e("LoginError", "Đăng nhập thất bại", task.getException());
@@ -117,6 +136,7 @@ public class LoginActivity extends Activity {
                         FirebaseUser user = mAuth.getCurrentUser();
                         if (user != null) {
                             checkIfUserExists(user);
+                            updateCurrentUser(mAuth.getUid());
                         }
                     } else {
                         Toast.makeText(this, "Xác thực thất bại", Toast.LENGTH_SHORT).show();
@@ -136,7 +156,7 @@ public class LoginActivity extends Activity {
                     showUsernamePrompt(user, usersRef);
                 } else {
                     // Người dùng đã có trong database -> Chuyển đến MainActivity
-                    goToMainActivity();
+                    goToMainActivity(uid);
                 }
             }
 
@@ -161,10 +181,14 @@ public class LoginActivity extends Activity {
             if (!username.isEmpty()) {
                 // Lưu vào Firebase Realtime Database
                 RegisterActivity.User newUser = new RegisterActivity.User(username, user.getEmail());
+
+                // Lưu dữ liệu người dùng lên MongoDB
+                RegisterActivity.createUser(user.getEmail(), username, user.getUid());
+
                 usersRef.child(user.getUid()).setValue(newUser)
                         .addOnCompleteListener(task -> {
                             if (task.isSuccessful()) {
-                                goToMainActivity();
+                                goToMainActivity(user.getUid());
                             } else {
                                 Toast.makeText(this, "Lưu thất bại", Toast.LENGTH_SHORT).show();
                             }
@@ -177,9 +201,48 @@ public class LoginActivity extends Activity {
         builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());
         builder.show();
     }
+    public void updateCurrentUser(String firebaseUID){
+        userBUS.fetchUserByFirebaseUID(firebaseUID, new UserBUS.OnUserFetchedByFirebaseUIDListener() {
+            @Override
+            public void onUserFetched(List<UserDTO> user) {
+                UserDTO currentUser = user.get(0);
+//                Log.d("fetch user data success", user.toString());
 
-    private void goToMainActivity() {
-        startActivity(new Intent(LoginActivity.this, MainActivity.class));
-        finish();
+                // Lưu userId để dùng trong quá trình sử dụng ứng dụng
+                SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putString("userId", currentUser.get_id());
+                editor.apply();
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.d("fetch user data fail", error);
+            }
+        });
+    }
+    private void goToMainActivity(String userFirebaseUID) {
+        // Kiêm tra vai trò của người dùng và chuyển hướng đến màn hình chính tương ứng
+        userBUS.fetchUserByFirebaseUID(userFirebaseUID, new UserBUS.OnUserFetchedByFirebaseUIDListener() {
+            @Override
+            public void onUserFetched(List<UserDTO> user) {
+                UserDTO currentUser = user.get(0);
+                Intent intent;
+                if (currentUser.getRole().equals("user")){
+                    intent = new Intent(LoginActivity.this, MainActivity.class);
+                } else {
+                    intent = new Intent(LoginActivity.this, AdminActivity.class);
+                    intent.putExtra("username", currentUser.getUsername());
+                    startActivity(intent);
+                }
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void onError(String error) {
+
+            }
+        });
     }
 }

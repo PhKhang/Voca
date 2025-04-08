@@ -14,9 +14,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,7 +32,17 @@ import androidx.core.content.ContextCompat;
 import com.arthenica.ffmpegkit.FFmpegKit;
 import com.arthenica.ffmpegkit.ReturnCode;
 import com.example.voca.R;
+import com.example.voca.bus.LikeBUS;
+import com.example.voca.bus.PostBUS;
+import com.example.voca.bus.SongBUS;
+import com.example.voca.bus.UserBUS;
+import com.example.voca.dto.LikeDTO;
+import com.example.voca.dto.PostDTO;
+import com.example.voca.dto.SongDTO;
+import com.example.voca.dto.UserDTO;
 import com.example.voca.service.FileDownloader;
+import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.button.MaterialButton;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions;
@@ -42,7 +56,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 public class RecordActivity extends AppCompatActivity {
@@ -51,12 +67,11 @@ public class RecordActivity extends AppCompatActivity {
     EditText etMp3Url;
     Button btnDownload;
     TextView tvStatus;
-
-    String songName = "MatKetNoi";
-    private String downloadedMp3Path = "https://pub-b0a9bdcea1cd4f6ca28d98f878366466.r2.dev/youtube_LoKtEI9RONw_audio.mp3";
+    String songName = "";
+    private String downloadedMp3Path = "";
     private String combinedPath = "output.mp3";
     private String backgroundMusicPath = "background_music.mp3";
-    private String videoId = "LoKtEI9RONw";
+    private String videoId = "";
     private static final int REQUEST_RECORD_AUDIO = 1;
     private YouTubePlayer youTubePlayerInstance;
     private MediaRecorder mediaRecorder;
@@ -66,26 +81,42 @@ public class RecordActivity extends AppCompatActivity {
     private ByteArrayOutputStream recordingStream;
     private ByteArrayOutputStream musicStream;
     private String mySdPath;
-
     private boolean isRecording;
-
-
+    MaterialToolbar topAppBar;
+    private SongBUS songBUS;
+    private String songId = ""; // Thêm biến songId
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getSupportActionBar().hide();
         setContentView(R.layout.record_room_layout);
+        songBUS = new SongBUS(); // Khởi tạo SongBUS
+
+        Intent intent = getIntent();
+        songName = intent.getStringExtra("song_name");
+        videoId = intent.getStringExtra("youtube_id");
+        songId = intent.getStringExtra("song_id");
+
+        downloadedMp3Path = intent.getStringExtra("mp3_file");
+        topAppBar = findViewById(R.id.topAppBar);
+        topAppBar.setSubtitle(songName);
+        setClickOnNavigationButton();
+
+        if (TextUtils.isEmpty(songName) || TextUtils.isEmpty(videoId) || TextUtils.isEmpty(downloadedMp3Path)) {
+            Toast.makeText(this, "Vui lòng chọn một bài hát khác", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+
         isRecording = false;
         YouTubePlayerView youTubePlayerView = findViewById(R.id.youtube_player_view);
-        Button recordButton = findViewById(R.id.record_button);
-        Button stopRecordButton = findViewById(R.id.stop_record_button);
-        Button playButton = findViewById(R.id.play_button);
-        Button returnButton = findViewById(R.id.return_button);
-
-        EditText mp3LinkEditText = findViewById(R.id.mp3_link_edittext);
-        EditText youtubeIdEditText = findViewById(R.id.youtube_id_edittext);
-        Button submitButton = findViewById(R.id.submit_button);
+        MaterialButton recordButton = findViewById(R.id.record_button);
+        MaterialButton stopRecordButton = findViewById(R.id.stop_record_button);
+//        Button playButton = findViewById(R.id.play_button);
+        MaterialButton returnButton = findViewById(R.id.return_button);
+//        Button returnHomeButton = findViewById(R.id.return_home_button);
 
         getLifecycle().addObserver(youTubePlayerView);
 
@@ -109,23 +140,11 @@ public class RecordActivity extends AppCompatActivity {
             }
         }, true, options);
 
-        submitButton.setOnClickListener(v -> {
-            String inputMp3Link = mp3LinkEditText.getText().toString().trim();
-            String inputVideoId = youtubeIdEditText.getText().toString().trim();
-            if (!inputMp3Link.isEmpty()) {
-                downloadedMp3Path = inputMp3Link;
-            }
-
-            if (!inputVideoId.isEmpty()) {
-                videoId = inputVideoId;
-            }
-        });
 
         recordButton.setOnClickListener(v -> {
             if (ContextCompat.checkSelfPermission(RecordActivity.this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(RecordActivity.this, new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_RECORD_AUDIO);
             } else {
-                // Kiểm tra file nhạc nền có tồn tại chưa
                 File musicFile = new File(getExternalFilesDir(null), backgroundMusicPath);
                 if (!musicFile.exists()) {
                     saveBackgroundMusic();
@@ -138,13 +157,15 @@ public class RecordActivity extends AppCompatActivity {
                         isRecording = true;
                         youTubePlayerInstance.play();
                         startRecording();
-                        playLocalFile(musicFile); // Sử dụng file local thay vì stream
+                        playLocalFile(musicFile);
+                        recordButton.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_pause_24dp));
                         Toast.makeText(RecordActivity.this, "Đang ghi âm...", Toast.LENGTH_SHORT).show();
                     } else {
                         isRecording = true;
                         youTubePlayerInstance.play();
                         resumeRecording();
                         resumeOnlineAudio();
+                        recordButton.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_pause_24dp)); // Khi tiếp tục hát -> ic_pause_24dp
                         Toast.makeText(RecordActivity.this, "Tiếp tục ghi âm...", Toast.LENGTH_SHORT).show();
                     }
                 } else {
@@ -152,6 +173,7 @@ public class RecordActivity extends AppCompatActivity {
                     youTubePlayerInstance.pause();
                     pauseRecording();
                     pauseOnlineAudio();
+                    recordButton.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_play_pink_24dp)); // Khi tạm dừng -> ic_record_24dp
                     Toast.makeText(RecordActivity.this, "Tạm dừng ghi âm...", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -161,8 +183,39 @@ public class RecordActivity extends AppCompatActivity {
             youTubePlayerInstance.pause();
             stopRecording();
             stopOnlineAudio();
-            isRecording = false; // Reset trạng thái recording
             Toast.makeText(RecordActivity.this, "Đã kết thúc ghi âm", Toast.LENGTH_SHORT).show();
+
+            songBUS.recordSong(songId, new SongBUS.OnSongRecordedListener() {
+                @Override
+                public void onSongRecorded(SongDTO song) {
+                    Intent intent1 = new Intent(RecordActivity.this, RecordResultActivity.class);
+                    intent1.putExtra("recording_path", new File(getExternalFilesDir(null), "audio_recording.m4a").getAbsolutePath());
+                    intent1.putExtra("background_music_path", new File(getExternalFilesDir(null), backgroundMusicPath).getAbsolutePath());
+                    intent1.putExtra("song_name", songName);
+                    intent1.putExtra("song_id", songId); // Truyền songId về nếu cần
+                    startActivity(intent1);
+                    Toast.makeText(RecordActivity.this, "Đã cập nhật số người ghi âm!", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onError(String error) {
+                    Toast.makeText(RecordActivity.this, "Lỗi khi cập nhật ghi âm: " + error, Toast.LENGTH_SHORT).show();
+                }
+            });
+            //            combineAudioFiles(new Callback() {
+//                @Override
+//                public void onSuccess(String filePath) {
+//                    Intent intent = new Intent(RecordActivity.this, RecordResultActivity.class);
+//                    intent.putExtra("audio_path", filePath);
+//                    intent.putExtra("song_name", songName);
+//                    startActivity(intent);
+//                }
+//
+//                @Override
+//                public void onFailure() {
+//                    Toast.makeText(RecordActivity.this, "Không thể phát do lỗi trộn!", Toast.LENGTH_SHORT).show();
+//                }
+//            });
         });
 
 //        playButton.setOnClickListener(v -> {
@@ -175,30 +228,31 @@ public class RecordActivity extends AppCompatActivity {
 //            Intent intent = new Intent(this, RecordResultActivity.class);
 //            startActivity(intent);
 //        });
-        playButton.setOnClickListener(v -> {
-            if (isRecording) {
-                Toast.makeText(RecordActivity.this, "Vui lòng dừng ghi âm trước khi phát!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            playCombinedAudio(new Callback() {
-                @Override
-                public void onSuccess(String filePath) {
-                    Intent intent = new Intent(RecordActivity.this, RecordResultActivity.class);
-                    intent.putExtra("audio_path", filePath);
-                    intent.putExtra("song_name", songName);
-                    startActivity(intent);
-                }
-
-                @Override
-                public void onFailure() {
-                    Toast.makeText(RecordActivity.this, "Không thể phát do lỗi trộn!", Toast.LENGTH_SHORT).show();
-                }
-            });
-        });
+//        playButton.setOnClickListener(v -> {
+//            if (isRecording) {
+//                Toast.makeText(RecordActivity.this, "Vui lòng dừng ghi âm trước khi phát!", Toast.LENGTH_SHORT).show();
+//                return;
+//            }
+//            playCombinedAudio(new Callback() {
+//                @Override
+//                public void onSuccess(String filePath) {
+//                    Intent intent = new Intent(RecordActivity.this, RecordResultActivity.class);
+//                    intent.putExtra("audio_path", filePath);
+//                    intent.putExtra("song_name", songName);
+//                    startActivity(intent);
+//                }
+//
+//                @Override
+//                public void onFailure() {
+//                    Toast.makeText(RecordActivity.this, "Không thể phát do lỗi trộn!", Toast.LENGTH_SHORT).show();
+//                }
+//            });
+//        });
 
         returnButton.setOnClickListener(v -> {
             youTubePlayerInstance.seekTo(0f);
             youTubePlayerInstance.pause();
+            recordButton.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_record_24dp));
             if (isRecording) {
                 stopRecording();
                 stopOnlineAudio();
@@ -207,8 +261,18 @@ public class RecordActivity extends AppCompatActivity {
             Toast.makeText(RecordActivity.this, "Đã trở về đầu", Toast.LENGTH_SHORT).show();
         });
 
+        //returnHomeButton.setOnClickListener(v -> finish());
 
         audioFilePath = Objects.requireNonNull(getExternalCacheDir()).getAbsolutePath() + "/audiorecord.m4a";
+    }
+
+    private void setClickOnNavigationButton() {
+        topAppBar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
     }
 
     private void playLocalFile(File musicFile) {
@@ -291,6 +355,12 @@ public class RecordActivity extends AppCompatActivity {
     private void saveBackgroundMusic() {
         String fileName = backgroundMusicPath;
         FileDownloader.downloadExternalFile(this, downloadedMp3Path, fileName);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        finish();
     }
 
     @Override
@@ -466,7 +536,7 @@ public class RecordActivity extends AppCompatActivity {
 //            }
 //        });
 //    }
-private void playCombinedAudio(Callback callback) {
+private void combineAudioFiles(Callback callback) {
     if (callback == null) {
         throw new IllegalArgumentException("Callback cannot be null");
     }

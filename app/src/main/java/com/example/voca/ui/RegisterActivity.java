@@ -1,28 +1,41 @@
-package com.example.voca;
+package com.example.voca.ui;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.voca.R;
+import com.example.voca.bus.UserBUS;
+import com.example.voca.dto.UserDTO;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 
-public class RegisterActivity extends Activity {
+public class RegisterActivity extends AppCompatActivity {
     private EditText etEmail, etPassword, etConfirmPassword, etUsername;
     private Button btnRegister, btnBackToLogin;
     private FirebaseAuth auth;
+
+    static UserBUS userBUS = new UserBUS();
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.hide();
+        }
         setContentView(R.layout.activity_register);
 
         auth = FirebaseAuth.getInstance();
@@ -76,13 +89,33 @@ public class RegisterActivity extends Activity {
                         User user = new User(username, email);
                         userRef.setValue(user);
 
-                        Toast.makeText(RegisterActivity.this, "Registration successful", Toast.LENGTH_SHORT).show();
+                        createUser(email, username, userId);
+
+                        Toast.makeText(RegisterActivity.this, "Đăng kí thành công", Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent(this, LoginActivity.class);
                         startActivity(intent);
                     } else {
-                        Toast.makeText(RegisterActivity.this, "Registration failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(RegisterActivity.this, "Đăng kí thất bại: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
+
+    public static void createUser(String email, String username, String firebaseUID){
+        UserDTO newUser = new UserDTO(null, firebaseUID, username,
+                email, "",
+                "user", null, null, 0);
+
+        userBUS.createUser(newUser, new UserBUS.OnUserCreatedListener() {
+            @Override
+            public void onUserCreated(UserDTO user) {
+                Log.d("User create successfully", "Success");
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.d("User create failed", error);
+            }
+        });
     }
 
     public static class User {

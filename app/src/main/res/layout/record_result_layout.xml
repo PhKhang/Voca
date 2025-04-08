@@ -1,48 +1,165 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    tools:context=".ui.record.RecordResultActivity">
+
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="20dp"
-        android:gravity="center">
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <!-- SeekBar cho thời gian -->
+        <TextView
+            android:id="@+id/tvSongNameResult"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Song Name"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Playback Controls -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Playback (Sau khi áp dụng hiệu ứng)"
+            android:textStyle="bold"/>
         <SeekBar
             android:id="@+id/seekBarTime"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:enabled="false"/> <!-- Ban đầu vô hiệu hóa -->
 
-        <!-- Hiển thị thời gian -->
         <TextView
             android:id="@+id/tvCurrentTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="00:00"
-            android:textSize="18sp"/>
+            android:layout_gravity="end"
+            android:text="00:00 / 00:00"
+            android:textSize="12sp"/>
 
-        <!-- Nút Play/Pause -->
         <Button
             android:id="@+id/btnPlayPause"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Play" />
+            android:layout_gravity="center_horizontal"
+            android:text="Play"
+            android:enabled="false"/> <!-- Ban đầu vô hiệu hóa -->
 
-        <!-- SeekBar cho âm lượng -->
+        <!-- Effect Controls -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Điều chỉnh hiệu ứng"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"/>
+
+        <TextView
+            android:id="@+id/tvVolumeLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Âm lượng (0% - 200%)"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"/>
         <SeekBar
             android:id="@+id/seekBarVolume"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:max="200"
+            android:progress="100" /> <!-- Mặc định 100% -->
+
+        <TextView
+            android:id="@+id/tvEchoLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Echo Decay (Độ vang lặp lại 0-90%)"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"/>
+        <SeekBar
+            android:id="@+id/seekBarEcho"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="90"
+            android:progress="0" /> <!-- Mặc định không echo -->
+
+        <TextView
+            android:id="@+id/tvDelayLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Echo Delay (Độ trễ 0-2000ms)"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"/>
+        <SeekBar
+            android:id="@+id/seekBarDelay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="2000"
+            android:progress="0" /> <!-- Mặc định không delay -->
+
+        <TextView
+            android:id="@+id/tvBassLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Bass (-10dB đến +10dB)"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"/>
+        <SeekBar
+            android:id="@+id/seekBarBass"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="20"
+            android:progress="10" /> <!-- Mặc định 0dB -->
+
+        <TextView
+            android:id="@+id/tvTrebleLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Treble (-10dB đến +10dB)"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"/>
+        <SeekBar
+            android:id="@+id/seekBarTreble"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="20"
+            android:progress="10" /> <!-- Mặc định 0dB -->
+
+
+        <!-- Action Buttons -->
+        <Button
+            android:id="@+id/btnApplyEffects"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Xác nhận và Áp dụng hiệu ứng" />
+
+        <!-- Các nút khác có thể ẩn/hiện tùy logic -->
+        <Button
+            android:id="@+id/btnConfirmAndCombine"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ghép file đã xử lý với nhạc nền"
+            android:visibility="gone"/> <!-- Tạm ẩn -->
 
         <Button
             android:id="@+id/save_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Lưu file"
-            android:layout_marginTop="8dp"/>
+            android:text="Lưu file đã xử lý"
+            android:enabled="false" /> <!-- Ban đầu vô hiệu hóa -->
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

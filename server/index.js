@@ -1,6 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const multer = require('multer');
+const multerS3 = require('multer-s3');
+const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { fromEnv } = require('@aws-sdk/credential-providers');
+const crypto = require('crypto');
 dotenv.config();
 
 const app = express();
@@ -11,7 +16,49 @@ mongoose.connect(process.env.connection_string)
     .then(() => console.log('Connected to MongoDB'))
     .catch((err) => console.log('Error:', err));
 
-// Định nghĩa Schema
+const s3Client = new S3Client({
+    credentials: fromEnv(),
+    endpoint: "https://fd0314cb84aca3240521990fc2bb803c.r2.cloudflarestorage.com",
+});
+    
+const upload = multer({
+    storage: multerS3({
+        s3: s3Client,
+        bucket: 'voca',
+        metadata: (req, file, cb) => {
+            cb(null, { fieldName: file.fieldname });
+        },
+        contentType: multerS3.AUTO_CONTENT_TYPE,
+        key: (req, file, cb) => {
+            cb(null, `${Date.now().toString()}-${file.originalname}`);
+        },
+    }),
+});
+
+// File upload
+app.post('/upload', upload.single('file'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).send('No file uploaded.');
+    }
+    console.log(req.file.key);
+    return res.status(200).send({ filename: `https://pub-9baa3a81ecf34466aeb5591929ebf0b3.r2.dev/${req.file.key}` });
+}); 
+
+app.delete('/delete', async (req, res) => {
+    console.log("In");
+    console.log("Request body:", req.body);
+    const deleteFile = {
+        "Bucket": "voca",
+        "Key": decodeURI(req.body.key?.split('/').pop()),
+    }
+    console.log("To delete:", deleteFile);
+    
+    const command = new DeleteObjectCommand(deleteFile);
+    await s3Client.send(command);
+    res.status(200).send('File deleted successfully');
+});
+    
+// Schema Definitions
 const userSchema = new mongoose.Schema({
     firebase_uid: { type: String, required: true, unique: true },
     username: { type: String, required: true },
@@ -51,148 +98,112 @@ const likeSchema = new mongoose.Schema({
 });
 const Like = mongoose.model('Like', likeSchema);
 
-const notificationSchema = new mongoose.Schema({
-    recipient_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Người nhận thông báo
-    sender_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },    // Người gửi (người thích)
-    post_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Post', required: true },     // Bài đăng được thích
-    type: { type: String, default: 'like' },                                           // Loại thông báo (có thể mở rộng: comment, follow, v.v.)
-    is_read: { type: Boolean, default: false },                                        // Trạng thái đã đọc
-    created_at: { type: Date, default: Date.now }                                      // Thời gian tạo
+const roomSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    code: { type: String, unique: true },
+    is_private: { type: Boolean, default: false },
+    description: { type: String },
+    created_at: { type: Date, default: Date.now },
+    updated_at: { type: Date, default: Date.now },
+    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    queue: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Song' }],
+    current_song: { type: mongoose.Schema.Types.ObjectId, ref: 'Song' },
+    current_song_start_time: { type: Date },
+    chats: [
+        {
+            message_type: { type: String },
+            user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+            message: { type: String },
+            timestamp: { type: Date, default: Date.now },
+        },
+    ],
 });
+// Pre-save hook to generate code
+roomSchema.pre('save', async function(next) {
+    if (!this.code) {
+        // Generate a 6-character alphanumeric code
+        let generatedCode = generateRandomCode();
 
-const Notification = mongoose.model('Notification', notificationSchema);
-
-// CRUD APIs for Notifications
-app.post('/likes', async (req, res) => {
-    try {
-        // Tạo Like
-        const like = new Like(req.body);
-        await like.save();
-
-        // Tăng số lượt thích trong Post bằng $inc
-        const post = await Post.findByIdAndUpdate(
-            req.body.post_id,
-            { $inc: { likes: 1 } }, // Tăng likes lên 1
-            { new: true } // Trả về document sau khi cập nhật
-        );
-        if (!post) {
-            // Nếu không tìm thấy post, xóa like vừa tạo để tránh dữ liệu không nhất quán
-            await Like.findByIdAndDelete(like._id);
-            return res.status(404).json({ error: 'Post not found' });
+        // Ensure that the generated code is unique
+        while (await Room.findOne({ code: generatedCode })) {
+            generatedCode = generateRandomCode();  // Regenerate the code if it's already taken
         }
 
-        // Tạo Notification
-        const notification = new Notification({
-            recipient_id: post.user_id, // Người sở hữu bài đăng
-            sender_id: req.body.user_id, // Người thích
-            post_id: req.body.post_id,
-            type: 'like'
-        });
-        await notification.save();
+        this.code = generatedCode;
+    }
+    next();
+});
 
-        const populatedLike = await Like.findById(like._id)
-            .populate('user_id')
-            .populate({
-                path: 'post_id',
-                populate: [
-                    { path: 'user_id' },
-                    { path: 'song_id', populate: { path: 'uploaded_by' } }
-                ]
-            });
-            console.log("Add: " + post.likes);
+// Random 6-character alphanumeric code
+function generateRandomCode() {
+    return crypto.randomBytes(3).toString('hex').toUpperCase();  // 6 characters
+}
 
-        // Trả về Like đã được populate
-        res.status(201).json(populatedLike);
+const Room = mongoose.model('Room', roomSchema);
+
+// CRUD APIs for Rooms
+app.post('/rooms', async (req, res) => {
+    try {
+        var room = new Room(req.body);
+        await room.save()
+        // .then(room => room.populate('created_by').populate('members').populate('queue').populate('current_song'));
+        room = await Room.findById(room._id).populate('created_by').populate('members').populate('queue').populate('current_song');
+        res.status(201).json(room);
+        console.log("Room created:", room);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+        console.error("Error creating room:", err.message);
+    }
+});
+
+app.get('/rooms/', async (req, res) => {
+    let filter = {};
+
+    if (req.query.name) {
+        filter.name = new RegExp(req.query.name, 'i'); 
+    }
+
+    if (req.query.code) {
+        filter.code = req.query.code;
+    }
+    
+    if (req.query.user_id) {
+        filter.created_by = new mongoose.Types.ObjectId(req.query.user_id);
+    }
+    
+    const room = req.query.code 
+    ? await Room.findOne(filter).populate('created_by').populate('members').populate('queue').populate('current_song')
+    : await Room.find(filter).populate('created_by').populate('members').populate('queue').populate('current_song');
+    console.log("Rooms found:", room);
+    room ? res.json(room) : res.status(404).json({ error: 'Room not found' });
+});
+
+app.get('/rooms/:id', async (req, res) => {
+    const room = await Room.findById(req.params.id).populate('created_by').populate('members').populate('queue').populate('current_song');
+    room ? res.json(room) : res.status(404).json({ error: 'Room not found' });
+});
+
+app.delete('/rooms/:id', async (req, res) => {
+    await Room.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Room deleted' });
+});
+
+app.delete('/rooms/:id', async (req, res) => {
+    await Room.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Room deleted' });
+});
+
+app.put('/rooms/:id', async (req, res) => {
+    try {
+        const room = await Room.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json(room);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 });
-
-app.delete('/likes/:id', async (req, res) => {
-    try {
-        // Tìm và xóa Like
-        const like = await Like.findByIdAndDelete(req.params.id);
-        if (!like) {
-            return res.status(404).json({ error: 'Like not found' });
-        }
-
-        const post = await Post.findByIdAndUpdate(
-            like.post_id,
-            { $inc: { likes: -1 } }, // Giảm likes đi 1
-            { new: true } // Trả về document sau khi cập nhật
-        );
-        if (!post) {
-            return res.status(404).json({ error: 'Post not found' });
-        }
-        // Đảm bảo likes không âm (nếu cần)
-        if (post.likes < 0) {
-            await Post.findByIdAndUpdate(like.post_id, { likes: 0 });
-        }
-
-        console.log("Delete: " + post.likes);
-
-        res.json({ message: 'Like deleted', post_likes: post.likes });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.get('/notifications/:userId', async (req, res) => {
-    try {
-        const notifications = await Notification.find({ recipient_id: req.params.userId })
-            .populate('recipient_id') // Lấy thông tin người nhận
-            .populate('sender_id') // Lấy thông tin người gửi
-            .populate({
-                path: 'post_id',
-                populate: [
-                    { path: 'user_id' },
-                    { path: 'song_id', populate: { path: 'uploaded_by' } }
-                ]
-            })
-            .sort({ created_at: -1 }); // Sắp xếp theo thời gian mới nhất
-        res.json(notifications);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
-
-app.put('/notifications/:id/read', async (req, res) => {
-    try {
-        const notification = await Notification.findByIdAndUpdate(
-            req.params.id,
-            { is_read: true },
-            { new: true }
-        )
-            .populate('recipient_id') // Người nhận thông báo
-            .populate('sender_id')    // Người gửi thông báo
-            .populate({
-                path: 'post_id',
-                populate: [
-                    { path: 'user_id' },
-                    { path: 'song_id', populate: { path: 'uploaded_by' } }
-                ]
-            });
-
-        if (!notification) {
-            return res.status(404).json({ error: 'Notification not found' });
-        }
-        res.json(notification);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
-
-app.delete('/notifications/:id', async (req, res) => {
-    try {
-        await Notification.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Notification deleted' });
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
-
-// API Endpoints cho User
-// Create User
+        
+// CRUD APIs for Users
 app.post('/users', async (req, res) => {
     try {
         const user = new User(req.body);
