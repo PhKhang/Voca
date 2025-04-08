@@ -108,7 +108,7 @@ public class HomeFragment extends Fragment implements FunctionAdapter.OnFunction
                     }
                 }
             }
-            mAuth.signOut();
+        mAuth.signOut();
 
             Intent intent = new Intent(requireContext(), LoginActivity.class);
             startActivity(intent);
