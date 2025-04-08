@@ -124,6 +124,29 @@
             android:textSize="24sp"
             android:textStyle="bold" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/code"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:hint="Mã phòng"
+                android:inputType="text" />
+
+            <Button
+                android:id="@+id/goToCode"
+                style="?attr/materialIconButtonFilledStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="Go to Karaoke room with code"
+                app:icon="@drawable/arrow_forward_24dp_e3e3e3_fill0_wght400_grad0_opsz24" />
+        </LinearLayout>
+
         <GridView
             android:id="@+id/rooms"
             android:layout_width="match_parent"

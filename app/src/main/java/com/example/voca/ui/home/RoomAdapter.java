@@ -55,7 +55,7 @@ public class RoomAdapter extends BaseAdapter {
                 public void onClick(View view) {
                     // Handle room click
                     Intent intent = new Intent(view.getContext(), KaraokeRoom.class);
-                    intent.putExtra("room", room.get_id());
+                    intent.putExtra("room", room.getCode());
                     view.getContext().startActivity(intent);
                 }
             });
