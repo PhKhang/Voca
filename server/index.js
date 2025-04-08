@@ -21,8 +21,12 @@ mongoose.connect(process.env.connection_string)
 let s3Client;
 try {
     s3Client = new S3Client({
-        credentials: fromEnv(),
+        credentials: {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID, // Dùng trực tiếp
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY, // Dùng trực tiếp
+        },
         endpoint: "https://fd0314cb84aca3240521990fc2bb803c.r2.cloudflarestorage.com",
+        region: process.env.AWS_REGION || "auto",
     });
     console.log('S3 Client initialized successfully');
 } catch (err) {
