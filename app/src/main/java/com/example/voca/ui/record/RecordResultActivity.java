@@ -1,7 +1,9 @@
-package com.example.voca.ui.record; // Ensure this matches your package
+package com.example.voca.ui.record;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
+import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
@@ -10,8 +12,11 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,6 +29,13 @@ import com.arthenica.ffmpegkit.FFmpegKit;
 import com.arthenica.ffmpegkit.ReturnCode;
 import com.arthenica.ffmpegkit.SessionState;
 import com.example.voca.R; // Ensure this matches your R file
+import com.example.voca.bus.PostBUS;
+import com.example.voca.bus.SongBUS;
+import com.example.voca.bus.UserBUS;
+import com.example.voca.dto.PostDTO;
+import com.example.voca.dto.SongDTO;
+import com.example.voca.dto.UserDTO;
+import com.example.voca.service.FileUploader;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -40,14 +52,13 @@ public class RecordResultActivity extends AppCompatActivity {
     // UI Elements
     private SeekBar seekBarTime, seekBarVolume, seekBarEcho, seekBarDelay, seekBarBass, seekBarTreble;
     private TextView tvCurrentTime, tvSongNameResult; // Added TextView for song name
-    private Button btnPlayPause, btnPreviewEffects, saveButton; // Renamed btnApplyEffects, Removed btnConfirmAndCombine
-
+    private Button btnPlayPause, btnPreviewEffects, saveButton, btnCreatePost; // Renamed btnApplyEffects, Removed btnConfirmAndCombine
     // File Paths
     private String originalRecordingPath; // Path to the user's raw voice recording (M4A)
     private String backgroundMusicPath; // Path to the background music (MP3/M4A etc.)
     private String processedAndMixedPath; // Path to the temporary file containing voice+effects+music (MP3)
     private String songName; // To display and use in saved filename
-
+    private String songId; // Thêm songId để liên kết với bài hát
     // Media Player
     private MediaPlayer mediaPlayer;
     private Handler progressHandler = new Handler(Looper.getMainLooper());
@@ -60,6 +71,10 @@ public class RecordResultActivity extends AppCompatActivity {
     private int currentBassGain = 0;
     private int currentTrebleGain = 0;
 
+    private UserBUS userBUS;
+    private SongBUS songBUS;
+    private PostBUS postBUS;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,12 +82,15 @@ public class RecordResultActivity extends AppCompatActivity {
             getSupportActionBar().hide();
         }
         setContentView(R.layout.record_result_layout);
+        userBUS = new UserBUS();
+        songBUS = new SongBUS();
+        postBUS = new PostBUS();
 
         // --- Get Intent Extras ---
         originalRecordingPath = getIntent().getStringExtra("recording_path");
         backgroundMusicPath = getIntent().getStringExtra("background_music_path");
         songName = getIntent().getStringExtra("song_name"); // Get song name
-
+        songId = getIntent().getStringExtra("song_id"); // Lấy songId từ Intent
         // --- Basic Validation ---
         if (originalRecordingPath == null || backgroundMusicPath == null || songName == null) {
             Log.e(TAG, "Missing required paths or song name in Intent");
@@ -133,7 +151,7 @@ public class RecordResultActivity extends AppCompatActivity {
         // **IMPORTANT:** Make sure the button ID in your layout matches R.id.btnPreviewEffects
         btnPreviewEffects = findViewById(R.id.btnApplyEffects); // Assuming ID is still btnApplyEffects
         saveButton = findViewById(R.id.save_button);
-
+        btnCreatePost = findViewById(R.id.btn_create_post);
         // Remove or comment out the findView for the removed button
         // btnConfirmAndCombine = findViewById(R.id.btnConfirmAndCombine);
     }
@@ -237,9 +255,128 @@ public class RecordResultActivity extends AppCompatActivity {
             }
         });
 
+        btnCreatePost.setOnClickListener(v -> {
+            if (processedAndMixedPath != null && new File(processedAndMixedPath).exists()) {
+                showCreatePostDialog();
+            } else {
+                Toast.makeText(this, "Chưa tạo bản xem trước để đăng", Toast.LENGTH_SHORT).show();
+            }
+        });
         // Remove listener for btnConfirmAndCombine
     }
 
+    private void showCreatePostDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Tạo bài đăng mới");
+
+        EditText inputCaption = new EditText(this);
+        inputCaption.setHint("Nhập tiêu đề bài đăng...");
+        builder.setView(inputCaption);
+
+        builder.setPositiveButton("Đăng", null); // Sẽ override trong dialog.show()
+        builder.setNegativeButton("Hủy", (dialog, which) -> dialog.dismiss());
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        positiveButton.setEnabled(false);
+
+        inputCaption.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                positiveButton.setEnabled(s.length() > 0);
+            }
+        });
+
+        positiveButton.setOnClickListener(v -> {
+            String caption = inputCaption.getText().toString().trim();
+            uploadAndCreatePost(processedAndMixedPath, caption);
+            dialog.dismiss();
+        });
+    }
+
+    private void uploadAndCreatePost(String filePath, String caption) {
+        File file = new File(filePath);
+        if (!file.exists()) {
+            Toast.makeText(this, "File không tồn tại!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Đang tải lên và tạo bài đăng...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        FileUploader fileUploader = new FileUploader();
+        fileUploader.run(this, Uri.fromFile(file), new FileUploader.OnUploadCompleteListener() {
+            @Override
+            public void onSuccess(String audioUrl) {
+                SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                String userId = prefs.getString("userId", null);
+
+                userBUS.fetchUserById(userId, new UserBUS.OnUserFetchedListener() {
+                    @Override
+                    public void onUserFetched(UserDTO user) {
+                        songBUS.fetchSongById(songId, new SongBUS.OnSongFetchedListener() {
+                            @Override
+                            public void onSongFetched(SongDTO song) {
+                                PostDTO newPost = new PostDTO(null, user, song, audioUrl, caption, 0, null);
+                                postBUS.createPost(newPost, new PostBUS.OnPostCreatedListener() {
+                                    @Override
+                                    public void onPostCreated(PostDTO post) {
+                                        runOnUiThread(() -> {
+                                            progressDialog.dismiss();
+                                            Toast.makeText(RecordResultActivity.this, "Đã tạo bài đăng thành công!", Toast.LENGTH_SHORT).show();
+                                            finish();
+                                        });
+                                    }
+
+                                    @Override
+                                    public void onError(String error) {
+                                        runOnUiThread(() -> {
+                                            progressDialog.dismiss();
+                                            Toast.makeText(RecordResultActivity.this, "Lỗi khi tạo bài đăng: " + error, Toast.LENGTH_SHORT).show();
+                                        });
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                runOnUiThread(() -> {
+                                    progressDialog.dismiss();
+                                    Toast.makeText(RecordResultActivity.this, "Lỗi khi lấy thông tin bài hát: " + error, Toast.LENGTH_SHORT).show();
+                                });
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        runOnUiThread(() -> {
+                            progressDialog.dismiss();
+                            Toast.makeText(RecordResultActivity.this, "Lỗi khi lấy thông tin người dùng: " + error, Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure() {
+                runOnUiThread(() -> {
+                    progressDialog.dismiss();
+                    Toast.makeText(RecordResultActivity.this, "Lỗi khi tải file lên!", Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
     private void setupMediaPlayerListeners() {
         mediaPlayer.setOnPreparedListener(mp -> {
             Log.d(TAG, "MediaPlayer prepared. Duration: " + mp.getDuration());

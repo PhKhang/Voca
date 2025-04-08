@@ -159,7 +159,13 @@
             android:layout_height="wrap_content"
             android:text="Lưu file đã xử lý"
             android:enabled="false" /> <!-- Ban đầu vô hiệu hóa -->
-
+        <Button
+            android:id="@+id/btn_create_post"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tạo bài đăng"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
