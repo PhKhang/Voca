@@ -27,17 +27,6 @@
             android:queryHint="Tìm kiếm"
             app:iconifiedByDefault="false" />
 
-        <ImageView
-            android:id="@+id/clearSearchButton"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_close"
-            android:visibility="gone"
-            android:padding="4dp"
-            app:layout_constraintEnd_toEndOf="@id/searchEditText"
-            app:layout_constraintTop_toTopOf="@id/searchEditText"
-            app:layout_constraintBottom_toBottomOf="@id/searchEditText"/>
-
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabLayout"
             android:layout_width="match_parent"

@@ -26,6 +26,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.MediaController;
+import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -69,9 +70,7 @@ public class DashboardFragment extends Fragment {
     RecyclerView recyclerView;
     private ExoPlayer player;
     private RecyclerView recyclerViewUsers;
-    private EditText searchEditText;
     private UserBUS userBUS = new UserBUS();
-//    private FrameLayout searchResultsContainer;
     private UserAdapter userAdapter;
     private List<UserDTO> userList = new ArrayList<>(), filteredUsers = new ArrayList<>();
 
@@ -103,8 +102,7 @@ public class DashboardFragment extends Fragment {
         });
 
         recyclerViewUsers = root.findViewById(R.id.recyclerViewUsers);
-        searchEditText = root.findViewById(R.id.searchEditText);
-//        searchResultsContainer = root.findViewById(R.id.searchOverlay);
+        SearchView searchView = root.findViewById(R.id.searchView);
 
         userBUS.fetchUsers(new UserBUS.OnUsersFetchedListener() {
             @Override
@@ -123,48 +121,32 @@ public class DashboardFragment extends Fragment {
         recyclerViewUsers.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerViewUsers.setAdapter(userAdapter);
 
-        ImageView clearSearchButton = root.findViewById(R.id.clearSearchButton);
-        clearSearchButton.setOnClickListener(v -> {
-            searchEditText.setText("");
-            searchEditText.clearFocus();
-        });
-        searchEditText.addTextChangedListener(new TextWatcher() {
+        // Lắng nghe khi người dùng gõ vào ô tìm kiếm
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
-            public void afterTextChanged(Editable s) {
-                String query = s.toString().trim();
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
 
-                clearSearchButton.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                String query = newText.trim();
 
                 if (!query.isEmpty()) {
                     searchUsers(query);
                 } else {
                     hideSearchResults();
                 }
+                return true;
             }
-
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
         });
-        // Xử lý sự kiện khi nhấn nút xóa
-        clearSearchButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                searchEditText.setText("");
-                searchEditText.clearFocus();
 
+        // Xử lý focus (ẩn hiện RecyclerView)
+        searchView.setOnQueryTextFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus && !searchView.getQuery().toString().isEmpty()) {
+                recyclerViewUsers.setVisibility(View.VISIBLE);
+            } else {
                 recyclerViewUsers.setVisibility(View.GONE);
-            }
-        });
-//        searchResultsContainer.setOnClickListener(v -> hideSearchResults());
-        searchEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (hasFocus && searchEditText.getText().length() > 0) {
-                    // Hiển thị kết quả tìm kiếm khi có focus và có nội dung
-                    recyclerViewUsers.setVisibility(View.VISIBLE);
-                } else {
-                    recyclerViewUsers.setVisibility(View.GONE);
-                }
             }
         });
 
@@ -187,13 +169,10 @@ public class DashboardFragment extends Fragment {
 
         userAdapter.notifyDataSetChanged();
         recyclerViewUsers.setVisibility(View.VISIBLE);
-//        searchResultsContainer.setVisibility(View.VISIBLE);
     }
 
     private void hideSearchResults() {
-//        searchEditText.setText("");
         recyclerViewUsers.setVisibility(View.GONE);
-//        searchResultsContainer.setVisibility(View.GONE);
     }
 
     @Override
