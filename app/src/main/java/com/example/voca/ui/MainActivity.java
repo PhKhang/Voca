@@ -1,21 +1,12 @@
 package com.example.voca.ui;
 
 import android.content.Intent;
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.DocumentsContract;
-import android.util.Log;
-import android.view.MenuItem;
-import android.view.View;
-import android.widget.Button;
 
 import androidx.appcompat.app.ActionBar;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -23,12 +14,9 @@ import androidx.navigation.ui.NavigationUI;
 
 import com.example.voca.R;
 import com.example.voca.databinding.ActivityMainBinding;
-import com.example.voca.service.FileUploader;
-import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.example.voca.ui.auth.LoginActivity;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-
-import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
 

@@ -1,4 +1,4 @@
-package com.example.voca.ui;
+package com.example.voca.ui.auth;
 
 import android.content.Intent;
 import android.os.Bundle;

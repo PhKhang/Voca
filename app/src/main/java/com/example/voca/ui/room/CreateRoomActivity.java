@@ -1,4 +1,4 @@
-package com.example.voca.ui.home;
+package com.example.voca.ui.room;
 
 import android.content.Context;
 import android.content.Intent;
@@ -18,7 +18,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.example.voca.ui.room.KaraokeRoom;
+import com.example.voca.ui.adapter.RoomAdapter;
 import com.example.voca.R;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.dao.RoomDAO;

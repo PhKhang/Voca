@@ -1,4 +1,4 @@
-package com.example.voca.ui.home;
+package com.example.voca.ui.adapter;
 
 import android.content.Intent;
 import android.view.View;
@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 
+import com.example.voca.ui.room.CreateRoomActivity;
 import com.example.voca.ui.room.KaraokeRoom;
 import com.example.voca.R;
 import com.example.voca.dto.RoomDTO;

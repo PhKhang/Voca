@@ -1,55 +1,33 @@
 package com.example.voca.ui.dashboard;
 
-import static android.content.Context.MODE_PRIVATE;
-
-import static androidx.core.content.ContextCompat.getColor;
 import static com.google.android.material.internal.ViewUtils.hideKeyboard;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.graphics.Typeface;
-import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.FrameLayout;
-import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.MediaController;
 import android.widget.SearchView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.voca.R;
-import com.example.voca.bus.LikeBUS;
-import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.databinding.FragmentDashboardBinding;
-import com.example.voca.dto.LikeDTO;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
-import com.example.voca.ui.PostAdapter;
-import com.example.voca.ui.ProfileViewActivity;
+import com.example.voca.ui.adapter.PostAdapter;
+import com.example.voca.ui.profile.ProfileViewActivity;
 import com.google.android.exoplayer2.ExoPlayer;
 
 import java.text.ParseException;

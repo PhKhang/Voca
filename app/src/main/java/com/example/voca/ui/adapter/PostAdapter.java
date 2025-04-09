@@ -1,8 +1,7 @@
-package com.example.voca.ui;
+package com.example.voca.ui.adapter;
 
 import static android.content.Context.MODE_PRIVATE;
 
-import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -35,7 +34,8 @@ import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.LikeDTO;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
-import com.example.voca.service.LoadImage;
+import com.example.voca.ui.MainActivity;
+import com.example.voca.ui.profile.ProfileViewActivity;
 import com.example.voca.ui.dashboard.DashboardFragment;
 import com.example.voca.ui.dashboard.SharedPostViewModel;
 import com.google.android.exoplayer2.ExoPlayer;

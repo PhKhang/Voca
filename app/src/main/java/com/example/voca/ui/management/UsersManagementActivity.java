@@ -6,7 +6,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.Toast;
@@ -16,8 +15,8 @@ import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
+import com.example.voca.ui.adapter.UserAdapter;
 import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;

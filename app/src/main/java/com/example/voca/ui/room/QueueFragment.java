@@ -4,7 +4,6 @@ import android.os.Bundle;
 
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.RecyclerView;
 
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -17,7 +16,7 @@ import android.widget.ListView;
 import com.example.voca.R;
 import com.example.voca.dao.SongDAO;
 import com.example.voca.dto.SongDTO;
-import com.example.voca.ui.PostAdapter;
+import com.example.voca.ui.adapter.SingleSongAdapter;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package com.example.voca.ui;
+package com.example.voca.ui.profile;
 
 import android.os.Bundle;
 
@@ -17,6 +17,7 @@ import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
+import com.example.voca.ui.adapter.PostAdapter;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.material.appbar.MaterialToolbar;
 

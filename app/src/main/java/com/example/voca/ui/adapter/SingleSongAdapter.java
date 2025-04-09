@@ -1,28 +1,19 @@
-package com.example.voca.ui.room;
+package com.example.voca.ui.adapter;
 
 import android.content.Context;
-import android.content.Intent;
-import android.media.MediaMetadataRetriever;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.media.MediaPlayer;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.voca.R;
 import com.example.voca.dto.SongDTO;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.service.LoadImage;
-import com.example.voca.ui.management.SongAdapter;
-import com.example.voca.ui.record.RecordActivity;
 
-import java.io.IOException;
 import java.util.List;
 
 public class SingleSongAdapter extends BaseAdapter {

@@ -1,4 +1,4 @@
-package com.example.voca.ui;
+package com.example.voca.ui.profile;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -7,11 +7,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.text.Editable;
-import android.text.InputFilter;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,11 +20,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -40,6 +31,8 @@ import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
 import com.example.voca.service.FileUploader;
+import com.example.voca.ui.adapter.PostAdapter;
+import com.example.voca.ui.auth.LoginActivity;
 import com.example.voca.ui.dashboard.SharedPostViewModel;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;

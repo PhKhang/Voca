@@ -1,6 +1,5 @@
-package com.example.voca.ui;
+package com.example.voca.ui.auth;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -19,6 +18,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.voca.R;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.UserDTO;
+import com.example.voca.ui.AdminActivity;
+import com.example.voca.ui.MainActivity;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;

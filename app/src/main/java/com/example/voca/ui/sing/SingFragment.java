@@ -17,6 +17,7 @@ import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.SongBUS;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.SongDTO;
+import com.example.voca.ui.adapter.SingAdapter;
 import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;

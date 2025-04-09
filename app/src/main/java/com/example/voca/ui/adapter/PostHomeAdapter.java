@@ -1,4 +1,4 @@
-package com.example.voca.ui.home;
+package com.example.voca.ui.adapter;
 
 import android.content.Context;
 import android.view.LayoutInflater;

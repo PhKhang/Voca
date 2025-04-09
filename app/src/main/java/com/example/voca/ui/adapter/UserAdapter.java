@@ -1,4 +1,4 @@
-package com.example.voca.ui.management;
+package com.example.voca.ui.adapter;
 
 import android.content.Context;
 import android.util.Log;
