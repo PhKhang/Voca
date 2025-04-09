@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -47,6 +48,8 @@ public class KaraokeRoom extends AppCompatActivity implements QueueFragment.OnGe
     ImageButton next;
     ImageButton prev;
     ImageButton mic;
+    TextView host;
+    TextView roomCode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,12 +64,14 @@ public class KaraokeRoom extends AppCompatActivity implements QueueFragment.OnGe
         });
 
         Intent intent = getIntent();
-        roomId = intent.getExtras().getString("room");
+        roomId = intent.getExtras().getString("roomId");
 
         ImageButton playButton = findViewById(R.id.play);
         queue = findViewById(R.id.queue);
         next = findViewById(R.id.next);
         prev = findViewById(R.id.prev);
+        host = findViewById(R.id.host);
+        roomCode = findViewById(R.id.roomCode);
 
         queue.setOnClickListener(v -> {
             QueueFragment queueFragment = new QueueFragment();
@@ -126,6 +131,7 @@ public class KaraokeRoom extends AppCompatActivity implements QueueFragment.OnGe
         });
 
         RoomDAO roomDAO = new RoomDAO();
+        Toast.makeText(this, "Fetching room details: " + roomId, Toast.LENGTH_SHORT).show();
         roomDAO.getRoomByCode(roomId, new Callback<RoomDTO>() {
             @Override
             public void onResponse(Call<RoomDTO> call, Response<RoomDTO> response) {
@@ -133,11 +139,13 @@ public class KaraokeRoom extends AppCompatActivity implements QueueFragment.OnGe
                     currentRoom = response.body();
                     Log.e("Room", "Room details: " + currentRoom.toString());
                     getSupportActionBar().setTitle(currentRoom.getName());
+                    host.setText(currentRoom.getCreated_by().getUsername());
+                    roomCode.setText("Mã phòng: " + currentRoom.getCode());
                 } else {
                     Log.e("Error", "Failed to fetch room details: " + response.errorBody());
-                    Intent intent = new Intent(KaraokeRoom.this, CreateRoomActivity.class);
-                    intent.putExtra("message", "Room " + roomId + "not found");
-                    startActivity(intent);
+//                    Intent intent = new Intent(KaraokeRoom.this, CreateRoomActivity.class);
+//                    intent.putExtra("message", "Room " + roomId + "not found");
+//                    startActivity(intent);
                     finish();
                 }
             }
