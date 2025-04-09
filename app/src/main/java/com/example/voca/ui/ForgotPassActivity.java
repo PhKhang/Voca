@@ -46,7 +46,7 @@ public class ForgotPassActivity extends AppCompatActivity {
                 mAuth.sendPasswordResetEmail(email)
                         .addOnCompleteListener(task -> {
                             if (task.isSuccessful()) {
-                                Toast.makeText(ForgotPassActivity.this, "Kiểm tra email để đặt lại mật khẩu", Toast.LENGTH_LONG).show();
+                                Toast.makeText(ForgotPassActivity.this, "Nếu email này đã được đăng ký, ứng dụng đã gửi email hướng dẫn đặt lại mật khẩu", Toast.LENGTH_LONG).show();
                                 finish();
                             } else {
                                 Toast.makeText(ForgotPassActivity.this, "Lỗi: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
