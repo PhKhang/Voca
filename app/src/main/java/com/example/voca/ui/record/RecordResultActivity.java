@@ -603,22 +603,19 @@ public class RecordResultActivity extends AppCompatActivity {
     }
 
     // Core function to run FFmpeg for mixing audio
+    // Core function to run FFmpeg for mixing audio
     private void createFinalMixedAudio() {
         // voiceDelayMs is updated by the SeekBar listener
+        Log.d(TAG, "Using voice delay: " + voiceDelayMs + " ms"); // Check the final ms value
 
         // --- Input File Validation ---
-        if (originalRecordingPath == null || backgroundMusicPath == null) {
-            //Toast.makeText(this, "Lỗi: Đường dẫn file đầu vào không hợp lệ.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        File originalFile = new File(originalRecordingPath);
-        File musicFile = new File(backgroundMusicPath);
-        if (!originalFile.exists() || !musicFile.exists()) {
-            //Toast.makeText(this, "Lỗi: Một hoặc cả hai file âm thanh không tồn tại.", Toast.LENGTH_SHORT).show();
+        if (originalRecordingPath == null || backgroundMusicPath == null
+                || !new File(originalRecordingPath).exists() || !new File(backgroundMusicPath).exists()) {
+           // Toast.makeText(this, "Lỗi: File đầu vào không hợp lệ hoặc không tồn tại.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Get latest effect parameters
+        // Get latest effect parameters from SeekBars
         updateEffectParametersFromSeekBars();
 
         // --- Output File Setup ---
@@ -633,98 +630,118 @@ public class RecordResultActivity extends AppCompatActivity {
 
         // --- Build FFmpeg Filter Complex Graph ---
         StringBuilder filterGraph = new StringBuilder();
-        String voiceInput = "[0:a]";
-        String musicInput = "[1:a]";
-        String lastVoiceFilterOutput = voiceInput;
+        String voiceInput = "[0:a]"; // Input stream from the first file (voice recording)
+        String musicInput = "[1:a]"; // Input stream from the second file (background music)
+        String currentVoiceLabel = voiceInput; // Label for the current state of the voice stream
+        String currentMusicLabel = musicInput; // Label for the current state of the music stream
 
-        // 1. Apply Voice Effects
-        filterGraph.append(String.format(Locale.US, "%svolume=volume=%.2f[vol];", lastVoiceFilterOutput, currentVolume));
-        lastVoiceFilterOutput = "[vol]";
+        // 1. Apply Voice Effects (Sequentially, updating currentVoiceLabel)
+        filterGraph.append(String.format(Locale.US, "%s volume=volume=%.2f [vol_out];", currentVoiceLabel, currentVolume));
+        currentVoiceLabel = "[vol_out]"; // Update label after volume filter
+
         if (Math.abs(currentBassGain) > 0.1) {
-            filterGraph.append(String.format(Locale.US, "%sbass=g=%d:f=100:w=0.5[bass];", lastVoiceFilterOutput, currentBassGain));
-            lastVoiceFilterOutput = "[bass]";
+            filterGraph.append(String.format(Locale.US, "%s bass=g=%d:f=100:w=0.5 [bass_out];", currentVoiceLabel, currentBassGain));
+            currentVoiceLabel = "[bass_out]"; // Update label after bass filter
         }
         if (Math.abs(currentTrebleGain) > 0.1) {
-            filterGraph.append(String.format(Locale.US, "%streble=g=%d:f=3000:w=0.5[treble];", lastVoiceFilterOutput, currentTrebleGain));
-            lastVoiceFilterOutput = "[treble]";
+            filterGraph.append(String.format(Locale.US, "%s treble=g=%d:f=3000:w=0.5 [treble_out];", currentVoiceLabel, currentTrebleGain));
+            currentVoiceLabel = "[treble_out]"; // Update label after treble filter
         }
         if (currentEchoDelay > 0 && currentEchoDecay > 0.01) {
-            filterGraph.append(String.format(Locale.US, "%saecho=input_gain=0.8:output_gain=0.6:delays=%d:decays=%.2f[echo];", lastVoiceFilterOutput, currentEchoDelay, currentEchoDecay));
-            lastVoiceFilterOutput = "[echo]";
+            // Use correct aecho syntax: delays=...:decays=...
+            filterGraph.append(String.format(Locale.US, "%s aecho=delays=%d:decays=%.2f [echo_out];", currentVoiceLabel, currentEchoDelay, currentEchoDecay));
+            currentVoiceLabel = "[echo_out]"; // Update label only if echo is applied
         }
+        // currentVoiceLabel now holds the label of the fully processed voice stream
 
-        String finalVoiceStream = "[final_voice]";
-        filterGraph.append(String.format(Locale.US, "%s anull %s;", lastVoiceFilterOutput, finalVoiceStream));
-        String finalMusicStream = "[final_music]";
-        filterGraph.append(String.format(Locale.US, "%s anull %s;", musicInput, finalMusicStream));
+        // 2. Apply FIXED Volume Reduction to Background Music
+        String reducedMusicLabel = "[music_reduced]"; // Label for music after volume reduction
+        filterGraph.append(String.format(Locale.US, "%s volume=volume=%.1f %s;", currentMusicLabel, 0.7f, reducedMusicLabel));
+        currentMusicLabel = reducedMusicLabel; // Update music label
 
-        // 2. Apply Synchronization Delay (adelay)
-        String streamToMix1;
-        String streamToMix2;
-        if (voiceDelayMs > 0) { // Voice late -> Delay voice
-            filterGraph.append(String.format(Locale.US, "%s adelay=%d|%d [delayed_voice];", finalVoiceStream, voiceDelayMs, voiceDelayMs));
-            streamToMix1 = "[delayed_voice]";
-            streamToMix2 = finalMusicStream;
-        } else if (voiceDelayMs < 0) { // Voice early -> Delay music
+        // 3. Apply Synchronization Delay (adelay) if needed
+        String voiceStreamForMix = currentVoiceLabel; // Default voice stream for mixing
+        String musicStreamForMix = currentMusicLabel; // Default music stream for mixing
+
+        if (voiceDelayMs > 0) { // Voice is late -> Delay the final voice stream
+            String delayedVoiceLabel = "[delayed_voice]";
+            // Apply delay using the correct syntax (delay|delay)
+            filterGraph.append(String.format(Locale.US, "%s adelay=%d|%d %s;", voiceStreamForMix, voiceDelayMs, voiceDelayMs, delayedVoiceLabel));
+            voiceStreamForMix = delayedVoiceLabel; // Update the voice stream label for mixing
+        } else if (voiceDelayMs < 0) { // Voice is early -> Delay the final music stream
             int musicDelayMs = Math.abs(voiceDelayMs);
-            filterGraph.append(String.format(Locale.US, "%s adelay=%d|%d [delayed_music];", finalMusicStream, musicDelayMs, musicDelayMs));
-            streamToMix1 = finalVoiceStream;
-            streamToMix2 = "[delayed_music]";
-        } else { // No delay
-            streamToMix1 = finalVoiceStream;
-            streamToMix2 = finalMusicStream;
+            String delayedMusicLabel = "[delayed_music]";
+            // Apply delay using the correct syntax (delay|delay)
+            filterGraph.append(String.format(Locale.US, "%s adelay=%d|%d %s;", musicStreamForMix, musicDelayMs, musicDelayMs, delayedMusicLabel));
+            musicStreamForMix = delayedMusicLabel; // Update the music stream label for mixing
         }
+        // If voiceDelayMs == 0, voiceStreamForMix and musicStreamForMix remain unchanged
 
-        // 3. Mix the final streams
+        // 4. Mix the final voice and music streams
+        // Use the potentially delayed stream labels (voiceStreamForMix, musicStreamForMix)
         filterGraph.append(String.format(Locale.US, "%s %s amix=inputs=2:duration=first:dropout_transition=3 [aout]",
-                streamToMix1, streamToMix2));
+                voiceStreamForMix, musicStreamForMix));
 
         // --- Construct FFmpeg Command ---
         String ffmpegCommand = String.format(Locale.US,
                 "-y -i \"%s\" -i \"%s\" -filter_complex \"%s\" -map \"[aout]\" -c:a libmp3lame -q:a 2 \"%s\"",
                 originalRecordingPath, backgroundMusicPath, filterGraph.toString(), outputFilePath
         );
+        // Log the filtergraph for easier debugging
+        Log.i(TAG, "Filtergraph:\n" + filterGraph.toString());
         Log.i(TAG, "Executing FFmpeg command with delay (" + voiceDelayMs + "ms):\n" + ffmpegCommand);
 
         // --- Execute FFmpeg Asynchronously ---
         ProgressDialog progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Đang hoàn thiện bản thu...");
-        progressDialog.setCancelable(false);
+        progressDialog.setCancelable(false); // Prevent cancellation during FFmpeg execution
         progressDialog.show();
-        setExecutionInProgress(true);
+
+        setExecutionInProgress(true); // Disable UI controls
 
         FFmpegKit.executeAsync(ffmpegCommand, session -> {
             final SessionState state = session.getState();
             final ReturnCode returnCode = session.getReturnCode();
+
+            // Ensure UI updates happen on the main thread
             runOnUiThread(() -> {
-                if (progressDialog.isShowing()) { progressDialog.dismiss(); }
-                setExecutionInProgress(false);
+                // Safely dismiss the progress dialog
+                if (progressDialog.isShowing()) {
+                    progressDialog.dismiss();
+                }
+                setExecutionInProgress(false); // Re-enable UI controls
+
                 if (ReturnCode.isSuccess(returnCode)) {
                     Log.i(TAG, "FFmpeg final mix completed successfully.");
                     File resultFile = new File(outputFilePath);
+                    // Verify the output file exists and has content
                     if (resultFile.exists() && resultFile.length() > 0) {
                         //Toast.makeText(RecordResultActivity.this, "Hoàn tất trộn âm thanh!", Toast.LENGTH_SHORT).show();
-                        deletePreviousFinalFile();
-                        finalMixedAudioPath = outputFilePath;
-                        prepareAndPlayMediaPlayer(finalMixedAudioPath);
+                        deletePreviousFinalFile(); // Clean up any old mix file
+                        finalMixedAudioPath = outputFilePath; // Store the path to the new file
+                        prepareAndPlayMediaPlayer(finalMixedAudioPath); // Prepare and start playback
                     } else {
-                        Log.e(TAG, "FFmpeg success but output file invalid: " + outputFilePath);
-                        //.makeText(RecordResultActivity.this, "Lỗi: Không tạo được file cuối cùng.", Toast.LENGTH_LONG).show();
-                        finalMixedAudioPath = null;
-                        setPlaybackControlsEnabled(false);
+                        // Handle case where FFmpeg reports success but file is invalid
+                        Log.e(TAG, "FFmpeg success reported but output file is invalid: " + outputFilePath);
+                        //Toast.makeText(RecordResultActivity.this, "Lỗi: Không tạo được file âm thanh cuối cùng.", Toast.LENGTH_LONG).show();
+                        finalMixedAudioPath = null; // Invalidate the path
+                        setPlaybackControlsEnabled(false); // Disable playback controls
                     }
                 } else {
+                    // Handle FFmpeg execution failure
                     Log.e(TAG, String.format("FFmpeg process failed! State: %s, RC: %s", state, returnCode));
+                    // Log the full FFmpeg output - CRITICAL for debugging
                     Log.e(TAG, "FFmpeg Full Output Logs:\n" + session.getAllLogsAsString());
+                    // Provide a user-friendly error message including the return code
                     String errorDetail = returnCode != null ? returnCode.toString() : "Unknown Error";
-                    //Toast.makeText(RecordResultActivity.this, "Lỗi xử lý âm thanh (" + errorDetail + ").", Toast.LENGTH_LONG).show();
-                    finalMixedAudioPath = null;
-                    resetMediaPlayer();
-                    setPlaybackControlsEnabled(false);
+                    //Toast.makeText(RecordResultActivity.this, "Lỗi khi xử lý âm thanh (" + errorDetail + "). Vui lòng kiểm tra log.", Toast.LENGTH_LONG).show();
+                    finalMixedAudioPath = null; // Invalidate the path on failure
+                    resetMediaPlayer(); // Reset the media player state
+                    setPlaybackControlsEnabled(false); // Disable playback controls
                 }
             });
         });
-    }
+    } // End of createFinalMixedAudio
 
     // Deletes the previously generated final mixed audio file
     private void deletePreviousFinalFile() {
