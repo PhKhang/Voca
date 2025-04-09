@@ -78,7 +78,6 @@ public class UsersManagementActivity extends AppCompatActivity {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                searchUsersByUsername(query);
                 return true;
             }
 
@@ -86,11 +85,14 @@ public class UsersManagementActivity extends AppCompatActivity {
             public boolean onQueryTextChange(String newText) {
                 if (newText.isEmpty()) {
                     userAdapter.updateData(users);
+                } else {
+                    searchUsersByUsername(newText);
                 }
                 return true;
             }
         });
     }
+
 
     private void setupRootViewClickListener() {
         findViewById(R.id.root_layout).setOnClickListener(v -> {
@@ -165,17 +167,13 @@ public class UsersManagementActivity extends AppCompatActivity {
     }
 
     private void searchUsersByUsername(String query) {
-//        userBUS.searchUsersByUsername(query, new UserBUS.OnUsersFetchedListener() {
-//            @Override
-//            public void onUsersFetched(List<UserDTO> fetchedUsers) {
-//                userAdapter.updateData(fetchedUsers);
-//            }
-//
-//            @Override
-//            public void onError(String errorMessage) {
-//                showToast(errorMessage);
-//            }
-//        });
+        List<UserDTO> filteredUsers = new ArrayList<>();
+        for (UserDTO user : users) {
+            if (user.getUsername() != null && user.getUsername().toLowerCase().contains(query.toLowerCase())) {
+                filteredUsers.add(user);
+            }
+        }
+        userAdapter.updateData(filteredUsers);
     }
 
     private void showLoadingDialog() {

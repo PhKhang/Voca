@@ -87,7 +87,6 @@ public class SongsManagementActivity extends AppCompatActivity {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                searchSongsByTitle(query);
                 return true;
             }
 
@@ -95,6 +94,8 @@ public class SongsManagementActivity extends AppCompatActivity {
             public boolean onQueryTextChange(String newText) {
                 if (newText.isEmpty()) {
                     songAdapter.updateData(songs);
+                } else {
+                    searchSongsByTitle(newText);
                 }
                 return true;
             }

@@ -92,15 +92,34 @@ public class DashboardFragment extends Fragment {
         if (getArguments() != null) {
             priorityPostId = getArguments().getString("priorityPostId");
         }
+
         sharedPostViewModel.fetchAllPosts(priorityPostId);
+
+        String finalPriorityPostId = priorityPostId;
 
         sharedPostViewModel.getAllPostsLiveData().observe(getViewLifecycleOwner(), posts -> {
             Log.d("DashboardFragment", "LiveData updated, size: " + (posts != null ? posts.size() : 0));
             if (posts != null) {
-                List<PostDTO> reversedPosts = new ArrayList<>(posts);
-                Collections.reverse(reversedPosts);
+                List<PostDTO> sortedPosts = new ArrayList<>(posts);
+                Collections.reverse(sortedPosts);
 
-                postAdapter.updateData(reversedPosts);
+                if (finalPriorityPostId != null) {
+                    PostDTO priorityPost = null;
+
+                    for (PostDTO post : sortedPosts) {
+                        if (finalPriorityPostId.equals(post.get_id())) {
+                            priorityPost = post;
+                            break;
+                        }
+                    }
+
+                    if (priorityPost != null) {
+                        sortedPosts.remove(priorityPost);
+                        sortedPosts.add(0, priorityPost);
+                    }
+                }
+
+                postAdapter.updateData(sortedPosts);
             }
         });
 

@@ -15,6 +15,8 @@ import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher; // Needed for caption dialog
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText; // Needed for caption dialog
 import android.widget.SeekBar;
@@ -389,48 +391,39 @@ public class RecordResultActivity extends AppCompatActivity {
     // Shows dialog for entering post caption
     private void showCreatePostDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Tạo bài đăng mới");
-
-        final EditText inputCaption = new EditText(this);
-        inputCaption.setHint("Nhập tiêu đề bài đăng (tối đa 150 ký tự)...");
-        int paddingDp = 16;
-        float density = getResources().getDisplayMetrics().density;
-        int paddingPixel = (int)(paddingDp * density);
-        inputCaption.setPadding(paddingPixel, paddingPixel, paddingPixel, paddingPixel);
-        // inputCaption.setFilters(new InputFilter[] { new InputFilter.LengthFilter(150) }); // Optional length limit
-
-        builder.setView(inputCaption);
-        builder.setPositiveButton("Đăng", null); // Override listener later
-        builder.setNegativeButton("Hủy", (dialog, which) -> dialog.dismiss());
-
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_create_post, null);
+        builder.setView(dialogView);
         AlertDialog dialog = builder.create();
 
-        dialog.setOnShowListener(dialogInterface -> {
-            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            positiveButton.setEnabled(false); // Initially disable
+        EditText inputCaption = dialogView.findViewById(R.id.inputCaption);
+        Button btnCancel = dialogView.findViewById(R.id.btnCancel);
+        Button btnPost = dialogView.findViewById(R.id.btnPost);
 
-            inputCaption.addTextChangedListener(new TextWatcher() {
-                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-                @Override public void afterTextChanged(Editable s) {
-                    positiveButton.setEnabled(s != null && s.toString().trim().length() > 0);
-                }
-            });
+        inputCaption.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
+                btnPost.setEnabled(s != null && s.toString().trim().length() > 0);
+            }
+        });
 
-            positiveButton.setOnClickListener(v -> {
-                String caption = inputCaption.getText().toString().trim();
-                if (!caption.isEmpty()) {
-                    if (finalMixedAudioPath != null && new File(finalMixedAudioPath).exists()) {
-                        uploadAndCreatePost(finalMixedAudioPath, caption);
-                        dialog.dismiss();
-                    } else {
-                        //Toast.makeText(RecordResultActivity.this, "Lỗi: File âm thanh không còn tồn tại.", Toast.LENGTH_SHORT).show();
-                    }
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnPost.setOnClickListener(v -> {
+            String caption = inputCaption.getText().toString().trim();
+            if (!caption.isEmpty()) {
+                if (finalMixedAudioPath != null && new File(finalMixedAudioPath).exists()) {
+                    uploadAndCreatePost(finalMixedAudioPath, caption);
+                    dialog.dismiss();
                 } else {
                     //Toast.makeText(RecordResultActivity.this, "Vui lòng nhập tiêu đề", Toast.LENGTH_SHORT).show();
+                    // Toast.makeText(this, "Lỗi: File âm thanh không còn tồn tại.", Toast.LENGTH_SHORT).show();
                 }
-            });
+            } else {
+                // Toast.makeText(this, "Vui lòng nhập tiêu đề", Toast.LENGTH_SHORT).show();
+            }
         });
+
         dialog.show();
     }
 
