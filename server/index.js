@@ -265,7 +265,7 @@ app.post('/likes', async (req, res) => {
             return res.status(404).json({ error: 'Post not found' });
         }
 
-        if (String(req.body.recipient_id) !== String(req.body.user_id)) {
+        if (String(req.body.recipient_id) !== String(req.body.sender_id)) {
             const notification = new Notification({
                 recipient_id: post.user_id,
                 sender_id: req.body.user_id,
