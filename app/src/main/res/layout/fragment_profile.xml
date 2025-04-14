@@ -83,7 +83,8 @@
                     android:translationZ="10dp"
                     android:layout_alignEnd="@id/avatarFrame"
                     android:layout_alignBottom="@id/avatarFrame"
-                    android:src="@drawable/edit_icon"/>
+                    android:src="@drawable/edit_icon"
+                    app:iconTint="?attr/colorOnBackground"/>
             </RelativeLayout>
 
             <!-- Thông tin người dùng -->
