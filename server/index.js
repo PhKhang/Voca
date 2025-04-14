@@ -264,13 +264,18 @@ app.post('/likes', async (req, res) => {
             await Like.findByIdAndDelete(like._id);
             return res.status(404).json({ error: 'Post not found' });
         }
-        const notification = new Notification({
-            recipient_id: post.user_id,
-            sender_id: req.body.user_id,
-            post_id: req.body.post_id,
-            type: 'like'
-        });
-        await notification.save();
+
+        if (String(post.user_id) !== String(req.body.user_id)) {
+            const notification = new Notification({
+                recipient_id: post.user_id,
+                sender_id: req.body.user_id,
+                post_id: req.body.post_id,
+                type: 'like',
+                is_read: false
+            });
+            await notification.save();
+        }
+
         const populatedLike = await Like.findById(like._id)
             .populate('user_id')
             .populate({ path: 'post_id', populate: [{ path: 'user_id' }, { path: 'song_id', populate: { path: 'uploaded_by' } }] });
