@@ -649,8 +649,13 @@ app.post('/songs/:id/record', async (req, res) => {
     }
 });
 
+const admin = require('firebase-admin');
 
-const admin = require('firebase-admin'); 
+const serviceAccount = require('../serviceAccountKey.json'); 
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 
 async function sendPushNotification(user_id, post_id) {
     try {
