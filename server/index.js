@@ -274,6 +274,8 @@ app.post('/likes', async (req, res) => {
                 is_read: false
             });
             await notification.save();
+
+            await sendPushNotification(post.user_id, req.body.post_id);
         }
 
         const populatedLike = await Like.findById(like._id)
@@ -646,6 +648,33 @@ app.post('/songs/:id/record', async (req, res) => {
         res.status(400).json({ error: 'Failed to record song', details: err.message });
     }
 });
+
+
+const admin = require('firebase-admin'); 
+
+async function sendPushNotification(user_id, post_id) {
+    try {
+        const user = await User.findById(user_id); 
+        if (!user || !user.firebase_uid) return;
+
+        // Cấu hình thông báo
+        const message = {
+            token: user.firebase_uid,  
+            notification: {
+                title: 'Bạn có một lượt thích mới',
+                body: `Bài viết của bạn đã được thích.`,
+            },
+            data: {
+                post_id: post_id,  
+            }
+        };
+
+        await admin.messaging().send(message);
+        console.log('Push notification sent successfully!');
+    } catch (err) {
+        console.error('Error sending push notification:', err);
+    }
+}
 
 // Khởi động server
 const PORT = process.env.PORT || 3000;
