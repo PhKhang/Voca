@@ -95,6 +95,7 @@ app.delete('/delete', async (req, res) => {
 // Định nghĩa Schema
 const userSchema = new mongoose.Schema({
     firebase_uid: { type: String, required: true, unique: true },
+    fcmTokens: [{ type: String }],
     username: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     avatar: { type: String },
@@ -256,26 +257,40 @@ app.put('/rooms/:id', async (req, res) => {
 
 // CRUD APIs for Notifications
 app.post('/likes', async (req, res) => {
+    let like; 
     try {
-        const like = new Like(req.body);
-        await like.save();
-        const post = await Post.findByIdAndUpdate(req.body.post_id, { $inc: { likes: 1 } }, { new: true });
+        const { post_id, user_id } = req.body;
+
+        if (!post_id || !user_id) {
+            return res.status(400).json({ error: 'post_id and user_id are required' });
+        }
+
+        const post = await Post.findById(post_id);
         if (!post) {
-            await Like.findByIdAndDelete(like._id);
             return res.status(404).json({ error: 'Post not found' });
         }
 
-        if (String(req.body.recipient_id) !== String(req.body.sender_id)) {
+        const existingLike = await Like.findOne({ post_id, user_id });
+        if (existingLike) {
+            return res.status(400).json({ error: 'User already liked this post' });
+        }
+
+        like = new Like({ post_id, user_id });
+        await like.save();
+
+        await Post.findByIdAndUpdate(post_id, { $inc: { likes: 1 } }, { new: true });
+
+        if (String(post.user_id) !== String(user_id)) {
             const notification = new Notification({
                 recipient_id: post.user_id,
-                sender_id: req.body.user_id,
-                post_id: req.body.post_id,
+                sender_id: user_id,
+                post_id,
                 type: 'like',
                 is_read: false
             });
             await notification.save();
 
-            await sendPushNotification(post.user_id, req.body.post_id);
+            await sendPushNotification(post.user_id, post_id);
         }
 
         const populatedLike = await Like.findById(like._id)
@@ -285,6 +300,9 @@ app.post('/likes', async (req, res) => {
         res.status(201).json(populatedLike);
     } catch (err) {
         console.error('Error creating like:', err);
+        if (like && like._id) {
+            await Like.findByIdAndDelete(like._id);
+        }
         res.status(400).json({ error: 'Failed to create like', details: err.message });
     }
 });
@@ -403,6 +421,37 @@ app.delete('/users/:id', async (req, res) => {
     } catch (err) {
         console.error('Error deleting user:', err);
         res.status(500).json({ error: 'Failed to delete user', details: err.message });
+    }
+});
+
+app.patch('/users/:id/fcm-token', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { fcmToken } = req.body;
+
+        if (!fcmToken) {
+            return res.status(400).json({ error: 'fcmToken is required' });
+        }
+
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        if (!user.fcmTokens) {
+            user.fcmTokens = [];
+        }
+
+        if (!user.fcmTokens.includes(fcmToken)) {
+            user.fcmTokens.push(fcmToken);
+            await user.save();
+        }
+
+        console.log('FCM token updated for user:', id);
+        res.json(user);
+    } catch (error) {
+        console.error('Error updating FCM token:', error);
+        res.status(500).json({ error: 'Failed to update FCM token', details: error.message });
     }
 });
 
@@ -659,23 +708,38 @@ admin.initializeApp({
 
 async function sendPushNotification(user_id, post_id) {
     try {
-        const user = await User.findById(user_id); 
-        if (!user || !user.firebase_uid) return;
+        const user = await User.findById(user_id);
+        if (!user || !user.fcmTokens || user.fcmTokens.length === 0) {
+            console.log('No FCM tokens found for user_id:', user_id);
+            return;
+        }
 
-        // Cấu hình thông báo
-        const message = {
-            token: user.firebase_uid,  
+        const messages = user.fcmTokens.map(token => ({
+            token,
             notification: {
-                title: 'Bạn có một lượt thích mới',
-                body: `Bài viết của bạn đã được thích.`,
+                title: `${user.username} đã thích bài viết của bạn`,
+                body: `Bài viết của bạn đã nhận được một lượt thích mới.`,
             },
             data: {
-                post_id: post_id,  
+                post_id: post_id.toString(),
             }
-        };
+        }));
 
-        await admin.messaging().send(message);
-        console.log('Push notification sent successfully!');
+        const results = await Promise.all(messages.map(message =>
+            admin.messaging().send(message).catch(err => ({ error: err }))
+        ));
+
+        const invalidTokens = results
+            .map((result, index) => result.error && result.error.code === 'messaging/registration-token-not-registered' ? user.fcmTokens[index] : null)
+            .filter(token => token);
+
+        if (invalidTokens.length > 0) {
+            user.fcmTokens = user.fcmTokens.filter(t => !invalidTokens.includes(t));
+            await user.save();
+            console.log('Removed invalid tokens:', invalidTokens);
+        }
+
+        console.log('Push notifications sent successfully to:', user.fcmTokens);
     } catch (err) {
         console.error('Error sending push notification:', err);
     }
