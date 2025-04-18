@@ -294,9 +294,6 @@ app.post('/likes', async (req, res) => {
         res.status(201).json(populatedLike);
     } catch (err) {
         console.error('Error creating like:', err);
-        if (like && like._id) {
-            await Like.findByIdAndDelete(like._id);
-        }
         res.status(400).json({ error: 'Failed to create like', details: err.message });
     }
 });
