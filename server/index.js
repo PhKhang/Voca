@@ -257,40 +257,34 @@ app.put('/rooms/:id', async (req, res) => {
 
 // CRUD APIs for Notifications
 app.post('/likes', async (req, res) => {
-    let like; 
     try {
-        const { post_id, user_id } = req.body;
-
-        if (!post_id || !user_id) {
-            return res.status(400).json({ error: 'post_id and user_id are required' });
-        }
-
-        const post = await Post.findById(post_id);
+        const like = new Like(req.body);
+        await like.save();
+        const post = await Post.findByIdAndUpdate(req.body.post_id, { $inc: { likes: 1 } }, { new: true });
         if (!post) {
+            await Like.findByIdAndDelete(like._id);
             return res.status(404).json({ error: 'Post not found' });
         }
 
-        const existingLike = await Like.findOne({ post_id, user_id });
-        if (existingLike) {
-            return res.status(400).json({ error: 'User already liked this post' });
+        if (!req.body.recipient_id || !req.body.sender_id || !req.body.post_id) {
+            return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        like = new Like({ post_id, user_id });
-        await like.save();
-
-        await Post.findByIdAndUpdate(post_id, { $inc: { likes: 1 } }, { new: true });
-
-        if (String(post.user_id) !== String(user_id)) {
+        if (String(req.body.recipient_id) !== String(req.body.sender_id)) {
             const notification = new Notification({
                 recipient_id: post.user_id,
-                sender_id: user_id,
-                post_id,
+                sender_id: req.body.user_id,
+                post_id: req.body.post_id,
                 type: 'like',
                 is_read: false
             });
             await notification.save();
 
-            await sendPushNotification(post.user_id, post_id);
+            try {
+                await sendPushNotification(notification.sender_id, notification.post_id);
+            } catch (err) {
+                console.error('Error sending push notification:', err);
+            }
         }
 
         const populatedLike = await Like.findById(like._id)
