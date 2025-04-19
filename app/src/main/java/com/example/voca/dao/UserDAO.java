@@ -50,4 +50,10 @@ public class UserDAO {
         Call<Void> call = userApi.deleteUser(id);
         call.enqueue(callback);
     }
+
+    public void updateFcmToken(String id, String fcmToken, Callback<UserDTO> callback) {
+        UserApi.FcmTokenUpdate tokenUpdate = new UserApi.FcmTokenUpdate(fcmToken);
+        Call<UserDTO> call = userApi.updateFcmToken(id, tokenUpdate);
+        call.enqueue(callback);
+    }
 }

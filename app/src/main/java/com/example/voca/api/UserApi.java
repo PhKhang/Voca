@@ -3,6 +3,7 @@ package com.example.voca.api;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
+import retrofit2.http.PATCH;
 import retrofit2.http.POST;
     import retrofit2.http.PUT;
 import retrofit2.http.DELETE;
@@ -29,6 +30,26 @@ public interface UserApi {
     @PUT("users/{id}")
     Call<UserDTO> updateUser(@Path("id") String id, @Body UserDTO user);
 
+    @PATCH("users/{id}/fcm-token")
+    Call<UserDTO> updateFcmToken(@Path("id") String id, @Body FcmTokenUpdate fcmTokenUpdate);
+
     @DELETE("users/{id}")
     Call<Void> deleteUser(@Path("id") String id);
+
+    public class FcmTokenUpdate {
+        private String fcmToken;
+
+        public FcmTokenUpdate(String fcmToken) {
+            this.fcmToken = fcmToken;
+        }
+
+        public String getFcmToken() {
+            return fcmToken;
+        }
+
+        public void setFcmToken(String fcmToken) {
+            this.fcmToken = fcmToken;
+        }
+    }
 }
+

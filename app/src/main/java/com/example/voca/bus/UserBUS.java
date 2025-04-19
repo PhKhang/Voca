@@ -134,6 +134,24 @@ public class UserBUS {
         });
     }
 
+    public void updateFcmToken(String userId, String fcmToken, OnUpdateFcmTokenListener listener) {
+        userDAO.updateFcmToken(userId, fcmToken, new Callback<UserDTO>() {
+            @Override
+            public void onResponse(Call<UserDTO> call, Response<UserDTO> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    listener.onSuccess();
+                } else {
+                    listener.onError("Cập nhật token thất bại: " + response.message());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UserDTO> call, Throwable t) {
+                listener.onError(t.getMessage());
+            }
+        });
+    }
+
     // Các interface listener để xử lý kết quả
     public interface OnUsersFetchedListener {
         void onUsersFetched(List<UserDTO> users);
@@ -161,6 +179,11 @@ public class UserBUS {
 
     public interface OnUserDeletedListener {
         void onUserDeleted();
+        void onError(String error);
+    }
+
+    public interface OnUpdateFcmTokenListener {
+        void onSuccess();
         void onError(String error);
     }
 }

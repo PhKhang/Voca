@@ -3,6 +3,7 @@ package com.example.voca.dto;
 public class UserDTO {
     private String _id;
     private String firebase_uid;
+    private String fcmToken;
     private String username;
     private String email;
     private String avatar;
@@ -31,6 +32,9 @@ public class UserDTO {
 
     public String getFirebase_uid() { return firebase_uid; }
     public void setFirebase_uid(String firebase_uid) { this.firebase_uid = firebase_uid; }
+
+    public void setFcmToken(String fcmToken) { this.fcmToken = fcmToken; }
+    public String getFcmToken() { return fcmToken; }
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }

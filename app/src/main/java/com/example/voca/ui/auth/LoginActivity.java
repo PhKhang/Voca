@@ -35,6 +35,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.List;
 
@@ -202,18 +203,50 @@ public class LoginActivity extends AppCompatActivity {
         builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());
         builder.show();
     }
-    public void updateCurrentUser(String firebaseUID){
+    public void updateCurrentUser(String firebaseUID) {
         userBUS.fetchUserByFirebaseUID(firebaseUID, new UserBUS.OnUserFetchedByFirebaseUIDListener() {
             @Override
             public void onUserFetched(List<UserDTO> user) {
                 UserDTO currentUser = user.get(0);
-//                Log.d("fetch user data success", user.toString());
-
-                // Lưu userId để dùng trong quá trình sử dụng ứng dụng
                 SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
                 SharedPreferences.Editor editor = prefs.edit();
                 editor.putString("userId", currentUser.get_id());
                 editor.apply();
+
+                String pendingToken = prefs.getString("pendingFcmToken", null);
+                if (pendingToken != null) {
+                    userBUS.updateFcmToken(currentUser.get_id(), pendingToken, new UserBUS.OnUpdateFcmTokenListener() {
+                        @Override
+                        public void onSuccess() {
+                            Log.d("FCM Token", "Pending token updated successfully");
+                            editor.remove("pendingFcmToken").apply();
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            Log.e("FCM Token", "Failed to update pending token: " + error);
+                        }
+                    });
+                }
+
+                FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        String currentToken = task.getResult();
+                        userBUS.updateFcmToken(currentUser.get_id(), currentToken, new UserBUS.OnUpdateFcmTokenListener() {
+                            @Override
+                            public void onSuccess() {
+                                Log.d("FCM Token", "Current token updated successfully");
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                Log.e("FCM Token", "Failed to update current token: " + error);
+                            }
+                        });
+                    } else {
+                        Log.e("FCM Token", "Failed to get current token", task.getException());
+                    }
+                });
             }
 
             @Override
