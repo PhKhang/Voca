@@ -281,7 +281,7 @@ app.post('/likes', async (req, res) => {
         
                 const notiId = savedNotification._id;
         
-                await sendPushNotification(savedNotification.sender_id, savedNotification.post_id, notiId);
+                await sendPushNotification(savedNotification.recipient_id, savedNotification.post_id, notiId);
             } catch (err) {
                 console.error('Error creating notification or sending push:', err);
             }
