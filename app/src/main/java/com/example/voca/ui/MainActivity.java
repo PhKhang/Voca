@@ -32,6 +32,8 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private MaterialToolbar toolbar;
     private ActivityResultLauncher<String> requestPermissionLauncher;
+    private NavController navController;
+    private BottomNavigationView navView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        BottomNavigationView navView = findViewById(R.id.nav_view);
+        navView = findViewById(R.id.nav_view);
 //        Button pick = findViewById(R.id.pick);
 //        pick.setOnClickListener(new View.OnClickListener() {
 //            @Override
@@ -110,13 +112,15 @@ public class MainActivity extends AppCompatActivity {
         toolbar = findViewById(R.id.topAppBar);
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(R.id.navigation_home, R.id.navigation_sing, R.id.navigation_dashboard, R.id.navigation_notifications, R.id.navigation_profile).build();
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment_activity_main);
-        NavController navController = navHostFragment.getNavController();
+        navController = navHostFragment.getNavController();
 //        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_activity_main);
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(binding.navView, navController);
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
             toolbar.setTitle(destination.getLabel());
         });
+
+        handleIntent(getIntent());
 //        topAppBar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
 //            @Override
 //            public boolean onMenuItemClick(MenuItem menuItem) {
@@ -150,5 +154,22 @@ public class MainActivity extends AppCompatActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); // Xóa ngăn xếp
         startActivity(intent);
         finish();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIntent(intent);
+    }
+
+    private void handleIntent(Intent intent) {
+        if (intent != null && "notifications".equals(intent.getStringExtra("navigate_to"))) {
+            if (navController.getCurrentDestination() == null ||
+                    navController.getCurrentDestination().getId() != R.id.navigation_notifications) {
+                navController.navigate(R.id.navigation_notifications);
+                navView.setSelectedItemId(R.id.navigation_notifications);
+            }
+        }
     }
 }

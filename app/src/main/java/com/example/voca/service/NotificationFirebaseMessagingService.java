@@ -39,11 +39,7 @@ public class NotificationFirebaseMessagingService extends FirebaseMessagingServi
         String title = remoteMessage.getNotification() != null ? remoteMessage.getNotification().getTitle() : "Thông báo";
         String message = remoteMessage.getNotification() != null ? remoteMessage.getNotification().getBody() : "Bạn có thông báo mới";
         String notificationId = remoteMessage.getData().get("notification_id");
-        Log.d("Noti id", notificationId);
-
-        RemoteViews notificationLayout = new RemoteViews(getPackageName(), R.layout.custom_notification_layout);
-        notificationLayout.setTextViewText(R.id.notification_username, title);
-        notificationLayout.setTextViewText(R.id.notification_content, message);
+        Log.d("Noti id", "Notification ID: " + notificationId);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             android.app.NotificationChannel channel = new android.app.NotificationChannel(
@@ -56,7 +52,8 @@ public class NotificationFirebaseMessagingService extends FirebaseMessagingServi
         }
 
         Intent intent = new Intent(this, MainActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.putExtra("navigate_to", "notifications");
         PendingIntent contentIntent = PendingIntent.getActivity(
                 this,
                 0,
@@ -64,37 +61,41 @@ public class NotificationFirebaseMessagingService extends FirebaseMessagingServi
                 PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
         );
 
-        Intent markAsReadIntent = new Intent(this, MarkAsReadNotificationReceiver.class);
-        markAsReadIntent.setAction(ACTION_MARK_AS_READ);
+        Intent markAsReadIntent = new Intent(ACTION_MARK_AS_READ);
+        markAsReadIntent.setClass(this, MarkAsReadNotificationReceiver.class);
         markAsReadIntent.putExtra("notification_id", notificationId);
         PendingIntent markAsReadPendingIntent = PendingIntent.getBroadcast(
                 this,
-                0,
+                notificationId != null ? notificationId.hashCode() : 0, // Sử dụng ID duy nhất
                 markAsReadIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
         );
 
         // Tạo thông báo
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.notification_icon)
+                .setSmallIcon(R.drawable.notification_icon_white)
                 .setContentTitle(title)
                 .setContentText(message)
-                .setContentIntent(contentIntent) // Mở MainActivity khi nhấn
+                .setContentIntent(contentIntent) // Mở MainActivity khi nhấn và vào Noti Fragment
                 .addAction(R.drawable.ic_check_24dp, "Đánh dấu đã đọc", markAsReadPendingIntent) // Thêm action
                 .setAutoCancel(true)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                .setPriority(NotificationCompat.PRIORITY_HIGH);
 
         // Kiểm tra quyền POST_NOTIFICATIONS
         NotificationManagerCompat manager = NotificationManagerCompat.from(this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, "android.permission.POST_NOTIFICATIONS")
                     == PackageManager.PERMISSION_GRANTED) {
-                manager.notify(1, builder.build());
+                int notifyId = notificationId != null ? notificationId.hashCode() : 1;
+                manager.notify(notifyId, builder.build());
+                Log.d("NotificationService", "Notification sent with ID: " + notifyId);
             } else {
                 Log.w("NotificationService", "POST_NOTIFICATIONS permission not granted");
             }
         } else {
-            manager.notify(1, builder.build());
+            int notifyId = notificationId != null ? notificationId.hashCode() : 1;
+            manager.notify(notifyId, builder.build());
+            Log.d("NotificationService", "Notification sent with ID: " + notifyId);
         }
     }
 

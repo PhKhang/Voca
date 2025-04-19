@@ -1,4 +1,5 @@
 package com.example.voca.service;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -9,9 +10,12 @@ import com.example.voca.bus.NotificationBUS;
 import com.example.voca.dto.NotificationDTO;
 
 public class MarkAsReadNotificationReceiver extends BroadcastReceiver {
+    private static final String ACTION_MARK_AS_READ = "com.example.voca.ACTION_MARK_AS_READ";
+
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (!"ACTION_MARK_AS_READ".equals(intent.getAction())) {
+        if (!ACTION_MARK_AS_READ.equals(intent.getAction())) {
+            Log.w("MarkAsReadReceiver", "Ignoring broadcast with incorrect action: " + intent.getAction());
             return;
         }
 
