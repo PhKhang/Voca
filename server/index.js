@@ -278,10 +278,7 @@ app.post('/likes', async (req, res) => {
 
             try {
                 const savedNotification = await notification.save();
-        
-                const notiId = savedNotification._id;
-        
-                await sendPushNotification(savedNotification.recipient_id, savedNotification.post_id, notiId);
+                await sendPushNotification(savedNotification.sender_id, savedNotification.post_id, savedNotification._id, savedNotification.recipient_id);
             } catch (err) {
                 console.error('Error creating notification or sending push:', err);
             }
@@ -697,24 +694,30 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
-async function sendPushNotification(user_id, post_id, notification_id) {
+async function sendPushNotification(user_id, post_id, noti_id, rcpe_id) {
     try {
-        const user = await User.findById(user_id);
-        if (!user || !user.fcmTokens || user.fcmTokens.length === 0) {
-            console.log('No FCM tokens found for user_id:', user_id);
+        const sender = await User.findById(user_id);
+        if (!sender) {
+            console.log('Sender not found for user_id:', user_id);
             return;
         }
 
-        const messages = user.fcmTokens.map(token => ({
+        const recipient = await User.findById(rcpe_id);
+        if (!recipient || !recipient.fcmTokens || recipient.fcmTokens.length === 0) {
+            console.log('No FCM tokens found for recipient_id:', rcpe_id);
+            return;
+        }
+
+        const messages = recipient.fcmTokens.map(token => ({
             token,
             notification: {
-                title: `${user.username} đã thích bài viết của bạn`,
+                title: `${sender.username} đã thích bài viết của bạn`,
                 body: `Bài viết của bạn đã nhận được một lượt thích mới.`,
             },
             data: {
                 post_id: post_id.toString(),
-                recipient_id: user_id.toString(),
-                notification_id: notification_id.toString(),
+                recipient_id: rcpe_id.toString(),
+                notification_id: noti_id.toString(),
             }
         }));
 
@@ -723,16 +726,16 @@ async function sendPushNotification(user_id, post_id, notification_id) {
         ));
 
         const invalidTokens = results
-            .map((result, index) => result.error && result.error.code === 'messaging/registration-token-not-registered' ? user.fcmTokens[index] : null)
+            .map((result, index) => result.error && result.error.code === 'messaging/registration-token-not-registered' ? recipient.fcmTokens[index] : null)
             .filter(token => token);
 
         if (invalidTokens.length > 0) {
-            user.fcmTokens = user.fcmTokens.filter(t => !invalidTokens.includes(t));
-            await user.save();
+            recipient.fcmTokens = recipient.fcmTokens.filter(t => !invalidTokens.includes(t));
+            await recipient.save();
             console.log('Removed invalid tokens:', invalidTokens);
         }
 
-        console.log('Push notifications sent successfully to:', user.fcmTokens);
+        console.log('Push notifications sent successfully to:', recipient.fcmTokens);
     } catch (err) {
         console.error('Error sending push notification:', err);
     }
