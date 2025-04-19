@@ -267,12 +267,7 @@ app.post('/likes', async (req, res) => {
             return res.status(404).json({ error: 'Post not found' });
         }
 
-        if (!req.body.recipient_id || !req.body.sender_id || !req.body.post_id) {
-            console.log('Missing required fields:', req.body);
-            return res.status(400).json({ error: 'Missing required fields' });
-        }
-
-        if (String(req.body.recipient_id) !== String(req.body.sender_id)) {
+        if (String(post.user_id) !== String(req.body.user_id)) {
             const notification = new Notification({
                 recipient_id: post.user_id,
                 sender_id: req.body.user_id,
@@ -280,7 +275,6 @@ app.post('/likes', async (req, res) => {
                 type: 'like',
                 is_read: false
             });
-            console.log('Creating notification:', notification);
             console.log(await notification.save());
 
             try {
