@@ -167,7 +167,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                                         if (currentPosition != RecyclerView.NO_POSITION) {
                                             postList.get(currentPosition).setLikes(updatedPost.getLikes());
                                             holder.likeNumber.setText(Integer.toString(updatedPost.getLikes()));
-                                            notifyItemChanged(currentPosition);
+                                            //notifyItemChanged(currentPosition);
                                         }
                                     }
 
@@ -207,7 +207,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                                         if (currentPosition != RecyclerView.NO_POSITION) {
                                             postList.get(currentPosition).setLikes(updatedPost.getLikes());
                                             holder.likeNumber.setText(Integer.toString(updatedPost.getLikes()));
-                                            notifyItemChanged(currentPosition);
+                                            //notifyItemChanged(currentPosition);
                                         }
                                     }
 
