@@ -275,12 +275,15 @@ app.post('/likes', async (req, res) => {
                 type: 'like',
                 is_read: false
             });
-            console.log(await notification.save());
 
             try {
-                await sendPushNotification(notification.sender_id, notification.post_id);
+                const savedNotification = await notification.save();
+        
+                const notiId = savedNotification._id;
+        
+                await sendPushNotification(savedNotification.sender_id, savedNotification.post_id, notiId);
             } catch (err) {
-                console.error('Error sending push notification:', err);
+                console.error('Error creating notification or sending push:', err);
             }
         }
 
@@ -694,7 +697,7 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
-async function sendPushNotification(user_id, post_id) {
+async function sendPushNotification(user_id, post_id, notification_id) {
     try {
         const user = await User.findById(user_id);
         if (!user || !user.fcmTokens || user.fcmTokens.length === 0) {
@@ -710,6 +713,8 @@ async function sendPushNotification(user_id, post_id) {
             },
             data: {
                 post_id: post_id.toString(),
+                recipient_id: user_id.toString(),
+                notification_id: notification_id.toString(),
             }
         }));
 
