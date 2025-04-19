@@ -266,10 +266,8 @@ app.post('/likes', async (req, res) => {
             console.log('Post not found, like deleted:', req.body.post_id);
             return res.status(404).json({ error: 'Post not found' });
         }
-        console.log("nguoi tao post: " +  post.user_id);
-        console.log("nguoi like post: " + req.body.user_id)
-        console.log("ket qua:" + String(post.user_id) !== String(req.body.user_id))
-        if (String(post.user_id) !== String(req.body.user_id)) {
+
+        if (String(post.user_id) !== String(req.body.user_id._id)) {
             const notification = new Notification({
                 recipient_id: post.user_id,
                 sender_id: req.body.user_id,
