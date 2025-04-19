@@ -263,10 +263,12 @@ app.post('/likes', async (req, res) => {
         const post = await Post.findByIdAndUpdate(req.body.post_id, { $inc: { likes: 1 } }, { new: true });
         if (!post) {
             await Like.findByIdAndDelete(like._id);
+            console.log('Post not found, like deleted:', req.body.post_id);
             return res.status(404).json({ error: 'Post not found' });
         }
 
         if (!req.body.recipient_id || !req.body.sender_id || !req.body.post_id) {
+            console.log('Missing required fields:', req.body);
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
@@ -278,7 +280,8 @@ app.post('/likes', async (req, res) => {
                 type: 'like',
                 is_read: false
             });
-            await notification.save();
+            console.log('Creating notification:', notification);
+            console.log(await notification.save());
 
             try {
                 await sendPushNotification(notification.sender_id, notification.post_id);
