@@ -2,6 +2,9 @@ package com.example.voca.ui.room;
 
 import static androidx.constraintlayout.widget.ConstraintSet.VISIBLE;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -22,13 +25,21 @@ import androidx.fragment.app.FragmentTransaction;
 import com.example.voca.R;
 import com.example.voca.dao.RoomDAO;
 import com.example.voca.dto.RoomDTO;
+import com.example.voca.dto.SongDTO;
 import com.example.voca.ui.home.CreateRoomActivity;
-import com.example.voca.ui.home.RoomAdapter;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
+
+import java.util.Collections;
+import java.util.List;
 
 import java.io.IOException;
 import java.util.List;
@@ -37,11 +48,9 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class KaraokeRoom extends AppCompatActivity implements QueueFragment.OnGetAllSongInQueue {
+public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback {
 
     Boolean isPlaying = false;
-    private String videoId = "WCXDr38Rq20";
-    private YouTubePlayer youTubePlayerInstance;
     String roomId;
     RoomDTO currentRoom;
     ImageButton queue;
@@ -50,6 +59,9 @@ public class KaraokeRoom extends AppCompatActivity implements QueueFragment.OnGe
     ImageButton mic;
     TextView host;
     TextView roomCode;
+    ImageButton btnCopyRoomCode;
+    private String videoId = "WCXDr38Rq20";
+    private YouTubePlayer youTubePlayerInstance;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,21 +78,121 @@ public class KaraokeRoom extends AppCompatActivity implements QueueFragment.OnGe
         Intent intent = getIntent();
         roomId = intent.getExtras().getString("roomId");
 
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("room");
+
+        myRef.child(roomId).child("current").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    String currentYouTubeId = snapshot.getValue(String.class);
+                    Log.d("Room", "Current song ID: " + currentYouTubeId);
+                    assert currentYouTubeId != null;
+                    if (youTubePlayerInstance == null) {
+                        return;
+                    }
+                    youTubePlayerInstance.loadVideo(currentYouTubeId, 0);
+                    Log.d("Room", "Starting ID: " + currentYouTubeId);
+                } else {
+                    Log.d("Room", "No current song found");
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+
+
         ImageButton playButton = findViewById(R.id.play);
         queue = findViewById(R.id.queue);
         next = findViewById(R.id.next);
+        next.setOnClickListener(v -> {
+            if (youTubePlayerInstance == null) {
+                return;
+            }
+
+            if (currentRoom.getQueue().isEmpty()) {
+                Toast.makeText(this, "No songs in queue", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String currentSongId = currentRoom.getCurrent_song().getYoutube_id();
+            int currentIndex = -1;
+            for (int i = 0; i < currentRoom.getQueue().size(); i++) {
+                if (currentRoom.getQueue().get(i).getYoutube_id().equals(currentSongId)) {
+                    currentIndex = i;
+                    break;
+                }
+            }
+            if (currentIndex != -1 && currentIndex < currentRoom.getQueue().size() - 1) {
+                currentRoom.setCurrent_song(currentRoom.getQueue().get(currentIndex + 1));
+                myRef.child(roomId).child("current").setValue(currentRoom.getQueue().get(currentIndex + 1).getYoutube_id());
+                Log.d("Room", "Next song ID: " + currentRoom.getQueue().get(currentIndex + 1).getYoutube_id());
+//                youTubePlayerInstance.cueVideo(currentRoom.getCurrent_song().getYoutube_id(), 0);
+//                youTubePlayerInstance.play();
+            } else {
+                Toast.makeText(this, "No next song in queue", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         prev = findViewById(R.id.prev);
+        prev.setOnClickListener(v -> {
+            if (youTubePlayerInstance == null) {
+                return;
+            }
+
+            if (currentRoom.getQueue().isEmpty()) {
+                Toast.makeText(this, "No songs in queue", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String currentSongId = currentRoom.getCurrent_song().getYoutube_id();
+            int currentIndex = -1;
+            for (int i = 0; i < currentRoom.getQueue().size(); i++) {
+                if (currentRoom.getQueue().get(i).getYoutube_id().equals(currentSongId)) {
+                    currentIndex = i;
+                    break;
+                }
+            }
+            if (currentIndex > 0) {
+                currentRoom.setCurrent_song(currentRoom.getQueue().get(currentIndex - 1));
+                myRef.child(roomId).child("current").setValue(currentRoom.getQueue().get(currentIndex - 1).getYoutube_id());
+                Log.d("Room", "Next song ID: " + currentRoom.getQueue().get(currentIndex - 1).getYoutube_id());
+//                youTubePlayerInstance.cueVideo(currentRoom.getCurrent_song().getYoutube_id(), 0);
+//                youTubePlayerInstance.play();
+            } else {
+                Toast.makeText(this, "No previous song in queue", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         host = findViewById(R.id.host);
         roomCode = findViewById(R.id.roomCode);
+        btnCopyRoomCode = findViewById(R.id.btnCopyRoomCode);
+
+        btnCopyRoomCode.setOnClickListener(v -> {
+            String fullText = roomCode.getText().toString();
+            String textToCopy = fullText.replace("Mã phòng: ", "").trim();
+
+            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData clip = ClipData.newPlainText("Room Code", textToCopy);
+            if (clipboard != null) {
+                clipboard.setPrimaryClip(clip);
+                Toast.makeText(getApplicationContext(), "Room code copied!", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         queue.setOnClickListener(v -> {
-            QueueFragment queueFragment = new QueueFragment();
-            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-            transaction.replace(R.id.fragment_container, queueFragment);
-            queueFragment.setOnGetAllSongInQueue(this);
-            transaction.addToBackStack(null); // Optional, if you want back navigation
-            transaction.commit();
+            KotlinFragment fragment = new KotlinFragment();
 
+            fragment.setSongUpdateCallback(this);
+
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, fragment)
+                    .addToBackStack(null) // Optional, if you want back navigation
+                    .commit();
             findViewById(R.id.fragment_container).setVisibility(View.VISIBLE);
         });
 
@@ -99,7 +211,7 @@ public class KaraokeRoom extends AppCompatActivity implements QueueFragment.OnGe
         youTubePlayerView.initialize(new AbstractYouTubePlayerListener() {
             @Override
             public void onReady(@NonNull YouTubePlayer youTubePlayer) {
-                youTubePlayer.cueVideo(videoId, 0);
+//                youTubePlayer.cueVideo(videoId, 0);
                 youTubePlayerInstance = youTubePlayer;
 //                youTubePlayer.mute();
                 youTubePlayerInstance.addListener(new AbstractYouTubePlayerListener() {
@@ -121,6 +233,16 @@ public class KaraokeRoom extends AppCompatActivity implements QueueFragment.OnGe
 
         playButton.setOnClickListener(v -> {
             if (youTubePlayerInstance != null) {
+                if (currentRoom.getCurrent_song() == null) {
+                    Toast.makeText(this, "No song is playing", Toast.LENGTH_SHORT).show();
+//                    return;
+                    if (currentRoom.getQueue().isEmpty()) {
+                        Toast.makeText(this, "No songs in queue", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    currentRoom.setCurrent_song(currentRoom.getQueue().get(0));
+                    youTubePlayerInstance.cueVideo(currentRoom.getCurrent_song().getYoutube_id(), 0);
+                }
                 if (isPlaying)
                     youTubePlayerInstance.pause();
                 else
@@ -128,6 +250,10 @@ public class KaraokeRoom extends AppCompatActivity implements QueueFragment.OnGe
             } else {
                 Toast.makeText(this, "Player not ready", Toast.LENGTH_SHORT).show();
             }
+
+//            Intent composeIntent = new Intent(KaraokeRoom.this, JetpackActivity.class);
+//            startActivity(composeIntent);
+
         });
 
         RoomDAO roomDAO = new RoomDAO();
@@ -153,7 +279,7 @@ public class KaraokeRoom extends AppCompatActivity implements QueueFragment.OnGe
             @Override
             public void onFailure(Call<RoomDTO> call, Throwable t) {
                 Log.e("Error", "API call failed: " + t.getMessage());
-                Intent intent = new Intent(KaraokeRoom.this, CreateRoomActivity.class);
+                Intent intent = new Intent(KaraokeRoom.this, CreatseRoomActivity.class);
                 intent.putExtra("message", "Room " + roomId + "not found");
                 startActivity(intent);
                 finish();
@@ -162,7 +288,37 @@ public class KaraokeRoom extends AppCompatActivity implements QueueFragment.OnGe
     }
 
     @Override
-    public void onGetAllSongInQueue() {
-        Log.e("", "Song list: " + currentRoom.getQueue().size());
+    public List<SongDTO> getQueue() {
+        return currentRoom.getQueue();
+    }
+
+    @Override
+    public void addSong(SongDTO song) {
+        Toast.makeText(this, "Before add: " + currentRoom.getQueue().size(), Toast.LENGTH_SHORT).show();
+        currentRoom.getQueue().add(song);
+        Toast.makeText(this, "After add: " + currentRoom.getQueue().size(), Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void removeSong(String songId) {
+        for (int i = 0; i < currentRoom.getQueue().size(); i++) {
+            if (currentRoom.getQueue().get(i).get_id().equals(songId)) {
+                currentRoom.getQueue().remove(i);
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void singSong(String songId) {
+        currentRoom.setCurrent_song_start_time(String.valueOf(System.currentTimeMillis()));
+        for (int i = 0; i < currentRoom.getQueue().size(); i++) {
+            if (currentRoom.getQueue().get(i).get_id().equals(songId)) {
+                Log.d("Song", "Singing song: " + currentRoom.getQueue().get(i).get_id());
+                videoId = currentRoom.getQueue().get(i).getYoutube_id();
+                youTubePlayerInstance.loadVideo(videoId, 0);
+                break;
+            }
+        }
     }
 }
