@@ -11,6 +11,13 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(libs.recyclerview)
     implementation(libs.activity)
+    implementation(libs.lifecycle.runtime.ktx)
+    implementation(libs.activity.compose)
+    implementation(platform(libs.compose.bom))
+    implementation(libs.ui)
+    implementation(libs.ui.graphics)
+    implementation(libs.ui.tooling.preview)
+    implementation(libs.material3)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
@@ -27,7 +34,15 @@ dependencies {
     implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.google.android.material:material:1.13.0-alpha11")
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.ui.test.junit4)
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+    debugImplementation(libs.ui.tooling)
+    debugImplementation(libs.ui.test.manifest)
+
+    implementation("io.getstream:stream-video-android-ui-compose:1.5.0")
+    implementation("io.getstream:stream-webrtc-android:1.3.8")
+    implementation("io.coil-kt:coil-compose:2.5.0")
     implementation ("com.google.firebase:firebase-messaging:23.0.8")
     implementation(libs.firebase.messaging)
 }
@@ -35,7 +50,9 @@ dependencies {
     plugins {
     alias(libs.plugins.android.application)
     id("com.google.gms.google-services")
-}
+        alias(libs.plugins.kotlin.android)
+        alias(libs.plugins.kotlin.compose)
+    }
 
 android {
     namespace = "com.example.voca"
@@ -64,8 +81,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
     buildFeatures {
         viewBinding = true
+        compose = true
     }
 }
 

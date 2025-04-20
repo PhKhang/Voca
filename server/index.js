@@ -1,311 +1,407 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const multer = require('multer');
-const multerS3 = require('multer-s3');
-const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
-const { fromEnv } = require('@aws-sdk/credential-providers');
-const crypto = require('crypto');
+const express = require("express");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const multer = require("multer");
+const multerS3 = require("multer-s3");
+const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const { StreamClient } = require("@stream-io/node-sdk");
+const { fromEnv } = require("@aws-sdk/credential-providers");
+const crypto = require("crypto");
 dotenv.config();
 
 const app = express();
 app.use(express.json());
-mongoose.connect(process.env.connection_string)
-    .then(() => console.log('Connected to MongoDB'))
-    .catch((err) => console.log('Error:', err));
+mongoose
+  .connect(process.env.connection_string)
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => console.log("Error:", err));
+
+const client = new StreamClient(
+  process.env.STREAMIO_API_KEY,
+  process.env.STREAMIO_API_SECRET,
+  { timeout: 3000 }
+);
 
 const s3Client = new S3Client({
-    credentials: fromEnv(),
-    endpoint: "https://fd0314cb84aca3240521990fc2bb803c.r2.cloudflarestorage.com",
+  credentials: fromEnv(),
+  endpoint: "https://fd0314cb84aca3240521990fc2bb803c.r2.cloudflarestorage.com",
 });
-    
+
 const upload = multer({
-    storage: multerS3({
-        s3: s3Client,
-        bucket: 'voca',
-        metadata: (req, file, cb) => {
-            cb(null, { fieldName: file.fieldname });
-        },
-        contentType: multerS3.AUTO_CONTENT_TYPE,
-        key: (req, file, cb) => {
-            cb(null, `${Date.now().toString()}-${file.originalname}`);
-        },
-    }),
+  storage: multerS3({
+    s3: s3Client,
+    bucket: "voca",
+    metadata: (req, file, cb) => {
+      cb(null, { fieldName: file.fieldname });
+    },
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: (req, file, cb) => {
+      cb(null, `${Date.now().toString()}-${file.originalname}`);
+    },
+  }),
 });
 
 // File upload
-app.post('/upload', upload.single('file'), async (req, res) => {
-    if (!req.file) {
-        return res.status(400).send('No file uploaded.');
-    }
-    console.log(req.file.key);
-    return res.status(200).send({ filename: `https://pub-9baa3a81ecf34466aeb5591929ebf0b3.r2.dev/${req.file.key}` });
-}); 
-
-app.delete('/delete', async (req, res) => {
-    console.log("In");
-    console.log("Request body:", req.body);
-    const deleteFile = {
-        "Bucket": "voca",
-        "Key": decodeURI(req.body.key?.split('/').pop()),
-    }
-    console.log("To delete:", deleteFile);
-    
-    const command = new DeleteObjectCommand(deleteFile);
-    await s3Client.send(command);
-    res.status(200).send('File deleted successfully');
+app.post("/upload", upload.single("file"), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).send("No file uploaded.");
+  }
+  console.log(req.file.key);
+  return res
+    .status(200)
+    .send({
+      filename: `https://pub-9baa3a81ecf34466aeb5591929ebf0b3.r2.dev/${req.file.key}`,
+    });
 });
-    
+
+app.delete("/delete", async (req, res) => {
+  console.log("In");
+  console.log("Request body:", req.body);
+  const deleteFile = {
+    Bucket: "voca",
+    Key: decodeURI(req.body.key?.split("/").pop()),
+  };
+  console.log("To delete:", deleteFile);
+
+  const command = new DeleteObjectCommand(deleteFile);
+  await s3Client.send(command);
+  res.status(200).send("File deleted successfully");
+});
+
 // Schema Definitions
 const userSchema = new mongoose.Schema({
-    firebase_uid: { type: String, required: true, unique: true },
-    username: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    avatar: { type: String },
-    roll: { type: String, default: 'user' },
-    created_at: { type: Date, default: Date.now },
-    updated_at: { type: Date, default: Date.now }
+  firebase_uid: { type: String, required: true, unique: true },
+  username: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  avatar: { type: String },
+  roll: { type: String, default: "user" },
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now },
 });
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model("User", userSchema);
 
 const songSchema = new mongoose.Schema({
-    youtube_id: { type: String, required: true, unique: true },
-    title: { type: String, required: true },
-    thumbnail: { type: String, required: true },
-    uploaded_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    created_at: { type: Date, default: Date.now }
+  youtube_id: { type: String, required: true, unique: true },
+  title: { type: String, required: true },
+  thumbnail: { type: String, required: true },
+  uploaded_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  created_at: { type: Date, default: Date.now },
 });
-const Song = mongoose.model('Song', songSchema);
+const Song = mongoose.model("Song", songSchema);
 
 const postSchema = new mongoose.Schema({
-    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    song_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Song', required: true },
-    audio_url: { type: String, required: true },
-    caption: { type: String },
-    likes: { type: Number, default: 0 },
-    created_at: { type: Date, default: Date.now }
+  user_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  song_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Song",
+    required: true,
+  },
+  audio_url: { type: String, required: true },
+  caption: { type: String },
+  likes: { type: Number, default: 0 },
+  created_at: { type: Date, default: Date.now },
 });
-const Post = mongoose.model('Post', postSchema);
+const Post = mongoose.model("Post", postSchema);
 
 const likeSchema = new mongoose.Schema({
-    post_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Post', required: true },
-    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    created_at: { type: Date, default: Date.now }
+  post_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Post",
+    required: true,
+  },
+  user_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  created_at: { type: Date, default: Date.now },
 });
-const Like = mongoose.model('Like', likeSchema);
+const Like = mongoose.model("Like", likeSchema);
 
 const roomSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    code: { type: String, unique: true },
-    is_private: { type: Boolean, default: false },
-    description: { type: String },
-    created_at: { type: Date, default: Date.now },
-    updated_at: { type: Date, default: Date.now },
-    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    queue: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Song' }],
-    current_song: { type: mongoose.Schema.Types.ObjectId, ref: 'Song' },
-    current_song_start_time: { type: Date },
-    chats: [
-        {
-            message_type: { type: String },
-            user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-            message: { type: String },
-            timestamp: { type: Date, default: Date.now },
-        },
-    ],
+  name: { type: String, required: true },
+  code: { type: String, unique: true },
+  is_private: { type: Boolean, default: false },
+  description: { type: String },
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now },
+  created_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  queue: [{ type: mongoose.Schema.Types.ObjectId, ref: "Song" }],
+  current_song: { type: mongoose.Schema.Types.ObjectId, ref: "Song" },
+  current_song_start_time: { type: Date },
+  chats: [
+    {
+      message_type: { type: String },
+      user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      message: { type: String },
+      timestamp: { type: Date, default: Date.now },
+    },
+  ],
 });
 // Pre-save hook to generate code
-roomSchema.pre('save', async function(next) {
-    if (!this.code) {
-        // Generate a 6-character alphanumeric code
-        let generatedCode = generateRandomCode();
+roomSchema.pre("save", async function (next) {
+  if (!this.code) {
+    // Generate a 6-character alphanumeric code
+    let generatedCode = generateRandomCode();
 
-        // Ensure that the generated code is unique
-        while (await Room.findOne({ code: generatedCode })) {
-            generatedCode = generateRandomCode();  // Regenerate the code if it's already taken
-        }
-
-        this.code = generatedCode;
+    // Ensure that the generated code is unique
+    while (await Room.findOne({ code: generatedCode })) {
+      generatedCode = generateRandomCode(); // Regenerate the code if it's already taken
     }
-    next();
+
+    this.code = generatedCode;
+  }
+  next();
 });
 
 // Random 6-character alphanumeric code
 function generateRandomCode() {
-    return crypto.randomBytes(3).toString('hex').toUpperCase();  // 6 characters
+  return crypto.randomBytes(3).toString("hex").toUpperCase(); // 6 characters
 }
 
-const Room = mongoose.model('Room', roomSchema);
+const Room = mongoose.model("Room", roomSchema);
 
 // CRUD APIs for Rooms
-app.post('/rooms', async (req, res) => {
-    try {
-        var room = new Room(req.body);
-        await room.save()
-        // .then(room => room.populate('created_by').populate('members').populate('queue').populate('current_song'));
-        room = await Room.findById(room._id).populate('created_by').populate('members').populate('queue').populate('current_song');
-        res.status(201).json(room);
-        console.log("Room created:", room);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-        console.error("Error creating room:", err.message);
-    }
+app.post("/rooms", async (req, res) => {
+  try {
+    var room = new Room(req.body);
+    await room.save();
+    // .then(room => room.populate('created_by').populate('members').populate('queue').populate('current_song'));
+    room = await Room.findById(room._id)
+      .populate("created_by")
+      .populate("members")
+      .populate("queue")
+      .populate("current_song");
+    res.status(201).json(room);
+    console.log("Room created:", room);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+    console.error("Error creating room:", err.message);
+  }
 });
 
-app.get('/rooms/', async (req, res) => {
-    let filter = {};
+app.get("/rooms/", async (req, res) => {
+  let filter = {};
 
-    if (req.query.name) {
-        filter.name = new RegExp(req.query.name, 'i'); 
-    }
+  if (req.query.name) {
+    filter.name = new RegExp(req.query.name, "i");
+  }
 
-    if (req.query.code) {
-        filter.code = req.query.code;
-    }
-    
-    if (req.query.user_id) {
-        filter.created_by = new mongoose.Types.ObjectId(req.query.user_id);
-    }
-    
-    const room = req.query.code 
-    ? await Room.findOne(filter).populate('created_by').populate('members').populate('queue').populate('current_song')
-    : await Room.find(filter).populate('created_by').populate('members').populate('queue').populate('current_song');
-    console.log("Rooms found:", room);
-    room ? res.json(room) : res.status(404).json({ error: 'Room not found' });
+  if (req.query.code) {
+    filter.code = req.query.code;
+  }
+
+  if (req.query.user_id) {
+    filter.created_by = new mongoose.Types.ObjectId(req.query.user_id);
+  }
+
+  const room = req.query.code
+    ? await Room.findOne(filter)
+        .populate("created_by")
+        .populate("members")
+        .populate("queue")
+        .populate("current_song")
+    : await Room.find(filter)
+        .populate("created_by")
+        .populate("members")
+        .populate("queue")
+        .populate("current_song");
+  console.log("Rooms found:", room);
+  room ? res.json(room) : res.status(404).json({ error: "Room not found" });
 });
 
-app.get('/rooms/:id', async (req, res) => {
-    const room = await Room.findById(req.params.id).populate('created_by').populate('members').populate('queue').populate('current_song');
-    room ? res.json(room) : res.status(404).json({ error: 'Room not found' });
+app.get("/rooms/:id", async (req, res) => {
+  const room = await Room.findById(req.params.id)
+    .populate("created_by")
+    .populate("members")
+    .populate("queue")
+    .populate("current_song");
+  if (room) {
+    console.log("Room found:", room);
+    const call = client.video.call("audio_room", req.params.id);
+    const result = await call.getOrCreate({
+      custom: { title: "Hi", description: `yet another room ${req.params.id}` },
+    });
+
+    res.json({ call: result });
+    return;
+  }
+
+  res.status(404).json({ error: "Room not found" });
 });
 
-app.delete('/rooms/:id', async (req, res) => {
-    await Room.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Room deleted' });
+app.post("/rooms/:id/join", async (req, res) => {
+  const roomId = req.params.id;
+  const userId = req.body.user_id;
+  const call = client.video.call("audio_room", roomId);
+
+  console.log(
+    process.env.STREAMIO_API_KEY,
+    "and",
+    process.env.STREAMIO_API_SECRET
+  );
+
+  if (!roomId || !userId) {
+    return res.status(400).json({ error: "Room ID and User ID are required" });
+  }
+
+  console.log("Creating room:", roomId, "for user:", userId);
+  await call.getOrCreate({
+    data: { created_by_id: userId },
+    custom: { title: "Hi", description: `yet another room ${roomId}` },
+  });
+
+  // console.log("Joining room:", roomId, "for user:", userId);
+  // await call.updateCallMembers({
+  //     update_members: [{ user_id: userId, role: "admin" }],
+  // });
+
+  console.log("Creating token");
+  const userToken = client.generateUserToken({
+    user_id: userId,
+    validity_in_seconds: 60 * 60 * 24 * 30,
+  });
+
+  res.json({ user_token: userToken });
+  console.log("Still ok");
 });
 
-app.delete('/rooms/:id', async (req, res) => {
-    await Room.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Room deleted' });
+app.delete("/rooms/:id", async (req, res) => {
+  await Room.findByIdAndDelete(req.params.id);
+  res.json({ message: "Room deleted" });
 });
 
-app.put('/rooms/:id', async (req, res) => {
-    try {
-        const room = await Room.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        res.json(room);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
+app.put("/rooms/:id", async (req, res) => {
+  try {
+    const room = await Room.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
+    res.json(room);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
-        
+
 // CRUD APIs for Users
-app.post('/users', async (req, res) => {
-    try {
-        const user = new User(req.body);
-        await user.save();
-        res.status(201).json(user);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
+app.post("/users", async (req, res) => {
+  try {
+    const user = new User(req.body);
+    await user.save();
+    res.status(201).json(user);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
-app.get('/users', async (req, res) => {
-    const users = await User.find();
-    res.json(users);
+app.get("/users", async (req, res) => {
+  const users = await User.find();
+  res.json(users);
 });
 
-app.get('/users/:id', async (req, res) => {
-    const user = await User.findById(req.params.id);
-    user ? res.json(user) : res.status(404).json({ error: 'User not found' });
+app.get("/users/:id", async (req, res) => {
+  const user = await User.findById(req.params.id);
+  user ? res.json(user) : res.status(404).json({ error: "User not found" });
 });
 
-app.put('/users/:id', async (req, res) => {
-    try {
-        const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        res.json(user);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
+app.put("/users/:id", async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
+    res.json(user);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
-app.delete('/users/:id', async (req, res) => {
-    await User.findByIdAndDelete(req.params.id);
-    res.json({ message: 'User deleted' });
+app.delete("/users/:id", async (req, res) => {
+  await User.findByIdAndDelete(req.params.id);
+  res.json({ message: "User deleted" });
 });
 
 // CRUD APIs for Songs
-app.post('/songs', async (req, res) => {
-    try {
-        const song = new Song(req.body);
-        await song.save();
-        res.status(201).json(song);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
+app.post("/songs", async (req, res) => {
+  try {
+    const song = new Song(req.body);
+    await song.save();
+    res.status(201).json(song);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
-app.get('/songs', async (req, res) => {
-    console.log("Fetching all songs");
-    const songs = await Song.find().populate('uploaded_by');
-    res.json(songs);
+app.get("/songs", async (req, res) => {
+  console.log("Fetching all songs");
+  const songs = await Song.find().populate("uploaded_by");
+  res.json(songs);
 });
 
-app.get('/songs/:id', async (req, res) => {
-    const song = await Song.findById(req.params.id).populate('uploaded_by');
-    song ? res.json(song) : res.status(404).json({ error: 'Song not found' });
+app.get("/songs/:id", async (req, res) => {
+  const song = await Song.findById(req.params.id).populate("uploaded_by");
+  song ? res.json(song) : res.status(404).json({ error: "Song not found" });
 });
 
-app.delete('/songs/:id', async (req, res) => {
-    await Song.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Song deleted' });
+app.delete("/songs/:id", async (req, res) => {
+  await Song.findByIdAndDelete(req.params.id);
+  res.json({ message: "Song deleted" });
 });
 
 // CRUD APIs for Posts
-app.post('/posts', async (req, res) => {
-    try {
-        const post = new Post(req.body);
-        await post.save();
-        res.status(201).json(post);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
+app.post("/posts", async (req, res) => {
+  try {
+    const post = new Post(req.body);
+    await post.save();
+    res.status(201).json(post);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
-app.get('/posts', async (req, res) => {
-    const posts = await Post.find().populate('user_id').populate('song_id');
-    res.json(posts);
+app.get("/posts", async (req, res) => {
+  const posts = await Post.find().populate("user_id").populate("song_id");
+  res.json(posts);
 });
 
-app.get('/posts/:id', async (req, res) => {
-    const post = await Post.findById(req.params.id).populate('user_id').populate('song_id');
-    post ? res.json(post) : res.status(404).json({ error: 'Post not found' });
+app.get("/posts/:id", async (req, res) => {
+  const post = await Post.findById(req.params.id)
+    .populate("user_id")
+    .populate("song_id");
+  post ? res.json(post) : res.status(404).json({ error: "Post not found" });
 });
 
-app.delete('/posts/:id', async (req, res) => {
-    await Post.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Post deleted' });
+app.delete("/posts/:id", async (req, res) => {
+  await Post.findByIdAndDelete(req.params.id);
+  res.json({ message: "Post deleted" });
 });
 
 // CRUD APIs for Likes
-app.post('/likes', async (req, res) => {
-    try {
-        const like = new Like(req.body);
-        await like.save();
-        res.status(201).json(like);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
+app.post("/likes", async (req, res) => {
+  try {
+    const like = new Like(req.body);
+    await like.save();
+    res.status(201).json(like);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
-app.get('/likes', async (req, res) => {
-    const likes = await Like.find().populate('post_id').populate('user_id');
-    res.json(likes);
+app.get("/likes", async (req, res) => {
+  const likes = await Like.find().populate("post_id").populate("user_id");
+  res.json(likes);
 });
 
-app.delete('/likes/:id', async (req, res) => {
-    await Like.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Like removed' });
+app.delete("/likes/:id", async (req, res) => {
+  await Like.findByIdAndDelete(req.params.id);
+  res.json({ message: "Like removed" });
 });
 
-app.listen(3000, () => console.log('Server is running on port 3000'));
+app.listen(3000, () => console.log("Server is running on port 3000"));

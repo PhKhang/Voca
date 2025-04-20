@@ -21,6 +21,7 @@
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -28,10 +29,29 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Voca"
         android:usesCleartextTraffic="true"
-        android:enableOnBackInvokedCallback="true"
         tools:targetApi="tiramisu">
         <activity
-            android:name=".ui.room.CreateRoomActivity"
+            android:name=".ui.room.JetpackActivity"
+            android:exported="false"
+            android:label="@string/title_activity_jetpack"
+            android:theme="@style/Theme.Voca" />
+        <activity
+            android:name=".ui.room.JetpackActivity"
+            android:exported="false"
+            android:label="@string/title_activity_jetpack"
+            android:theme="@style/Theme.Voca" />
+        <activity
+            android:name=".ui.room.JetpackActivity"
+            android:exported="false"
+            android:label="@string/title_activity_jetpack"
+            android:theme="@style/Theme.Voca" />
+        <activity
+            android:name=".ui.room.JetpackActivity"
+            android:exported="false"
+            android:label="@string/title_activity_jetpack"
+            android:theme="@style/Theme.Voca" />
+        <activity
+            android:name=".ui.room.CreateRoomActivity" 
             android:exported="false" />
         <activity
             android:name=".ui.room.MusicPlayer"
@@ -43,7 +63,7 @@
             android:name=".ui.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Voca"></activity>
+            android:theme="@style/Theme.Voca" />
         <activity
             android:name=".ui.auth.LoginActivity"
             android:exported="true">
@@ -58,22 +78,28 @@
             android:exported="false" />
         <activity
             android:name=".ui.auth.RegisterActivity"
-            android:exported="true"></activity>
+            android:exported="true" />
         <activity
             android:name=".ui.record.RecordActivity"
-            android:exported="true"></activity>
+            android:exported="true" />
         <activity
             android:name=".ui.record.RecordResultActivity"
-            android:exported="true"></activity>
+            android:exported="true" />
         <activity
             android:name=".ui.AdminActivity"
-            android:exported="true"></activity>
+            android:exported="true" />
         <activity
             android:name=".ui.management.SongDetailsActivity"
-            android:exported="true"></activity>
+            android:exported="true" />
         <activity
             android:name=".ui.management.SongsManagementActivity"
-            android:exported="true"></activity>
+            android:exported="true" />
+        <activity
+            android:name=".ui.auth.ForgotPassActivity"
+            android:exported="true" />
+        <activity
+            android:name=".ui.profile.ProfileViewActivity"
+            android:exported="true" />
         <activity
             android:name=".ui.auth.ForgotPassActivity"
             android:exported="true"></activity>
