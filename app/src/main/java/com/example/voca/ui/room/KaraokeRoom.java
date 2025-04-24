@@ -32,9 +32,14 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstan
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.utils.YouTubePlayerTracker;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -52,10 +57,10 @@ public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback
     TextView host;
     TextView roomCode;
     ImageButton btnCopyRoomCode;
+    RoomBUS roomBUS;
     private String videoId = "WCXDr38Rq20";
     private YouTubePlayer youTubePlayerInstance;
-
-    RoomBUS roomBUS;
+    private YouTubePlayerTracker tracker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -203,6 +208,7 @@ public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback
                 .autoplay(0)
                 .build();
 
+        tracker = new YouTubePlayerTracker();
         youTubePlayerView.setEnableAutomaticInitialization(false);
         youTubePlayerView.initialize(new AbstractYouTubePlayerListener() {
             @Override
@@ -210,10 +216,14 @@ public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback
 //                youTubePlayer.cueVideo(videoId, 0);
                 youTubePlayerInstance = youTubePlayer;
 //                youTubePlayer.mute();
+                youTubePlayerInstance.addListener(tracker);
                 youTubePlayerInstance.addListener(new AbstractYouTubePlayerListener() {
                                                       @Override
                                                       public void onStateChange(@NonNull YouTubePlayer youTubePlayer, @NonNull PlayerConstants.PlayerState state) {
                                                           super.onStateChange(youTubePlayer, state);
+                                                          YouTubePlayerTracker newTracker = new YouTubePlayerTracker();
+                                                          youTubePlayer.addListener(newTracker);
+//                                                          Log.d("Room", "Video duration on loaded" + newTracker.getVideoDuration());
                                                           if (state == PlayerConstants.PlayerState.PAUSED || state == PlayerConstants.PlayerState.ENDED) {
                                                               playButton.setImageResource(R.drawable.play_arrow_24dp_e3e3e3_fill0_wght400_grad0_opsz24);
                                                               isPlaying = false;
@@ -228,6 +238,23 @@ public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback
         }, true, options);
 
         playButton.setOnClickListener(v -> {
+            Log.d("Room", "Current time: " + tracker.getVideoDuration());
+
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+            Date date = null;
+            try {
+                date = sdf.parse(currentRoom.getCurrent_song_start_time());
+            } catch (ParseException e) {
+//                throw new RuntimeException(e);
+                Log.e("Room", "Error parsing date: " + e.getMessage());
+                date = new Date();
+            }
+
+            Date now = new Date();
+            long diffInMillis = now.getTime() - date.getTime(); // difference in milliseconds
+            long diffInSeconds = diffInMillis / 1000;
+
             if (youTubePlayerInstance != null) {
                 if (currentRoom.getCurrent_song() == null) {
                     Toast.makeText(this, "No song is playing", Toast.LENGTH_SHORT).show();
@@ -237,7 +264,26 @@ public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback
                         return;
                     }
                     currentRoom.setCurrent_song(currentRoom.getQueue().get(0));
-                    youTubePlayerInstance.cueVideo(currentRoom.getCurrent_song().getYoutube_id(), 0);
+                    if (diffInSeconds >= 24 * 60 * 60) {
+                        currentRoom.setCurrent_song_start_time(String.valueOf(System.currentTimeMillis()));
+                        youTubePlayerInstance.loadVideo(currentRoom.getCurrent_song().getYoutube_id(), 0);
+                        roomBUS.updateRoom(currentRoom.get_id(), currentRoom, new RoomBUS.OnRoomUpdatedListener() {
+                            @Override
+                            public void onRoomUpdated(RoomDTO room) {
+                                Toast.makeText(KaraokeRoom.this, "Update play time successfully", Toast.LENGTH_SHORT).show();
+                                Log.d("Room", "Updated play time: ");
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                Toast.makeText(KaraokeRoom.this, "Error adding song: " + error, Toast.LENGTH_SHORT).show();
+                                Log.e("Error", "Failed to add song: " + error);
+                            }
+                        });
+                    }
+                    else {
+                        youTubePlayerInstance.loadVideo(currentRoom.getCurrent_song().getYoutube_id(), diffInSeconds);
+                    }
                 }
                 if (isPlaying)
                     youTubePlayerInstance.pause();
@@ -292,36 +338,17 @@ public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback
     public void addSong(SongDTO song) {
         Toast.makeText(this, "Before add: " + currentRoom.getQueue().size(), Toast.LENGTH_SHORT).show();
         currentRoom.getQueue().add(song);
-//        roomBUS.updateRoom(roomId, currentRoom, new RoomBUS.OnRoomUpdatedListener() {
-//            @Override
-//            public void onRoomUpdated(RoomDTO room) {
-//                Toast.makeText(KaraokeRoom.this, "Song added successfully", Toast.LENGTH_SHORT).show();
-//                Log.d("Room", "Song added: " + song.getYoutube_id());
-//            }
-//
-//            @Override
-//            public void onError(String error) {
-//                Toast.makeText(KaraokeRoom.this, "Error adding song: " + error, Toast.LENGTH_SHORT).show();
-//                Log.e("Error", "Failed to add song: " + error);
-//            }
-//        });
-        RoomDAO roomDao = new RoomDAO();
-        roomDao.updateRoom(roomId, currentRoom, new Callback<RoomDTO>() {
+        roomBUS.updateRoom(currentRoom.get_id(), currentRoom, new RoomBUS.OnRoomUpdatedListener() {
             @Override
-            public void onResponse(Call<RoomDTO> call, Response<RoomDTO> response) {
-                if (response.isSuccessful()) {
-                    Toast.makeText(KaraokeRoom.this, "Song added successfully", Toast.LENGTH_SHORT).show();
-                    Log.d("Room", "Song added: " + song.getYoutube_id());
-                } else {
-                    Toast.makeText(KaraokeRoom.this, "Error adding song: " + response.message(), Toast.LENGTH_SHORT).show();
-                    Log.e("Error", "Failed to add song: " + response.message());
-                }
+            public void onRoomUpdated(RoomDTO room) {
+                Toast.makeText(KaraokeRoom.this, "Song added successfully", Toast.LENGTH_SHORT).show();
+                Log.d("Room", "Song added: " + song.getYoutube_id());
             }
 
             @Override
-            public void onFailure(Call<RoomDTO> call, Throwable t) {
-                Toast.makeText(KaraokeRoom.this, "Error adding song: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                Log.e("Error", "Failed to add song: " + t.getMessage());
+            public void onError(String error) {
+                Toast.makeText(KaraokeRoom.this, "Error adding song: " + error, Toast.LENGTH_SHORT).show();
+                Log.e("Error", "Failed to add song: " + error);
             }
         });
         Toast.makeText(this, "After add: " + currentRoom.getQueue().size(), Toast.LENGTH_SHORT).show();
@@ -332,6 +359,19 @@ public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback
         for (int i = 0; i < currentRoom.getQueue().size(); i++) {
             if (currentRoom.getQueue().get(i).get_id().equals(songId)) {
                 currentRoom.getQueue().remove(i);
+                roomBUS.updateRoom(currentRoom.get_id(), currentRoom, new RoomBUS.OnRoomUpdatedListener() {
+                    @Override
+                    public void onRoomUpdated(RoomDTO room) {
+                        Toast.makeText(KaraokeRoom.this, "Song removed successfully", Toast.LENGTH_SHORT).show();
+                        Log.d("Room", "Song removed: " + songId);
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Toast.makeText(KaraokeRoom.this, "Error removing song: " + error, Toast.LENGTH_SHORT).show();
+                        Log.e("Error", "Failed to remove song: " + error);
+                    }
+                });
                 break;
             }
         }

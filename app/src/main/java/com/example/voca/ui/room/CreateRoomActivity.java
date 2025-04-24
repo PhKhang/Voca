@@ -167,6 +167,7 @@ public class CreateRoomActivity extends AppCompatActivity {
         RoomDAO roomDAO = new RoomDAO();
         UserBUS userBUS = new UserBUS();
         String userId = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE).getString("userId", null);
+
         userBUS.fetchUserById(userId, new UserBUS.OnUserFetchedListener() {
             @Override
             public void onUserFetched(UserDTO user) {
@@ -179,6 +180,24 @@ public class CreateRoomActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), "Failed to fetch: " + error, Toast.LENGTH_LONG).show();
             }
         });
+
+        Log.e("User ID", userId);
+//        roomDAO.getRoomByUserId(, new Callback<RoomDTO>() {
+//            @Override
+//            public void onResponse(Call<RoomDTO> call, Response<RoomDTO> response) {
+//                if (response.isSuccessful()) {
+//                    RoomDTO room = response.body();
+//                    Log.e("Room fetched", room.getName());
+//                } else {
+//                    Log.e("Error", "Failed to fetch room: " + response.message());
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(Call<RoomDTO> call, Throwable t) {
+//                Log.e("Error", "API call failed: " + t.getMessage());
+//            }
+//        });
 
         roomDAO.getRoomByUserId(userId, new Callback<List<RoomDTO>>() {
             @Override
