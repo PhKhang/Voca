@@ -1,9 +1,10 @@
-package com.example.voca.ui;
+package com.example.voca.ui.profile;
 
 import android.os.Bundle;
 
 import android.util.Log;
 
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,8 +17,12 @@ import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
+import com.example.voca.ui.adapter.PostAdapter;
 import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.material.appbar.MaterialToolbar;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ProfileViewActivity extends AppCompatActivity {
@@ -44,6 +49,7 @@ public class ProfileViewActivity extends AppCompatActivity {
         postList = new ArrayList<>();
         postAdapter = new PostAdapter(new ArrayList<>(), this, player);
         recyclerView.setAdapter(postAdapter);
+        setClickOnNavigationButton();
 
         userBUS.fetchUserById(userId, new UserBUS.OnUserFetchedListener() {
             @Override
@@ -55,8 +61,8 @@ public class ProfileViewActivity extends AppCompatActivity {
 
                 Glide.with(ProfileViewActivity.this)
                         .load(user.getAvatar())
-                        .placeholder(R.drawable.default_account_avatar) // Ảnh mặc định nếu tải chậm
-                        .error(R.drawable.default_account_avatar) // Ảnh nếu lỗi tải
+                        .placeholder(R.drawable.ic_profile_2_24dp) // Ảnh mặc định nếu tải chậm
+                        .error(R.drawable.ic_profile_2_24dp) // Ảnh nếu lỗi tải
                         .into(avatar);
 
                 curUser = user;
@@ -68,9 +74,15 @@ public class ProfileViewActivity extends AppCompatActivity {
                 Log.d("UserProfileError", error);
             }
         });
+    }
 
-        findViewById(R.id.back_arrow).setOnClickListener(v ->  {
-            finish();
+    private void setClickOnNavigationButton() {
+        MaterialToolbar topAppBar = findViewById(R.id.topAppBar);
+        topAppBar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
         });
     }
 
@@ -79,7 +91,9 @@ public class ProfileViewActivity extends AppCompatActivity {
             @Override
             public void onPostsFetched(List<PostDTO> posts) {
                 postList = posts;
-                postAdapter.updateData(postList);
+                List<PostDTO> reversedPosts = new ArrayList<>(posts);
+                Collections.reverse(reversedPosts);
+                postAdapter.updateData(reversedPosts);
             }
 
             @Override

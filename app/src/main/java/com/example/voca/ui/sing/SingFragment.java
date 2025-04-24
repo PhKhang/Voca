@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
+import android.widget.SearchView;
 import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
@@ -16,6 +17,7 @@ import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.SongBUS;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.SongDTO;
+import com.example.voca.ui.adapter.SingAdapter;
 import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
@@ -33,6 +35,7 @@ public class SingFragment extends Fragment {
     private ProgressDialog progressDialog;
     private Context context;
     private TabLayout tabLayout;
+    private SearchView searchView;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -47,6 +50,9 @@ public class SingFragment extends Fragment {
         postList = new ArrayList<>();
         songBUS = new SongBUS();
         postBUS = new PostBUS();
+
+        searchView = view.findViewById(R.id.searchView);
+        setupSearchViewListener();
 
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
@@ -69,17 +75,54 @@ public class SingFragment extends Fragment {
         return view;
     }
 
+    private void setupSearchViewListener() {
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                filterBySearchAndTab(query);
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                filterBySearchAndTab(newText);
+                return true;
+            }
+        });
+    }
+    private void filterBySearchAndTab(String query) {
+        if (songList == null) return;
+
+        int currentTab = tabLayout.getSelectedTabPosition();
+        List<SongDTO> filteredByTab = filterSongsByTab(songList, currentTab);
+
+        List<SongDTO> finalFilteredList = new ArrayList<>();
+        for (SongDTO song : filteredByTab) {
+            if (song.getTitle().toLowerCase().contains(query.toLowerCase())) {
+                finalFilteredList.add(song);
+            }
+        }
+
+        singAdapter = new SingAdapter(context, postList, finalFilteredList);
+        listView.setAdapter(singAdapter);
+    }
+
     private void resetAndFetchData(int tabPosition) {
         if (songList != null) songList.clear();
         if (postList != null) postList.clear();
         if (singAdapter != null) singAdapter.notifyDataSetChanged();
+
+        if (searchView != null) {
+            searchView.setQuery("", false);
+            searchView.clearFocus();
+        }
 
         fetchSongs(tabPosition);
     }
 
     private void fetchSongs(int tabPosition) {
         progressDialog = new ProgressDialog(requireContext());
-        progressDialog.setMessage("Loading songs...");
+        progressDialog.setMessage("Đang tải bài hát...");
         progressDialog.setCancelable(false);
         progressDialog.show();
 

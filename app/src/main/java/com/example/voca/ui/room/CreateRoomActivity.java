@@ -1,10 +1,11 @@
-package com.example.voca.ui.home;
+package com.example.voca.ui.room;
 
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.GridView;
@@ -17,7 +18,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.example.voca.ui.room.KaraokeRoom;
+import com.example.voca.ui.adapter.RoomAdapter;
 import com.example.voca.R;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.dao.RoomDAO;
@@ -39,6 +40,8 @@ public class CreateRoomActivity extends AppCompatActivity {
     EditText roomName;
     EditText roomDesc;
     Switch roomPublic;
+    EditText code;
+    Button goToCode;
 
     GridView rooms;
 
@@ -55,6 +58,22 @@ public class CreateRoomActivity extends AppCompatActivity {
 
         String userId = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE).getString("userId", null);
         Toast.makeText(this, "User ID: " + userId, Toast.LENGTH_SHORT).show();
+
+        code = findViewById(R.id.code);
+        goToCode = findViewById(R.id.goToCode);
+
+        goToCode.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (code.getText().toString().isEmpty()) {
+                    Toast.makeText(CreateRoomActivity.this, "Please enter a room code", Toast.LENGTH_SHORT).show();
+                } else {
+                    Intent intent = new Intent(CreateRoomActivity.this, KaraokeRoom.class);
+                    intent.putExtra("roomId", code.getText().toString());
+                    startActivity(intent);
+                }
+            }
+        });
 
         roomName = findViewById(R.id.roomName);
         roomDesc = findViewById(R.id.roomDesc);

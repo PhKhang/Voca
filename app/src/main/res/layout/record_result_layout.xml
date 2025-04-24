@@ -6,6 +6,14 @@
     android:layout_height="match_parent"
     tools:context=".ui.record.RecordResultActivity">
 
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -95,10 +103,10 @@
             android:progress="0" /> <!-- Mặc định không echo -->
 
         <TextView
-            android:id="@+id/tvDelayLabel"
+            android:id="@+id/tvEchoDecayLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Echo Delay (Độ trễ 0-2000ms)"
+            android:text="Echo Delay"
             android:textSize="14sp"
             android:layout_marginTop="8dp"/>
         <SeekBar
@@ -136,7 +144,47 @@
             android:max="20"
             android:progress="10" /> <!-- Mặc định 0dB -->
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp">
 
+            <TextView
+                android:id="@+id/tvSyncDelayLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Giọng sớm/trễ (ms):"
+                android:textSize="14sp"/>
+
+            <TextView
+                android:id="@+id/tvSyncDelayValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="0 ms"
+                android:textStyle="bold"
+                android:minWidth="60dp"
+                android:gravity="end"
+                android:textSize="14sp"/>
+        </LinearLayout>
+
+        <SeekBar
+            android:id="@+id/seekBarSyncDelay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:max="40"
+            android:progress="20" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="(Kéo sang trái nếu giọng sớm, sang phải nếu giọng trễ)"
+            android:textSize="12sp"
+            android:gravity="center_horizontal"
+            android:layout_marginTop="4dp"/>
         <!-- Action Buttons -->
         <Button
             android:id="@+id/btnApplyEffects"
@@ -159,7 +207,13 @@
             android:layout_height="wrap_content"
             android:text="Lưu file đã xử lý"
             android:enabled="false" /> <!-- Ban đầu vô hiệu hóa -->
-
+        <Button
+            android:id="@+id/btn_create_post"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tạo bài đăng"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp" />
     </LinearLayout>
-
+    </ScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>

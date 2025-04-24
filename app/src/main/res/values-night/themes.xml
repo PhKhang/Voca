@@ -11,7 +11,7 @@
         <item name="colorSecondaryVariant">@color/secondary_red</item>
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        <item name="android:statusBarColor">?attr/colorPrimary</item>
         <!-- Customize your theme here. -->
         <item name="android:windowLightStatusBar">false</item>
     </style>
@@ -28,5 +28,10 @@
         <item name="actionMenuTextColor">@android:color/white</item>
         <item name="actionOverflowButtonStyle">@android:color/white</item>
         <item name="drawerArrowStyle">@android:color/white</item>
+    </style>
+
+    <style name="ThemeOverlay.Voca.FullscreenContainer" parent="">
+        <item name="fullscreenBackgroundColor">@color/light_blue_900</item>
+        <item name="fullscreenTextColor">@color/light_blue_A400</item>
     </style>
 </resources>

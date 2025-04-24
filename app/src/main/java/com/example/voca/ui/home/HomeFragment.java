@@ -1,5 +1,6 @@
 package com.example.voca.ui.home;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -22,7 +23,9 @@ import com.example.voca.bus.SongBUS;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.SongDTO;
 import com.example.voca.databinding.FragmentHomeBinding;
-import com.example.voca.ui.sing.SingAdapter;
+import com.example.voca.ui.adapter.PostHomeAdapter;
+import com.example.voca.ui.adapter.SingAdapter;
+import com.example.voca.ui.room.CreateRoomActivity;
 import com.google.firebase.FirebaseApp;
 
 import java.util.ArrayList;
@@ -39,13 +42,16 @@ public class HomeFragment extends Fragment implements FunctionAdapter.OnFunction
     private List<SongDTO> songList;
     private List<PostDTO> postList;
     private SingAdapter singAdapter;
-    private PostAdapter postAdapter;
+    private PostHomeAdapter postAdapter;
     private SongBUS songBUS;
     private PostBUS postBUS;
     private ListView listViewSing;
     private ListView listViewPost;
     private Context context;
+    private ProgressDialog progressDialog;
+    private static final String LOADING_MESSAGE = "Đang tải dữ liệu...";
 
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         HomeViewModel homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
@@ -90,31 +96,6 @@ public class HomeFragment extends Fragment implements FunctionAdapter.OnFunction
                     args
             );
         });
-        /*
-        binding.btnSignout.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "signout", Toast.LENGTH_SHORT).show();
-            FirebaseAuth mAuth = FirebaseAuth.getInstance();
-            FirebaseUser user = mAuth.getCurrentUser();
-            if (user == null) {
-                Toast.makeText(requireContext(), "Không có người dùng nào đăng nhập!", Toast.LENGTH_SHORT).show();
-            }
-
-            if (user != null) {
-                for (UserInfo profile : user.getProviderData()) {
-                    String providerId = profile.getProviderId();
-
-                    if (providerId.equals("google.com")) {
-                        GoogleSignIn.getClient(requireContext(), GoogleSignInOptions.DEFAULT_SIGN_IN).signOut();
-                    }
-                }
-            }
-            mAuth.signOut();
-
-            Intent intent = new Intent(requireContext(), LoginActivity.class);
-            startActivity(intent);
-            requireActivity().finish();
-        });
-        */
 
         View root = binding.getRoot();
         return root;
@@ -144,6 +125,7 @@ public class HomeFragment extends Fragment implements FunctionAdapter.OnFunction
     }
 
     private void fetchSongsAndPosts() {
+        showLoadingDialog();
         songBUS.fetchSongs(new SongBUS.OnSongsFetchedListener() {
             @Override
             public void onSongsFetched(List<SongDTO> songs) {
@@ -188,12 +170,14 @@ public class HomeFragment extends Fragment implements FunctionAdapter.OnFunction
                         }
 
                         if (context != null)
-                            postAdapter = new PostAdapter(context, postList);
+                            postAdapter = new PostHomeAdapter(context, postList);
                         listViewPost.setAdapter(postAdapter);
+                        progressDialog.dismiss();
                     }
 
                     @Override
                     public void onError(String error) {
+                        progressDialog.dismiss();
                         Toast.makeText(requireContext(), "Error fetching posts: " + error, Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -204,5 +188,12 @@ public class HomeFragment extends Fragment implements FunctionAdapter.OnFunction
                 Toast.makeText(requireContext(), "Error fetching songs: " + error, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void showLoadingDialog() {
+        progressDialog = new ProgressDialog(requireContext());
+        progressDialog.setMessage(LOADING_MESSAGE);
+        progressDialog.setCancelable(false); // Không cho phép người dùng tắt dialog bằng nút back
+        progressDialog.show();
     }
 }

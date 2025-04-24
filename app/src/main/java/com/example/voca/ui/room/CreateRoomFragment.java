@@ -1,4 +1,4 @@
-package com.example.voca.ui.home;
+package com.example.voca.ui.room;
 
 import android.os.Bundle;
 

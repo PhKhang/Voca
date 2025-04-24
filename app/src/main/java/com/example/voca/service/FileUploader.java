@@ -49,7 +49,7 @@ public class FileUploader {
         System.out.println("Multipart created");
 
         Request request = new Request.Builder()
-                .url("http://10.0.2.2:3000/upload")
+                .url("https://voca-spda.onrender.com/upload")
                 .post(requestBody)
                 .build();
 
@@ -114,7 +114,7 @@ public class FileUploader {
         System.out.println("Json: " + json);
         RequestBody requestBody = RequestBody.create(json, MediaType.get("application/json"));
         Request request = new Request.Builder()
-                .url("http://10.0.2.2:3000/delete")
+                .url("https://voca-spda.onrender.com/delete")
                 .delete(requestBody)
                 .build();
 

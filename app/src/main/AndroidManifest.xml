@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission
@@ -12,13 +12,16 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <meta-data android:name="com.google.firebase.messaging.default_notification_icon"
+        android:resource="@drawable/notification_icon_white" />
     <meta-data
         android:name="com.google.android.gms.auth.api.signin"
         android:value="376964926034-26q0v64muogqhda7e51ket6qgpt9soos.apps.googleusercontent.com" />
-
+    
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -26,12 +29,32 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Voca"
         android:usesCleartextTraffic="true"
-        tools:targetApi="31">
+        tools:targetApi="tiramisu">
         <activity
-            android:name=".ui.home.CreateRoomActivity"
+            android:name=".ui.room.JetpackActivity"
+            android:exported="false"
+            android:label="@string/title_activity_jetpack"
+            android:theme="@style/Theme.Voca" />
+        <activity
+            android:name=".ui.room.JetpackActivity"
+            android:exported="false"
+            android:label="@string/title_activity_jetpack"
+            android:theme="@style/Theme.Voca" />
+        <activity
+            android:name=".ui.room.JetpackActivity"
+            android:exported="false"
+            android:label="@string/title_activity_jetpack"
+            android:theme="@style/Theme.Voca" />
+        <activity
+            android:name=".ui.room.JetpackActivity"
+            android:exported="false"
+            android:label="@string/title_activity_jetpack"
+            android:theme="@style/Theme.Voca" />
+        <activity
+            android:name=".ui.room.CreateRoomActivity" 
             android:exported="false" />
         <activity
-            android:name=".ui.MusicPlayer"
+            android:name=".ui.room.MusicPlayer"
             android:exported="false" />
         <activity
             android:name=".ui.room.KaraokeRoom"
@@ -40,9 +63,9 @@
             android:name=".ui.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Voca"></activity>
+            android:theme="@style/Theme.Voca" />
         <activity
-            android:name=".ui.LoginActivity"
+            android:name=".ui.auth.LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -50,36 +73,56 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <receiver
+            android:name=".service.MarkAsReadNotificationReceiver"
+            android:exported="false" />
         <activity
-            android:name=".ui.RegisterActivity"
-            android:exported="true"></activity>
+            android:name=".ui.auth.RegisterActivity"
+            android:exported="true" />
         <activity
             android:name=".ui.record.RecordActivity"
-            android:exported="true"></activity>
+            android:exported="true" />
         <activity
             android:name=".ui.record.RecordResultActivity"
-            android:exported="true"></activity>
+            android:exported="true" />
         <activity
             android:name=".ui.AdminActivity"
-            android:exported="true"></activity>
+            android:exported="true" />
         <activity
             android:name=".ui.management.SongDetailsActivity"
-            android:exported="true"></activity>
+            android:exported="true" />
         <activity
             android:name=".ui.management.SongsManagementActivity"
+            android:exported="true" />
+        <activity
+            android:name=".ui.auth.ForgotPassActivity"
+            android:exported="true" />
+        <activity
+            android:name=".ui.profile.ProfileViewActivity"
+            android:exported="true" />
+        <activity
+            android:name=".ui.auth.ForgotPassActivity"
             android:exported="true"></activity>
         <activity
-            android:name=".ui.ForgotPassActivity"
-            android:exported="true"></activity>
-        <activity
-            android:name=".ui.ProfileViewActivity"
+            android:name=".ui.profile.ProfileViewActivity"
             android:exported="true"></activity>
         <activity
             android:name=".ui.management.UsersManagementActivity"
             android:exported="true"></activity>
         <activity
+            android:name=".ui.management.UserDetailsActivity"
+            android:exported="true"></activity>
+        <activity
             android:name=".ui.management.SongAddActivity"
             android:exported="true"></activity>
+
+        <service
+            android:name=".service.NotificationFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

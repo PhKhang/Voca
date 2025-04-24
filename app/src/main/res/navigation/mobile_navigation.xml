@@ -45,11 +45,23 @@
         android:id="@+id/navigation_notifications"
         android:name="com.example.voca.ui.notifications.NotificationsFragment"
         android:label="@string/title_notifications"
-        tools:layout="@layout/fragment_notifications" />
+        tools:layout="@layout/fragment_notifications">
+        <action
+            android:id="@+id/action_notificationsFragment_to_dashboardFragment"
+            app:destination="@id/navigation_dashboard"
+            app:launchSingleTop="true"
+            app:popUpTo="@+id/mobile_navigation"
+            app:popUpToInclusive="true">
+            <argument
+                android:name="priorityPostId"
+                app:argType="string"
+                android:defaultValue="@null" />
+        </action>
+    </fragment>
 
     <fragment
         android:id="@+id/navigation_profile"
-        android:name="com.example.voca.ui.ProfileFragment"
+        android:name="com.example.voca.ui.profile.ProfileFragment"
         android:label="@string/title_profile"
         tools:layout="@layout/fragment_profile" />
 </navigation>

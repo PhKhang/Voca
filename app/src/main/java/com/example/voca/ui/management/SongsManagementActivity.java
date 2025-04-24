@@ -16,6 +16,7 @@ import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.SongBUS;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.SongDTO;
+import com.example.voca.ui.adapter.SongAdapter;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 
@@ -23,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SongsManagementActivity extends AppCompatActivity {
-    private static final String LOADING_MESSAGE = "Đang lấy dữ liệu bài hát...";
+    private static final String LOADING_MESSAGE = "Đang tải bài hát...";
     private ListView songListView;
     private List<SongDTO> songs;
     private List<PostDTO> posts;
@@ -49,13 +50,6 @@ public class SongsManagementActivity extends AppCompatActivity {
         loadSongs();
         setClickOnNavigationButton();
 
-    }
-
-    private void hideActionBar() {
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            actionBar.hide();
-        }
     }
 
     private void setClickOnNavigationButton() {
@@ -94,7 +88,6 @@ public class SongsManagementActivity extends AppCompatActivity {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                searchSongsByTitle(query);
                 return true;
             }
 
@@ -102,6 +95,8 @@ public class SongsManagementActivity extends AppCompatActivity {
             public boolean onQueryTextChange(String newText) {
                 if (newText.isEmpty()) {
                     songAdapter.updateData(songs);
+                } else {
+                    searchSongsByTitle(newText);
                 }
                 return true;
             }

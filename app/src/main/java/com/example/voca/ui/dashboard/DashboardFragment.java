@@ -1,54 +1,33 @@
 package com.example.voca.ui.dashboard;
 
-import static android.content.Context.MODE_PRIVATE;
-
-import static androidx.core.content.ContextCompat.getColor;
 import static com.google.android.material.internal.ViewUtils.hideKeyboard;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.graphics.Typeface;
-import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.FrameLayout;
-import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.MediaController;
+import android.widget.SearchView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.voca.R;
-import com.example.voca.bus.LikeBUS;
-import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.databinding.FragmentDashboardBinding;
-import com.example.voca.dto.LikeDTO;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
-import com.example.voca.ui.PostAdapter;
-import com.example.voca.ui.ProfileViewActivity;
+import com.example.voca.ui.adapter.PostAdapter;
+import com.example.voca.ui.profile.ProfileViewActivity;
 import com.google.android.exoplayer2.ExoPlayer;
 
 import java.text.ParseException;
@@ -69,9 +48,7 @@ public class DashboardFragment extends Fragment {
     RecyclerView recyclerView;
     private ExoPlayer player;
     private RecyclerView recyclerViewUsers;
-    private EditText searchEditText;
     private UserBUS userBUS = new UserBUS();
-//    private FrameLayout searchResultsContainer;
     private UserAdapter userAdapter;
     private List<UserDTO> userList = new ArrayList<>(), filteredUsers = new ArrayList<>();
 
@@ -93,18 +70,39 @@ public class DashboardFragment extends Fragment {
         if (getArguments() != null) {
             priorityPostId = getArguments().getString("priorityPostId");
         }
+
         sharedPostViewModel.fetchAllPosts(priorityPostId);
+
+        String finalPriorityPostId = priorityPostId;
 
         sharedPostViewModel.getAllPostsLiveData().observe(getViewLifecycleOwner(), posts -> {
             Log.d("DashboardFragment", "LiveData updated, size: " + (posts != null ? posts.size() : 0));
             if (posts != null) {
-                postAdapter.updateData(posts);
+                List<PostDTO> sortedPosts = new ArrayList<>(posts);
+                Collections.reverse(sortedPosts);
+
+                if (finalPriorityPostId != null) {
+                    PostDTO priorityPost = null;
+
+                    for (PostDTO post : sortedPosts) {
+                        if (finalPriorityPostId.equals(post.get_id())) {
+                            priorityPost = post;
+                            break;
+                        }
+                    }
+
+                    if (priorityPost != null) {
+                        sortedPosts.remove(priorityPost);
+                        sortedPosts.add(0, priorityPost);
+                    }
+                }
+
+                postAdapter.updateData(sortedPosts);
             }
         });
 
         recyclerViewUsers = root.findViewById(R.id.recyclerViewUsers);
-        searchEditText = root.findViewById(R.id.searchEditText);
-//        searchResultsContainer = root.findViewById(R.id.searchOverlay);
+        SearchView searchView = root.findViewById(R.id.searchView);
 
         userBUS.fetchUsers(new UserBUS.OnUsersFetchedListener() {
             @Override
@@ -123,48 +121,32 @@ public class DashboardFragment extends Fragment {
         recyclerViewUsers.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerViewUsers.setAdapter(userAdapter);
 
-        ImageView clearSearchButton = root.findViewById(R.id.clearSearchButton);
-        clearSearchButton.setOnClickListener(v -> {
-            searchEditText.setText("");
-            searchEditText.clearFocus();
-        });
-        searchEditText.addTextChangedListener(new TextWatcher() {
+        // Lắng nghe khi người dùng gõ vào ô tìm kiếm
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
-            public void afterTextChanged(Editable s) {
-                String query = s.toString().trim();
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
 
-                clearSearchButton.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                String query = newText.trim();
 
                 if (!query.isEmpty()) {
                     searchUsers(query);
                 } else {
                     hideSearchResults();
                 }
+                return true;
             }
-
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
         });
-        // Xử lý sự kiện khi nhấn nút xóa
-        clearSearchButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                searchEditText.setText("");
-                searchEditText.clearFocus();
 
+        // Xử lý focus (ẩn hiện RecyclerView)
+        searchView.setOnQueryTextFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus && !searchView.getQuery().toString().isEmpty()) {
+                recyclerViewUsers.setVisibility(View.VISIBLE);
+            } else {
                 recyclerViewUsers.setVisibility(View.GONE);
-            }
-        });
-//        searchResultsContainer.setOnClickListener(v -> hideSearchResults());
-        searchEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (hasFocus && searchEditText.getText().length() > 0) {
-                    // Hiển thị kết quả tìm kiếm khi có focus và có nội dung
-                    recyclerViewUsers.setVisibility(View.VISIBLE);
-                } else {
-                    recyclerViewUsers.setVisibility(View.GONE);
-                }
             }
         });
 
@@ -187,13 +169,10 @@ public class DashboardFragment extends Fragment {
 
         userAdapter.notifyDataSetChanged();
         recyclerViewUsers.setVisibility(View.VISIBLE);
-//        searchResultsContainer.setVisibility(View.VISIBLE);
     }
 
     private void hideSearchResults() {
-//        searchEditText.setText("");
         recyclerViewUsers.setVisibility(View.GONE);
-//        searchResultsContainer.setVisibility(View.GONE);
     }
 
     @Override
@@ -259,7 +238,7 @@ public class DashboardFragment extends Fragment {
 
             Glide.with(requireContext())
                     .load(user.getAvatar())
-                    .placeholder(R.drawable.default_account_avatar)
+                    .placeholder(R.drawable.ic_profile_2_24dp)
                     .into(holder.imgAvatar);
 
             holder.itemView.setOnClickListener(v -> {

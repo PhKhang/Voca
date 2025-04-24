@@ -1,21 +1,26 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const multer = require('multer');
-const multerS3 = require('multer-s3');
-const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
-const { fromEnv } = require('@aws-sdk/credential-providers');
-const crypto = require('crypto');
-
+const express = require("express");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const multer = require("multer");
+const multerS3 = require("multer-s3");
+const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const { StreamClient } = require("@stream-io/node-sdk");
+const { fromEnv } = require("@aws-sdk/credential-providers");
+const crypto = require("crypto");
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+mongoose
+  .connect(process.env.connection_string)
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => console.log("Error:", err));
 
-// Kết nối tới MongoDB
-mongoose.connect(process.env.connection_string)
-    .then(() => console.log('Connected to MongoDB'))
-    .catch((err) => console.error('MongoDB connection error:', err));
+const client = new StreamClient(
+  process.env.STREAMIO_API_KEY,
+  process.env.STREAMIO_API_SECRET,
+  { timeout: 3000 }
+);
 
 // Khởi tạo S3 Client với xử lý lỗi
 let s3Client;
@@ -103,7 +108,7 @@ const userSchema = new mongoose.Schema({
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date, default: Date.now }
 });
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model("User", userSchema);
 
 const songSchema = new mongoose.Schema({
     youtube_id: { type: String, required: true, unique: true },
@@ -114,22 +119,38 @@ const songSchema = new mongoose.Schema({
     recorded_people: { type: Number, default: 0 },
     created_at: { type: Date, default: Date.now }
 });
-const Song = mongoose.model('Song', songSchema);
+const Song = mongoose.model("Song", songSchema);
 
 const postSchema = new mongoose.Schema({
-    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    song_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Song', required: true },
-    audio_url: { type: String, required: true },
-    caption: { type: String },
-    likes: { type: Number, default: 0 },
-    created_at: { type: Date, default: Date.now }
+  user_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  song_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Song",
+    required: true,
+  },
+  audio_url: { type: String, required: true },
+  caption: { type: String },
+  likes: { type: Number, default: 0 },
+  created_at: { type: Date, default: Date.now },
 });
-const Post = mongoose.model('Post', postSchema);
+const Post = mongoose.model("Post", postSchema);
 
 const likeSchema = new mongoose.Schema({
-    post_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Post', required: true },
-    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    created_at: { type: Date, default: Date.now }
+  post_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Post",
+    required: true,
+  },
+  user_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  created_at: { type: Date, default: Date.now },
 });
 const Like = mongoose.model('Like', likeSchema);
 
@@ -144,23 +165,25 @@ const notificationSchema = new mongoose.Schema({
 const Notification = mongoose.model('Notification', notificationSchema);
 
 const roomSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    code: { type: String, unique: true },
-    is_private: { type: Boolean, default: false },
-    description: { type: String },
-    created_at: { type: Date, default: Date.now },
-    updated_at: { type: Date, default: Date.now },
-    created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    queue: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Song' }],
-    current_song: { type: mongoose.Schema.Types.ObjectId, ref: 'Song' },
-    current_song_start_time: { type: Date },
-    chats: [{
-        message_type: { type: String },
-        user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        message: { type: String },
-        timestamp: { type: Date, default: Date.now },
-    }],
+  name: { type: String, required: true },
+  code: { type: String, unique: true },
+  is_private: { type: Boolean, default: false },
+  description: { type: String },
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now },
+  created_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  queue: [{ type: mongoose.Schema.Types.ObjectId, ref: "Song" }],
+  current_song: { type: mongoose.Schema.Types.ObjectId, ref: "Song" },
+  current_song_start_time: { type: Date },
+  chats: [
+    {
+      message_type: { type: String },
+      user_id: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      message: { type: String },
+      timestamp: { type: Date, default: Date.now },
+    },
+  ],
 });
 
 roomSchema.pre('save', async function(next) {
@@ -179,68 +202,116 @@ function generateRandomCode() {
     return crypto.randomBytes(3).toString('hex').toUpperCase();
 }
 
-const Room = mongoose.model('Room', roomSchema);
+const Room = mongoose.model("Room", roomSchema);
 
 // CRUD APIs for Rooms
-app.post('/rooms', async (req, res) => {
-    try {
-        let room = new Room(req.body);
-        await room.save();
-        room = await Room.findById(room._id)
-            .populate('created_by')
-            .populate('members')
-            .populate('queue')
-            .populate('current_song');
-        console.log('Room created:', room);
-        res.status(201).json(room);
-    } catch (err) {
-        console.error('Error creating room:', err);
-        res.status(400).json({ error: 'Failed to create room', details: err.message });
-    }
+app.post("/rooms", async (req, res) => {
+  try {
+    var room = new Room(req.body);
+    await room.save();
+    // .then(room => room.populate('created_by').populate('members').populate('queue').populate('current_song'));
+    room = await Room.findById(room._id)
+      .populate("created_by")
+      .populate("members")
+      .populate("queue")
+      .populate("current_song");
+    res.status(201).json(room);
+    console.log("Room created:", room);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+    console.error("Error creating room:", err.message);
+  }
 });
 
-app.get('/rooms/', async (req, res) => {
-    try {
-        let filter = {};
-        if (req.query.name) filter.name = new RegExp(req.query.name, 'i');
-        if (req.query.code) filter.code = req.query.code;
-        if (req.query.user_id) filter.created_by = new mongoose.Types.ObjectId(req.query.user_id);
+app.get("/rooms/", async (req, res) => {
+  let filter = {};
 
-        const room = req.query.code
-            ? await Room.findOne(filter).populate('created_by').populate('members').populate('queue').populate('current_song')
-            : await Room.find(filter).populate('created_by').populate('members').populate('queue').populate('current_song');
-        console.log('Rooms found:', room);
-        room ? res.json(room) : res.status(404).json({ error: 'Room not found' });
-    } catch (err) {
-        console.error('Error fetching rooms:', err);
-        res.status(500).json({ error: 'Failed to fetch rooms', details: err.message });
-    }
+  if (req.query.name) {
+    filter.name = new RegExp(req.query.name, "i");
+  }
+
+  if (req.query.code) {
+    filter.code = req.query.code;
+  }
+
+  if (req.query.user_id) {
+    filter.created_by = new mongoose.Types.ObjectId(req.query.user_id);
+  }
+
+  const room = req.query.code
+    ? await Room.findOne(filter)
+        .populate("created_by")
+        .populate("members")
+        .populate("queue")
+        .populate("current_song")
+    : await Room.find(filter)
+        .populate("created_by")
+        .populate("members")
+        .populate("queue")
+        .populate("current_song");
+  console.log("Rooms found:", room);
+  room ? res.json(room) : res.status(404).json({ error: "Room not found" });
 });
 
-app.get('/rooms/:id', async (req, res) => {
-    try {
-        const room = await Room.findById(req.params.id)
-            .populate('created_by')
-            .populate('members')
-            .populate('queue')
-            .populate('current_song');
-        room ? res.json(room) : res.status(404).json({ error: 'Room not found' });
-    } catch (err) {
-        console.error('Error fetching room:', err);
-        res.status(500).json({ error: 'Failed to fetch room', details: err.message });
-    }
+app.get("/rooms/:id", async (req, res) => {
+  const room = await Room.findById(req.params.id)
+    .populate("created_by")
+    .populate("members")
+    .populate("queue")
+    .populate("current_song");
+  if (room) {
+    console.log("Room found:", room);
+    const call = client.video.call("audio_room", req.params.id);
+    const result = await call.getOrCreate({
+      custom: { title: "Hi", description: `yet another room ${req.params.id}` },
+    });
+
+    res.json({ call: result });
+    return;
+  }
+
+  res.status(404).json({ error: "Room not found" });
 });
 
-app.delete('/rooms/:id', async (req, res) => {
-    try {
-        const room = await Room.findByIdAndDelete(req.params.id);
-        if (!room) return res.status(404).json({ error: 'Room not found' });
-        console.log('Room deleted:', req.params.id);
-        res.json({ message: 'Room deleted' });
-    } catch (err) {
-        console.error('Error deleting room:', err);
-        res.status(500).json({ error: 'Failed to delete room', details: err.message });
-    }
+app.post("/rooms/:id/join", async (req, res) => {
+  const roomId = req.params.id;
+  const userId = req.body.user_id;
+  const call = client.video.call("audio_room", roomId);
+
+  console.log(
+    process.env.STREAMIO_API_KEY,
+    "and",
+    process.env.STREAMIO_API_SECRET
+  );
+
+  if (!roomId || !userId) {
+    return res.status(400).json({ error: "Room ID and User ID are required" });
+  }
+
+  console.log("Creating room:", roomId, "for user:", userId);
+  await call.getOrCreate({
+    data: { created_by_id: userId },
+    custom: { title: "Hi", description: `yet another room ${roomId}` },
+  });
+
+  // console.log("Joining room:", roomId, "for user:", userId);
+  // await call.updateCallMembers({
+  //     update_members: [{ user_id: userId, role: "admin" }],
+  // });
+
+  console.log("Creating token");
+  const userToken = client.generateUserToken({
+    user_id: userId,
+    validity_in_seconds: 60 * 60 * 24 * 30,
+  });
+
+  res.json({ user_token: userToken });
+  console.log("Still ok");
+});
+
+app.delete("/rooms/:id", async (req, res) => {
+  await Room.findByIdAndDelete(req.params.id);
+  res.json({ message: "Room deleted" });
 });
 
 app.put('/rooms/:id', async (req, res) => {

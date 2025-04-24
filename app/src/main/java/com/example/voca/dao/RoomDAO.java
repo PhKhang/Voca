@@ -33,10 +33,6 @@ public class RoomDAO {
         Call<RoomDTO> call = roomApi.getRoomById(id);
         call.enqueue(callback);
     }
-    public void getRoomByCode(String code, Callback<RoomDTO> callback) {
-        Call<RoomDTO> call = roomApi.getRoomByCode(code);
-        call.enqueue(callback);
-    }
 
     public void createRoom(RoomDTO song, Callback<RoomDTO> callback) {
         Call<RoomDTO> call = roomApi.createRoom(song);
@@ -55,6 +51,10 @@ public class RoomDAO {
 
     public void deleteRoom(String id, Callback<Void> callback) {
         Call<Void> call = roomApi.deleteRoom(id);
+        call.enqueue(callback);
+    }
+    public void getRoomByCode(String code, Callback<RoomDTO> callback) {
+        Call<RoomDTO> call = roomApi.getRoomByCode(code);
         call.enqueue(callback);
     }
 
