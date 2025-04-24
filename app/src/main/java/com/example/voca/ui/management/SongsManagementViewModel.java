@@ -1,4 +1,4 @@
-package com.example.voca.ui.home;
+package com.example.voca.ui.management;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -10,12 +10,10 @@ import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.SongDTO;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class HomeViewModel extends ViewModel {
+public class SongsManagementViewModel extends ViewModel {
     private final MutableLiveData<List<SongDTO>> songsLiveData = new MutableLiveData<>();
     private final MutableLiveData<List<PostDTO>> postsLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> errorLiveData = new MutableLiveData<>();
@@ -40,15 +38,8 @@ public class HomeViewModel extends ViewModel {
 
         songBUS.fetchSongs(new SongBUS.OnSongsFetchedListener() {
             @Override
-            public void onSongsFetched(List<SongDTO> songs) {
-                List<SongDTO> songList = songs != null ? new ArrayList<>(songs) : new ArrayList<>();
-                if (!songList.isEmpty()) {
-                    Collections.sort(songList, (s1, s2) -> Integer.compare(s2.getRecorded_people(), s1.getRecorded_people()));
-                    if (songList.size() > 3) {
-                        songList = new ArrayList<>(songList.subList(0, 3));
-                    }
-                }
-                songsLiveData.setValue(songList);
+            public void onSongsFetched(List<SongDTO> fetchedSongs) {
+                songsLiveData.setValue(fetchedSongs != null ? new ArrayList<>(fetchedSongs) : new ArrayList<>());
                 if (tasksCompleted.incrementAndGet() == totalTasks) {
                 }
             }
@@ -61,17 +52,9 @@ public class HomeViewModel extends ViewModel {
 
         postBUS.fetchPosts(new PostBUS.OnPostsFetchedListener() {
             @Override
-            public void onPostsFetched(List<PostDTO> posts) {
-                List<PostDTO> postList = posts != null ? new ArrayList<>(posts) : new ArrayList<>();
-                if (!postList.isEmpty()) {
-                    Collections.sort(postList, (p1, p2) -> Integer.compare(p2.getLikes(), p1.getLikes()));
-                    if (postList.size() > 3) {
-                        postList = new ArrayList<>(postList.subList(0, 3));
-                    }
-                }
-                postsLiveData.setValue(postList);
+            public void onPostsFetched(List<PostDTO> fetchedPosts) {
+                postsLiveData.setValue(fetchedPosts != null ? new ArrayList<>(fetchedPosts) : new ArrayList<>());
                 if (tasksCompleted.incrementAndGet() == totalTasks) {
-
                 }
             }
 
@@ -80,5 +63,24 @@ public class HomeViewModel extends ViewModel {
                 errorLiveData.setValue("Error fetching posts: " + error);
             }
         });
+    }
+
+    public void searchSongs(String query) {
+        if (query.isEmpty()) {
+            List<SongDTO> currentSongs = songsLiveData.getValue();
+            songsLiveData.setValue(currentSongs != null ? new ArrayList<>(currentSongs) : new ArrayList<>());
+        } else {
+            songBUS.searchSongsByTitle(query, new SongBUS.OnSongsFetchedListener() {
+                @Override
+                public void onSongsFetched(List<SongDTO> fetchedSongs) {
+                    songsLiveData.setValue(fetchedSongs != null ? new ArrayList<>(fetchedSongs) : new ArrayList<>());
+                }
+
+                @Override
+                public void onError(String error) {
+                    errorLiveData.setValue(error);
+                }
+            });
+        }
     }
 }

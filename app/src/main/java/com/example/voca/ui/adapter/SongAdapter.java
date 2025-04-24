@@ -9,27 +9,44 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.example.voca.R;
-import com.example.voca.dto.SongDTO;
-import com.example.voca.dto.PostDTO;
-import com.example.voca.service.LoadImage;
+import androidx.annotation.NonNull;
 
+import com.bumptech.glide.Glide;
+import com.example.voca.R;
+import com.example.voca.dto.PostDTO;
+import com.example.voca.dto.SongDTO;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SongAdapter extends ArrayAdapter<SongDTO> {
     private Context context;
     private List<SongDTO> songs;
     private List<PostDTO> posts;
+    private Map<String, Integer> likeCounts;
 
     public SongAdapter(Context context, List<SongDTO> songs, List<PostDTO> posts) {
         super(context, R.layout.song_item_layout, songs);
         this.context = context;
         this.songs = songs;
         this.posts = posts;
+        this.likeCounts = new HashMap<>();
+        precomputeLikeCounts();
+    }
+
+    private void precomputeLikeCounts() {
+        likeCounts.clear();
+        for (PostDTO post : posts) {
+            if (post != null && post.getSong_id() != null && post.getSong_id().get_id() != null) {
+                String songId = post.getSong_id().get_id();
+                likeCounts.put(songId, likeCounts.getOrDefault(songId, 0) + post.getLikes());
+            }
+        }
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(int position, @NonNull View convertView, @NonNull ViewGroup parent) {
         ViewHolder holder;
 
         if (convertView == null) {
@@ -52,21 +69,19 @@ public class SongAdapter extends ArrayAdapter<SongDTO> {
             Log.e("SongAdapter", "SongDTO at position " + position + " is null");
             return convertView; // Tránh crash
         }
-        new LoadImage(holder.thumbnail).execute(song.getThumbnail());
-        holder.title.setText(song.getTitle());
-        holder.uploader.setText(song.getUploaded_by().getUsername());
+
+        Glide.with(context)
+                .load(song.getThumbnail())
+                .placeholder(R.drawable.default_thumbnail)
+                .error(R.drawable.default_thumbnail)
+                .into(holder.thumbnail);
+
+        holder.title.setText(song.getTitle() != null ? song.getTitle() : "N/A");
+        holder.uploader.setText(song.getUploaded_by() != null && song.getUploaded_by().getUsername() != null
+                ? song.getUploaded_by().getUsername() : "N/A");
         holder.recorded_people.setText(String.valueOf(song.getRecorded_people()));
 
-        int totalLikes = 0;
-        for (PostDTO post : posts) {
-            if (post == null || post.getSong_id() == null || post.getSong_id().get_id() == null) {
-                continue;
-            }
-
-            if (song.get_id() != null && post.getSong_id().get_id().equals(song.get_id())) {
-                totalLikes += post.getLikes();
-            }
-        }
+        int totalLikes = likeCounts.getOrDefault(song.get_id(), 0);
         holder.like_times.setText(String.valueOf(totalLikes));
 
         return convertView;
@@ -81,10 +96,11 @@ public class SongAdapter extends ArrayAdapter<SongDTO> {
     public void updateDataPost(List<PostDTO> newPosts) {
         posts.clear();
         posts.addAll(newPosts);
+        precomputeLikeCounts();
         notifyDataSetChanged();
     }
 
-    private class ViewHolder {
+    private static class ViewHolder {
         ImageView thumbnail;
         TextView title;
         TextView uploader;

@@ -1,19 +1,20 @@
 package com.example.voca.ui.management;
 
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
+
 import com.example.voca.R;
-import com.example.voca.bus.PostBUS;
-import com.example.voca.bus.SongBUS;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.SongDTO;
 import com.example.voca.ui.adapter.SongAdapter;
@@ -29,11 +30,12 @@ public class SongsManagementActivity extends AppCompatActivity {
     private List<SongDTO> songs;
     private List<PostDTO> posts;
     private SongAdapter songAdapter;
-    private SongBUS songBUS;
-    private PostBUS postBUS;
     private ExtendedFloatingActionButton addSongButton;
     private SearchView searchView;
     private ProgressDialog progressDialog;
+    private SongsManagementViewModel viewModel;
+    private Handler searchHandler;
+    private Runnable searchRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,19 +49,13 @@ public class SongsManagementActivity extends AppCompatActivity {
         initializeViews();
         initializeData();
         setupListeners();
-        loadSongs();
+        setupViewModel();
         setClickOnNavigationButton();
-
     }
 
     private void setClickOnNavigationButton() {
         MaterialToolbar topAppBar = findViewById(R.id.topAppBar);
-        topAppBar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
+        topAppBar.setNavigationOnClickListener(v -> finish());
     }
 
     private void initializeViews() {
@@ -71,10 +67,29 @@ public class SongsManagementActivity extends AppCompatActivity {
     private void initializeData() {
         songs = new ArrayList<>();
         posts = new ArrayList<>();
-        songBUS = new SongBUS();
-        postBUS = new PostBUS();
         songAdapter = new SongAdapter(this, songs, posts);
         songListView.setAdapter(songAdapter);
+        searchHandler = new Handler(Looper.getMainLooper());
+    }
+
+    private void setupViewModel() {
+        viewModel = new ViewModelProvider(this).get(SongsManagementViewModel.class);
+        viewModel.getSongsLiveData().observe(this, fetchedSongs -> {
+            songs = fetchedSongs != null ? new ArrayList<>(fetchedSongs) : new ArrayList<>();
+            songAdapter.updateData(songs);
+            checkDataLoaded();
+        });
+        viewModel.getPostsLiveData().observe(this, fetchedPosts -> {
+            posts = fetchedPosts != null ? new ArrayList<>(fetchedPosts) : new ArrayList<>();
+            songAdapter.updateDataPost(posts);
+            checkDataLoaded();
+        });
+        viewModel.getErrorLiveData().observe(this, error -> {
+            progressDialog.dismiss();
+            showToast(error);
+        });
+        showLoadingDialog();
+        viewModel.fetchData();
     }
 
     private void setupListeners() {
@@ -88,16 +103,17 @@ public class SongsManagementActivity extends AppCompatActivity {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
+                viewModel.searchSongs(query);
                 return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                if (newText.isEmpty()) {
-                    songAdapter.updateData(songs);
-                } else {
-                    searchSongsByTitle(newText);
+                if (searchRunnable != null) {
+                    searchHandler.removeCallbacks(searchRunnable);
                 }
+                searchRunnable = () -> viewModel.searchSongs(newText);
+                searchHandler.postDelayed(searchRunnable, 300);
                 return true;
             }
         });
@@ -107,7 +123,7 @@ public class SongsManagementActivity extends AppCompatActivity {
         findViewById(R.id.root_layout).setOnClickListener(v -> {
             searchView.clearFocus();
             searchView.setQuery("", false);
-            songAdapter.updateData(songs);
+            viewModel.searchSongs("");
         });
     }
 
@@ -139,7 +155,7 @@ public class SongsManagementActivity extends AppCompatActivity {
     @Override
     protected void onRestart() {
         super.onRestart();
-        loadSongs();
+        viewModel.fetchData();
     }
 
     @Override
@@ -149,58 +165,16 @@ public class SongsManagementActivity extends AppCompatActivity {
         findViewById(R.id.root_layout).requestFocus();
     }
 
-    private void loadSongs() {
-        showLoadingDialog();
-        songBUS.fetchSongs(new SongBUS.OnSongsFetchedListener() {
-            @Override
-            public void onSongsFetched(List<SongDTO> fetchedSongs) {
-                songs = fetchedSongs;
-                songAdapter.updateData(songs);
-                loadPosts();
-                progressDialog.dismiss();
-            }
-
-            @Override
-            public void onError(String error) {
-                progressDialog.dismiss();
-                showToast("Error fetching songs: " + error);
-            }
-        });
-    }
-
-    private void loadPosts() {
-        postBUS.fetchPosts(new PostBUS.OnPostsFetchedListener() {
-            @Override
-            public void onPostsFetched(List<PostDTO> fetchedPosts) {
-                posts = fetchedPosts;
-                songAdapter.updateDataPost(posts);
-            }
-
-            @Override
-            public void onError(String error) {
-                showToast("Error fetching posts: " + error);
-            }
-        });
-    }
-
-    private void searchSongsByTitle(String query) {
-        songBUS.searchSongsByTitle(query, new SongBUS.OnSongsFetchedListener() {
-            @Override
-            public void onSongsFetched(List<SongDTO> songs) {
-                songAdapter.updateData(songs);
-            }
-
-            @Override
-            public void onError(String errorMessage) {
-                showToast(errorMessage);
-            }
-        });
+    private void checkDataLoaded() {
+        if (!songs.isEmpty() && !posts.isEmpty()) {
+            progressDialog.dismiss();
+        }
     }
 
     private void showLoadingDialog() {
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage(LOADING_MESSAGE);
-        progressDialog.setCancelable(false);
+        progressDialog.setCancelable(true);
         progressDialog.show();
     }
 
