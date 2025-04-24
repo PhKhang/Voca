@@ -325,20 +325,31 @@ app.get('/notifications/:userId', async (req, res) => {
     }
 });
 
-app.put('/notifications/:id/read', async (req, res) => {
+app.put('/notifications/:id/status', async (req, res) => {
     try {
-        const notification = await Notification.findByIdAndUpdate(req.params.id, { is_read: true }, { new: true })
-            .populate('recipient_id')
-            .populate('sender_id')
-            .populate({ path: 'post_id', populate: [{ path: 'user_id' }, { path: 'song_id', populate: { path: 'uploaded_by' } }] });
-        if (!notification) return res.status(404).json({ error: 'Notification not found' });
-        console.log('Notification marked as read:', req.params.id);
-        res.json(notification);
+        const { is_read } = req.body;
+        if (typeof is_read !== 'boolean') {
+            return res.status(400).json({ error: 'Invalid input: is_read must be a boolean' });
+        }
+
+        const notification = await Notification.findByIdAndUpdate(
+            req.params.id,
+            { is_read },
+            { new: true }
+        ).select('is_read');
+
+        if (!notification) {
+            return res.status(404).json({ error: 'Notification not found' });
+        }
+
+        /* console.log(`Notification ${is_read ? 'marked as read' : 'marked as unread'}:`, req.params.id); */
+        res.json({ message: `Notification marked as ${is_read ? 'read' : 'unread'}`, is_read: notification.is_read });
     } catch (err) {
-        console.error('Error updating notification:', err);
-        res.status(400).json({ error: 'Failed to update notification', details: err.message });
+        console.error('Error updating notification status:', err);
+        res.status(500).json({ error: 'Failed to update notification status', details: err.message });
     }
 });
+
 
 app.delete('/notifications/:id', async (req, res) => {
     try {
