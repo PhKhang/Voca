@@ -3,6 +3,8 @@ package com.example.voca.ui.sing;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,7 +25,10 @@ import com.google.android.material.tabs.TabLayout;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SingFragment extends Fragment {
     private ListView listView;
@@ -36,6 +41,9 @@ public class SingFragment extends Fragment {
     private Context context;
     private TabLayout tabLayout;
     private SearchView searchView;
+    private Handler searchHandler;
+    private Runnable searchRunnable;
+    private Map<String, Integer> songLikesCache;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -48,10 +56,15 @@ public class SingFragment extends Fragment {
 
         songList = new ArrayList<>();
         postList = new ArrayList<>();
+        songLikesCache = new HashMap<>();
         songBUS = new SongBUS();
         postBUS = new PostBUS();
 
+        singAdapter = new SingAdapter(context, postList, songList);
+        listView.setAdapter(singAdapter);
+
         searchView = view.findViewById(R.id.searchView);
+        searchHandler = new Handler(Looper.getMainLooper());
         setupSearchViewListener();
 
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
@@ -70,7 +83,7 @@ public class SingFragment extends Fragment {
             }
         });
 
-        fetchSongs(0);
+        fetchData(0);
 
         return view;
     }
@@ -85,11 +98,16 @@ public class SingFragment extends Fragment {
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                filterBySearchAndTab(newText);
+                if (searchRunnable != null) {
+                    searchHandler.removeCallbacks(searchRunnable);
+                }
+                searchRunnable = () -> filterBySearchAndTab(newText);
+                searchHandler.postDelayed(searchRunnable, 300); // 300ms debounce
                 return true;
             }
         });
     }
+
     private void filterBySearchAndTab(String query) {
         if (songList == null) return;
 
@@ -103,35 +121,42 @@ public class SingFragment extends Fragment {
             }
         }
 
-        singAdapter = new SingAdapter(context, postList, finalFilteredList);
-        listView.setAdapter(singAdapter);
+        singAdapter.updateData(postList, finalFilteredList);
+        singAdapter.notifyDataSetChanged();
     }
 
     private void resetAndFetchData(int tabPosition) {
-        if (songList != null) songList.clear();
-        if (postList != null) postList.clear();
-        if (singAdapter != null) singAdapter.notifyDataSetChanged();
+        songList.clear();
+        postList.clear();
+        songLikesCache.clear();
+        singAdapter.updateData(postList, songList);
+        singAdapter.notifyDataSetChanged();
 
         if (searchView != null) {
             searchView.setQuery("", false);
             searchView.clearFocus();
         }
 
-        fetchSongs(tabPosition);
+        fetchData(tabPosition);
     }
 
-    private void fetchSongs(int tabPosition) {
+    private void fetchData(int tabPosition) {
         progressDialog = new ProgressDialog(requireContext());
-        progressDialog.setMessage("Đang tải bài hát...");
-        progressDialog.setCancelable(false);
+        progressDialog.setMessage("Đang tải dữ liệu...");
+        progressDialog.setCancelable(true);
         progressDialog.show();
 
+        AtomicInteger tasksCompleted = new AtomicInteger(0);
+        int totalTasks = 2;
+
+        // Fetch songs
         songBUS.fetchSongs(new SongBUS.OnSongsFetchedListener() {
             @Override
             public void onSongsFetched(List<SongDTO> songs) {
-                songList = songs; // Lưu danh sách bài hát gốc
-                fetchPosts(tabPosition); // Truyền tabPosition vào fetchPosts
-                // Không gọi filterSongsByTab ở đây nữa
+                songList = songs != null ? new ArrayList<>(songs) : new ArrayList<>();
+                if (tasksCompleted.incrementAndGet() == totalTasks) {
+                    updateUI(tabPosition);
+                }
             }
 
             @Override
@@ -140,20 +165,17 @@ public class SingFragment extends Fragment {
                 Toast.makeText(requireContext(), "Error fetching songs: " + error, Toast.LENGTH_SHORT).show();
             }
         });
-    }
 
-    private void fetchPosts(int tabPosition) {
+        // Fetch posts
         postBUS.fetchPosts(new PostBUS.OnPostsFetchedListener() {
             @Override
             public void onPostsFetched(List<PostDTO> posts) {
-                postList = posts;
-                // Sau khi có cả songList và postList, giờ mới lọc và cập nhật UI
-                songList = filterSongsByTab(songList, tabPosition);
-                if (context != null) {
-                    singAdapter = new SingAdapter(context, postList, songList);
-                    listView.setAdapter(singAdapter);
+                postList = posts != null ? new ArrayList<>(posts) : new ArrayList<>();
+                // Precompute total likes
+                precomputeSongLikes();
+                if (tasksCompleted.incrementAndGet() == totalTasks) {
+                    updateUI(tabPosition);
                 }
-                progressDialog.dismiss();
             }
 
             @Override
@@ -164,55 +186,48 @@ public class SingFragment extends Fragment {
         });
     }
 
+    private void precomputeSongLikes() {
+        songLikesCache.clear();
+        for (PostDTO post : postList) {
+            if (post != null && post.getSong_id() != null && post.getSong_id().get_id() != null) {
+                String songId = post.getSong_id().get_id();
+                songLikesCache.put(songId, songLikesCache.getOrDefault(songId, 0) + post.getLikes());
+            }
+        }
+    }
+
+    private void updateUI(int tabPosition) {
+        List<SongDTO> filteredSongs = filterSongsByTab(songList, tabPosition);
+        singAdapter.updateData(postList, filteredSongs);
+        singAdapter.notifyDataSetChanged();
+        progressDialog.dismiss();
+    }
+
     private List<SongDTO> filterSongsByTab(List<SongDTO> songs, int tabPosition) {
-        List<SongDTO> filteredList = new ArrayList<>(songs); // Sao chép danh sách gốc để không thay đổi nó
+        List<SongDTO> filteredList = new ArrayList<>(songs);
 
         switch (tabPosition) {
-            case 0: // Tab "Tất cả"
-                // Không cần lọc, trả về toàn bộ danh sách
+            case 0:
                 return filteredList;
 
-            case 1: // Tab "Nhiều lượt thích nhất"
-                // Sắp xếp theo số lượt thích (tính từ posts)
-                Collections.sort(filteredList, new Comparator<SongDTO>() {
-                    @Override
-                    public int compare(SongDTO song1, SongDTO song2) {
-                        int likes1 = calculateTotalLikes(song1);
-                        int likes2 = calculateTotalLikes(song2);
-                        return Integer.compare(likes2, likes1); // Sắp xếp giảm dần
-                    }
+            case 1:
+                Collections.sort(filteredList, (song1, song2) -> {
+                    int likes1 = songLikesCache.getOrDefault(song1.get_id(), 0);
+                    int likes2 = songLikesCache.getOrDefault(song2.get_id(), 0);
+                    return Integer.compare(likes2, likes1);
                 });
                 return filteredList;
 
-            case 2: // Tab "Hát nhiều nhất"
-                // Sắp xếp theo số người đã ghi âm (recorded_people)
-                Collections.sort(filteredList, new Comparator<SongDTO>() {
-                    @Override
-                    public int compare(SongDTO song1, SongDTO song2) {
-                        int recorded1 = song1.getRecorded_people();
-                        int recorded2 = song2.getRecorded_people();
-                        return Integer.compare(recorded2, recorded1); // Sắp xếp giảm dần
-                    }
+            case 2:
+                Collections.sort(filteredList, (song1, song2) -> {
+                    int recorded1 = song1.getRecorded_people();
+                    int recorded2 = song2.getRecorded_people();
+                    return Integer.compare(recorded2, recorded1);
                 });
                 return filteredList;
 
             default:
-                return filteredList; // Trường hợp không xác định, trả về danh sách gốc
+                return filteredList;
         }
-    }
-
-    // Phương thức phụ để tính tổng số lượt thích cho một bài hát
-    private int calculateTotalLikes(SongDTO song) {
-        int totalLikes = 0;
-        if (postList != null && song.get_id() != null) {
-            for (PostDTO post : postList) {
-                if (post != null && post.getSong_id() != null && post.getSong_id().get_id() != null) {
-                    if (post.getSong_id().get_id().equals(song.get_id())) {
-                        totalLikes += post.getLikes();
-                    }
-                }
-            }
-        }
-        return totalLikes;
     }
 }

@@ -20,6 +20,7 @@ import com.example.voca.R;
 import com.example.voca.databinding.FragmentNotificationsBinding;
 import com.example.voca.dto.NotificationDTO;
 import com.example.voca.ui.adapter.NotificationAdapter;
+import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,8 @@ public class NotificationsFragment extends Fragment {
     private List<NotificationDTO> notificationList = new ArrayList<>();
     private ListView listView;
 
+    private TabLayout tabLayout;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -43,6 +46,7 @@ public class NotificationsFragment extends Fragment {
 
         listView = binding.listViewNotifications;
         notificationAdapter = new NotificationAdapter(notificationList, getContext());
+        tabLayout = root.findViewById(R.id.tabLayout);
         listView.setAdapter(notificationAdapter);
         /*listView.setOnItemClickListener((parent, view, position, id) -> {
             NotificationDTO selectedNotification = notificationList.get(position);
@@ -57,6 +61,21 @@ public class NotificationsFragment extends Fragment {
                     args
             );
         });*/
+
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                resetAndFetchData(tab.getPosition());
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) { }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+                resetAndFetchData(tab.getPosition());
+            }
+        });
 
         notificationsViewModel = new ViewModelProvider(this).get(NotificationsViewModel.class);
 
@@ -88,4 +107,9 @@ public class NotificationsFragment extends Fragment {
         super.onDestroyView();
         binding = null;
     }
+
+    private void resetAndFetchData(int tabPosition) {
+        notificationsViewModel.filterNotifications(tabPosition);
+    }
+
 }

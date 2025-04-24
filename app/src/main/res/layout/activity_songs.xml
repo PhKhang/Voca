@@ -23,7 +23,8 @@
             android:minHeight="?attr/actionBarSize"
             app:title="Quản lý bài hát"
             app:titleCentered="true"
-            app:navigationIcon="@drawable/ic_back_24dp"/>
+            app:navigationIcon="@drawable/ic_back_24dp"
+            app:navigationIconTint="?attr/colorOnBackground"/>
 
     </com.google.android.material.appbar.AppBarLayout>
 

@@ -11,6 +11,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
+import com.bumptech.glide.Glide;
 import com.example.voca.R;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.UserDTO;
@@ -57,11 +58,15 @@ public class UserAdapter extends ArrayAdapter<UserDTO> {
             return convertView;
         }
 
-        new LoadImage(holder.avatar).execute(user.getAvatar());
+        Glide.with(context)
+                .load(user.getAvatar())
+                .placeholder(R.drawable.ic_profile_2_24dp)
+                .error(R.drawable.ic_profile_2_24dp)
+                .into(holder.avatar);
 
-        holder.username.setText(user.getUsername());
-        holder.email.setText(user.getEmail());
-        holder.role.setText(user.getRole());
+        holder.username.setText(user.getUsername() != null ? user.getUsername() : "N/A");
+        holder.email.setText(user.getEmail() != null ? user.getEmail() : "N/A");
+        holder.role.setText(user.getRole() != null ? user.getRole() : "N/A");
 
         if (user.getRole() != null && user.getRole().equals("admin")) {
             holder.iconPost.setVisibility(View.GONE);

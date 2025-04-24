@@ -15,6 +15,7 @@
 local.properties
 **/.env
 **/google-services.json
+**/serviceAccountKey.json
 .idea/misc.xml
 /.idea
 .vscode/
