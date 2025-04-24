@@ -19,6 +19,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.voca.R;
+import com.example.voca.bus.RoomBUS;
 import com.example.voca.dao.RoomDAO;
 import com.example.voca.dto.RoomDTO;
 import com.example.voca.dto.SongDTO;
@@ -54,6 +55,8 @@ public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback
     private String videoId = "WCXDr38Rq20";
     private YouTubePlayer youTubePlayerInstance;
 
+    RoomBUS roomBUS;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -68,6 +71,8 @@ public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback
 
         Intent intent = getIntent();
         roomId = intent.getExtras().getString("roomId");
+
+        roomBUS = new RoomBUS();
 
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference myRef = database.getReference("room");
@@ -287,6 +292,38 @@ public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback
     public void addSong(SongDTO song) {
         Toast.makeText(this, "Before add: " + currentRoom.getQueue().size(), Toast.LENGTH_SHORT).show();
         currentRoom.getQueue().add(song);
+//        roomBUS.updateRoom(roomId, currentRoom, new RoomBUS.OnRoomUpdatedListener() {
+//            @Override
+//            public void onRoomUpdated(RoomDTO room) {
+//                Toast.makeText(KaraokeRoom.this, "Song added successfully", Toast.LENGTH_SHORT).show();
+//                Log.d("Room", "Song added: " + song.getYoutube_id());
+//            }
+//
+//            @Override
+//            public void onError(String error) {
+//                Toast.makeText(KaraokeRoom.this, "Error adding song: " + error, Toast.LENGTH_SHORT).show();
+//                Log.e("Error", "Failed to add song: " + error);
+//            }
+//        });
+        RoomDAO roomDao = new RoomDAO();
+        roomDao.updateRoom(roomId, currentRoom, new Callback<RoomDTO>() {
+            @Override
+            public void onResponse(Call<RoomDTO> call, Response<RoomDTO> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(KaraokeRoom.this, "Song added successfully", Toast.LENGTH_SHORT).show();
+                    Log.d("Room", "Song added: " + song.getYoutube_id());
+                } else {
+                    Toast.makeText(KaraokeRoom.this, "Error adding song: " + response.message(), Toast.LENGTH_SHORT).show();
+                    Log.e("Error", "Failed to add song: " + response.message());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<RoomDTO> call, Throwable t) {
+                Toast.makeText(KaraokeRoom.this, "Error adding song: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e("Error", "Failed to add song: " + t.getMessage());
+            }
+        });
         Toast.makeText(this, "After add: " + currentRoom.getQueue().size(), Toast.LENGTH_SHORT).show();
     }
 
