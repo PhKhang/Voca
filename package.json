@@ -15,6 +15,7 @@
     "@aws-sdk/client-s3": "^3.758.0",
     "@aws-sdk/credential-providers": "^3.768.0",
     "@stream-io/node-sdk": "^0.4.22",
+    "axios": "^1.8.4",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "firebase-admin": "^13.2.0",

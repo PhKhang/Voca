@@ -7,6 +7,7 @@ const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { StreamClient } = require("@stream-io/node-sdk");
 const { fromEnv } = require("@aws-sdk/credential-providers");
 const crypto = require("crypto");
+const axios = require('axios');
 dotenv.config();
 
 const app = express();
