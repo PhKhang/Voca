@@ -711,6 +711,20 @@ app.put('/likes/:id', async (req, res) => {
     }
 });
 
+app.get('/fetchYouTubeTitle', async (req, res) => {
+  const videoId = req.query.videoId;
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  try {
+      const response = await axios.get(
+          `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${apiKey}`
+      );
+      const title = response.data.items[0]?.snippet?.title || null;
+      res.json({ title });
+  } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch title' });
+  }
+});
+
 app.post('/posts/:id/like', async (req, res) => {
     try {
         const postId = req.params.id;
