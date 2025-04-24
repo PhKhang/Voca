@@ -20,7 +20,8 @@
             android:minHeight="?attr/actionBarSize"
             app:subtitle="Chi tiết người dùng"
             app:titleCentered="true"
-            app:navigationIcon="@drawable/ic_back_24dp" />
+            app:navigationIcon="@drawable/ic_back_24dp"
+            app:navigationIconTint="?attr/colorOnBackground"/>
     </com.google.android.material.appbar.AppBarLayout>
 
     <ScrollView
@@ -116,7 +117,6 @@
                 android:textStyle="bold"
                 android:layout_gravity="center"
                 android:textSize="18sp"
-                android:textColor="@color/black"
                 android:layout_marginTop="20dp"/>
 
             <androidx.recyclerview.widget.RecyclerView

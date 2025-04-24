@@ -20,7 +20,8 @@
             android:minHeight="?attr/actionBarSize"
             app:subtitle="Chi tiết bài hát"
             app:titleCentered="true"
-            app:navigationIcon="@drawable/ic_back_24dp" />
+            app:navigationIcon="@drawable/ic_back_24dp"
+            app:navigationIconTint="?attr/colorOnBackground"/>
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView

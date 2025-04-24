@@ -53,7 +53,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     private LikeBUS likeBUS = new LikeBUS();
     private UserBUS userBUS = new UserBUS();
     private PostBUS postBUS = new PostBUS();
-    private static SharedPostViewModel sharedPostViewModel;
     PostViewHolder currentViewHolder;
 
     public PostAdapter(List<PostDTO> postList, Context context, ExoPlayer player) {

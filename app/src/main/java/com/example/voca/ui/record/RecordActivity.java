@@ -22,6 +22,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 //import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -183,7 +184,7 @@ public class RecordActivity extends AppCompatActivity {
             youTubePlayerInstance.pause();
             stopRecording();
             stopOnlineAudio();
-            //Toast.makeText(RecordActivity.this, "Đã kết thúc ghi âm", Toast.LENGTH_SHORT).show();
+            Toast.makeText(RecordActivity.this, "Đã kết thúc ghi âm", Toast.LENGTH_SHORT).show();
 
             songBUS.recordSong(songId, new SongBUS.OnSongRecordedListener() {
                 @Override
@@ -313,13 +314,13 @@ public class RecordActivity extends AppCompatActivity {
         try {
             mediaRecorder.prepare();
             mediaRecorder.start();
-            //Toast.makeText(this, "Đang ghi âm...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Đang ghi âm...", Toast.LENGTH_SHORT).show();
         } catch (IOException e) {
             releaseMediaRecorder();
-            //Toast.makeText(this, "Lỗi khi bắt đầu ghi âm", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Lỗi khi bắt đầu ghi âm", Toast.LENGTH_SHORT).show();
         } catch (IllegalStateException e) {
             releaseMediaRecorder();
-            //Toast.makeText(this, "Lỗi khi thiết lập ghi âm", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Lỗi khi thiết lập ghi âm", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -404,7 +405,7 @@ public class RecordActivity extends AppCompatActivity {
         if (onlineMediaPlayer != null && onlineMediaPlayer.isPlaying()) {
             try {
                 onlineMediaPlayer.pause();
-                //Toast.makeText(RecordActivity.this, "Đã tạm dừng", Toast.LENGTH_SHORT).show();
+                Toast.makeText(RecordActivity.this, "Đã dừng", Toast.LENGTH_SHORT).show();
             } catch (IllegalStateException e) {
                 //Toast.makeText(RecordActivity.this, "Lỗi khi tạm dừng!", Toast.LENGTH_SHORT).show();
             }
@@ -547,7 +548,7 @@ private void combineAudioFiles(Callback callback) {
     String outputFilePath = outputFile.getAbsolutePath();
 
     if (!recordingFile.exists() || !musicFile.exists()) {
-        //Toast.makeText(this, "File không tồn tại!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "File không tồn tại!", Toast.LENGTH_SHORT).show();
         callback.onFailure();
         return;
     }
@@ -573,7 +574,7 @@ private void combineAudioFiles(Callback callback) {
                 }
             } else {
                 Log.e("FFmpegKit", "Command failed: " + session.getState() + ", Code: " + session.getReturnCode().getValue());
-                //Toast.makeText(this, "Lỗi khi trộn âm thanh: " + session.getReturnCode().getValue(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Lỗi khi trộn âm thanh: " + session.getReturnCode().getValue(), Toast.LENGTH_SHORT).show();
                 callback.onFailure();
             }
         });

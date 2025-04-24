@@ -68,7 +68,7 @@ public class NotificationAdapter extends BaseAdapter {
             holder.textNotiContent = convertView.findViewById(R.id.textNotiContent);
             holder.iconAction = convertView.findViewById(R.id.iconAction);
             holder.btnEditPost = convertView.findViewById(R.id.btn_edit_post);
-            holder.readIndicator = convertView.findViewById(R.id.read); // Thêm view read
+            holder.readIndicator = convertView.findViewById(R.id.read);
             convertView.setTag(holder);
         } else {
             holder = (ViewHolder) convertView.getTag();
@@ -101,7 +101,7 @@ public class NotificationAdapter extends BaseAdapter {
         holder.textNotiContent.setText(content);
         holder.iconAction.setImageResource(iconResId);
 
-        holder.readIndicator.setVisibility(notification.isIs_read()? View.GONE : View.VISIBLE);
+        holder.readIndicator.setVisibility(notification.isIs_read() ? View.GONE : View.VISIBLE);
 
         Glide.with(context)
                 .load(notification.getSender_id().getAvatar())
@@ -138,10 +138,17 @@ public class NotificationAdapter extends BaseAdapter {
             }
         });
 
-        // Xử lý nút chỉnh sửa/xóa thông báo
         holder.btnEditPost.setOnClickListener(v -> {
             PopupMenu popupMenu = new PopupMenu(context, v);
             popupMenu.getMenuInflater().inflate(R.menu.notification_option_menu, popupMenu.getMenu());
+
+            if (notification.isIs_read()) {
+                popupMenu.getMenu().findItem(R.id.option_mark_read).setVisible(false);
+                popupMenu.getMenu().findItem(R.id.option_mark_unread).setVisible(true);
+            } else {
+                popupMenu.getMenu().findItem(R.id.option_mark_read).setVisible(true);
+                popupMenu.getMenu().findItem(R.id.option_mark_unread).setVisible(false);
+            }
 
             popupMenu.setOnMenuItemClickListener(item -> {
                 if (item.getItemId() == R.id.option_mark_read) {
@@ -150,6 +157,21 @@ public class NotificationAdapter extends BaseAdapter {
                         @Override
                         public void onNotificationUpdated(NotificationDTO updatedNotification) {
                             Toast.makeText(context, "Đã đánh dấu là đã đọc", Toast.LENGTH_SHORT).show();
+                            notifyDataSetChanged();
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            Toast.makeText(context, "Lỗi: " + error, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    return true;
+                } else if (item.getItemId() == R.id.option_mark_unread) {
+                    notification.setIs_read(false);
+                    notificationBUS.markNotificationAsUnread(notification.get_id(), new NotificationBUS.OnNotificationUpdatedListener() {
+                        @Override
+                        public void onNotificationUpdated(NotificationDTO updatedNotification) {
+                            Toast.makeText(context, "Đã đánh dấu là chưa đọc", Toast.LENGTH_SHORT).show();
                             notifyDataSetChanged();
                         }
 
@@ -202,6 +224,6 @@ public class NotificationAdapter extends BaseAdapter {
         LinearLayout content;
         TextView textUsername, textTime, textNotiContent;
         Button btnEditPost;
-        View readIndicator; // Thêm biến cho view read
+        View readIndicator;
     }
 }

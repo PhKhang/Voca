@@ -11,6 +11,8 @@
     <string name="tab_all">Tất cả</string>
     <string name="tab_suggest">Đề xuất</string>
     <string name="tab_popular">Phổ biến</string>
+    <string name="tab_notification_read">Đã đọc</string>
+    <string name="tab_notification_unread">Chưa đọc</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_jetpack">JetpackActivity</string>

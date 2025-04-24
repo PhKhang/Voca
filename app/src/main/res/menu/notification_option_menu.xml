@@ -2,10 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/option_mark_read"
-        android:title="Đánh dấu đã đọc"
-        />
+        android:title="Đánh dấu đã đọc" />
+    <item
+        android:id="@+id/option_mark_unread"
+        android:title="Đánh dấu chưa đọc" />
     <item
         android:id="@+id/option_delete"
-        android:title="Xóa"
-        />
+        android:title="Xóa" />
 </menu>

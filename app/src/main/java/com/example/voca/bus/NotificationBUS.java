@@ -43,7 +43,25 @@ public class NotificationBUS {
                 if (response.isSuccessful()) {
                     listener.onNotificationUpdated(response.body());
                 } else {
-                    listener.onError("Lỗi khi cập nhật thông báo: " + response.code());
+                    listener.onError("Lỗi khi đánh dấu đã đọc thông báo: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<NotificationDTO> call, Throwable t) {
+                listener.onError(t.getMessage());
+            }
+        });
+    }
+
+    public void markNotificationAsUnread(String id, final OnNotificationUpdatedListener listener) {
+        notificationDAO.markNotificationAsUnread(id, new Callback<NotificationDTO>() {
+            @Override
+            public void onResponse(Call<NotificationDTO> call, Response<NotificationDTO> response) {
+                if (response.isSuccessful()) {
+                    listener.onNotificationUpdated(response.body());
+                } else {
+                    listener.onError("Lỗi khi đánh dấu chưa đọc thông báo: " + response.code());
                 }
             }
 
