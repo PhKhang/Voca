@@ -807,11 +807,9 @@ async function sendPushNotification(user_id, post_id, noti_id, rcpe_id) {
 
         const messages = recipient.fcmTokens.map(token => ({
             token,
-            notification: {
+            data: {
                 title: `${sender.username} đã thích bài viết của bạn`,
                 body: `Bài viết của bạn đã nhận được một lượt thích mới.`,
-            },
-            data: {
                 post_id: post_id.toString(),
                 recipient_id: rcpe_id.toString(),
                 notification_id: noti_id.toString(),
