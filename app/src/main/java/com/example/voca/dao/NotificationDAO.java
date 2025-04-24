@@ -8,7 +8,9 @@ import retrofit2.Callback;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class NotificationDAO {
     private static final String BASE_URL = "https://voca-spda.onrender.com/";
@@ -28,12 +30,16 @@ public class NotificationDAO {
     }
 
     public void markNotificationAsRead(String id, Callback<NotificationDTO> callback) {
-        Call<NotificationDTO> call = notificationApi.markNotificationAsRead(id);
+        Map<String, Boolean> body = new HashMap<>();
+        body.put("is_read", true);
+        Call<NotificationDTO> call = notificationApi.updateNotificationStatus(id, body);
         call.enqueue(callback);
     }
 
     public void markNotificationAsUnread(String id, Callback<NotificationDTO> callback) {
-        Call<NotificationDTO> call = notificationApi.markNotificationAsUnread(id);
+        Map<String, Boolean> body = new HashMap<>();
+        body.put("is_read", false);
+        Call<NotificationDTO> call = notificationApi.updateNotificationStatus(id, body);
         call.enqueue(callback);
     }
 
