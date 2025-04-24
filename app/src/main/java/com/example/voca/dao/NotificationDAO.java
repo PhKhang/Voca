@@ -32,6 +32,11 @@ public class NotificationDAO {
         call.enqueue(callback);
     }
 
+    public void markNotificationAsUnread(String id, Callback<NotificationDTO> callback) {
+        Call<NotificationDTO> call = notificationApi.markNotificationAsUnread(id);
+        call.enqueue(callback);
+    }
+
     public void deleteNotification(String id, Callback<Void> callback) {
         Call<Void> call = notificationApi.deleteNotification(id);
         call.enqueue(callback);

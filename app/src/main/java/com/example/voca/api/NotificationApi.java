@@ -17,6 +17,9 @@ public interface NotificationApi {
     @PUT("notifications/{id}/read")
     Call<NotificationDTO> markNotificationAsRead(@Path("id") String id);
 
+    @PUT("notifications/{id}/unread")
+    Call<NotificationDTO> markNotificationAsUnread(@Path("id") String id);
+
     @DELETE("notifications/{id}")
     Call<Void> deleteNotification(@Path("id") String id);
 }
