@@ -18,7 +18,6 @@
             android:layout_height="wrap_content"
             android:minHeight="?attr/actionBarSize"
             app:subtitle="Tên bài hát"
-            app:subtitleCentered="true"
             app:navigationIcon="@drawable/ic_back_24dp"/>
 
     </com.google.android.material.appbar.AppBarLayout>

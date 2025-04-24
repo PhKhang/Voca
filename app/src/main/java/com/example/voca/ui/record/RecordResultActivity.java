@@ -23,6 +23,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 //import android.widget.Toast;
 import android.widget.SeekBar.OnSeekBarChangeListener;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.annotation.NonNull; // For NonNull annotation if needed
@@ -93,6 +94,7 @@ public class RecordResultActivity extends AppCompatActivity {
 
     // Format for displaying delay value (e.g., "+1.2 s")
     private DecimalFormat delayFormatter = new DecimalFormat("+#,##0.0 s;-#,##0.0 s");
+    private DecimalFormat echoDelayFormatter = new DecimalFormat("0.0 s");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -150,6 +152,7 @@ public class RecordResultActivity extends AppCompatActivity {
         setPlaybackControlsEnabled(false); // Playback controls disabled initially
         btnConfirmAndMix.setEnabled(true); // Confirm button enabled initially
         updateEffectParametersFromSeekBars(); // Read initial effect SeekBar values
+        updateSeekBarValueDisplays(); // Set initial TextView values
         // Set initial sync delay display based on default progress
         if (seekBarSyncDelay != null) { // Ensure SeekBar exists before getting progress
             updateSyncDelayDisplay(seekBarSyncDelay.getProgress());
@@ -189,8 +192,6 @@ public class RecordResultActivity extends AppCompatActivity {
             Objects.requireNonNull(seekBarSyncDelay, "seekBarSyncDelay is null");
             Objects.requireNonNull(tvSyncDelayValue, "tvSyncDelayValue is null");
 
-            btnConfirmAndMix.setText("Xác nhận & Trộn");
-
         } catch (NullPointerException e) {
             Log.e(TAG, "Fatal Error: One or more essential views not found in layout.", e);
             //Toast.makeText(this, "Lỗi nghiêm trọng: Giao diện không tải đúng.", Toast.LENGTH_LONG).show();
@@ -208,15 +209,74 @@ public class RecordResultActivity extends AppCompatActivity {
         if (seekBarTreble != null) currentTrebleGain = seekBarTreble.getProgress() - 10;
     }
 
+    // Sets initial TextView values based on SeekBar progress
+    private void updateSeekBarValueDisplays() {
+        TextView tvVolumeValue = findViewById(R.id.tvVolumeValue);
+        TextView tvEchoValue = findViewById(R.id.tvEchoValue);
+        TextView tvEchoDelayValue = findViewById(R.id.tvEchoDelayValue);
+        TextView tvBassValue = findViewById(R.id.tvBassValue);
+        TextView tvTrebleValue = findViewById(R.id.tvTrebleValue);
+
+        if (seekBarVolume != null && tvVolumeValue != null) {
+            tvVolumeValue.setText(String.format(Locale.getDefault(), "%d %%", seekBarVolume.getProgress()));
+        }
+        if (seekBarEcho != null && tvEchoValue != null) {
+            tvEchoValue.setText(String.format(Locale.getDefault(), "%d %%", seekBarEcho.getProgress()));
+        }
+        if (seekBarDelay != null && tvEchoDelayValue != null) {
+            float echoDelaySeconds = seekBarDelay.getProgress() / 1000.0f;
+            tvEchoDelayValue.setText(echoDelayFormatter.format(echoDelaySeconds));
+        }
+        if (seekBarBass != null && tvBassValue != null) {
+            int bassValue = seekBarBass.getProgress() - 10;
+            tvBassValue.setText(String.format(Locale.getDefault(), "%d dB", bassValue));
+        }
+        if (seekBarTreble != null && tvTrebleValue != null) {
+            int trebleValue = seekBarTreble.getProgress() - 10;
+            tvTrebleValue.setText(String.format(Locale.getDefault(), "%d dB", trebleValue));
+        }
+    }
+
     // Attaches listeners to all SeekBars
     private void setupSeekBarListeners() {
-        // Listener for effect SeekBars (Volume, Echo, Bass, Treble)
+        // Find TextViews for displaying SeekBar values
+        TextView tvVolumeValue = findViewById(R.id.tvVolumeValue);
+        TextView tvEchoValue = findViewById(R.id.tvEchoValue);
+        TextView tvEchoDelayValue = findViewById(R.id.tvEchoDelayValue);
+        TextView tvBassValue = findViewById(R.id.tvBassValue);
+        TextView tvTrebleValue = findViewById(R.id.tvTrebleValue);
+
         OnSeekBarChangeListener effectChangeListener = new OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser) {
-                    updateEffectParametersFromSeekBars();
-                    // No immediate action needed, effects applied on confirm
+                    updateEffectParametersFromSeekBars(); // Update internal variables
+                    // Update the corresponding TextView based on the SeekBar ID
+                    int seekBarId = seekBar.getId();
+                    if (seekBarId == R.id.seekBarVolume) {
+                        if (tvVolumeValue != null) {
+                            tvVolumeValue.setText(String.format(Locale.getDefault(), "%d %%", progress));
+                        }
+                    } else if (seekBarId == R.id.seekBarEcho) {
+                        if (tvEchoValue != null) {
+                            tvEchoValue.setText(String.format(Locale.getDefault(), "%d %%", progress));
+                        }
+                    } else if (seekBarId == R.id.seekBarDelay) {
+                        if (tvEchoDelayValue != null) {
+                            float echoDelaySeconds = progress / 1000.0f; // Convert ms to seconds
+                            tvEchoDelayValue.setText(echoDelayFormatter.format(echoDelaySeconds));
+                        }
+                    } else if (seekBarId == R.id.seekBarBass) {
+                        if (tvBassValue != null) {
+                            int bassValue = progress - 10; // Convert 0-20 to -10 to +10
+                            tvBassValue.setText(String.format(Locale.getDefault(), "%d dB", bassValue));
+                        }
+                    } else if (seekBarId == R.id.seekBarTreble) {
+                        if (tvTrebleValue != null) {
+                            int trebleValue = progress - 10; // Convert 0-20 to -10 to +10
+                            tvTrebleValue.setText(String.format(Locale.getDefault(), "%d dB", trebleValue));
+                        }
+                    }
                 }
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
@@ -313,12 +373,10 @@ public class RecordResultActivity extends AppCompatActivity {
                 }
 
                 @Override
-                public void onStartTrackingTouch(SeekBar seekBar) {
-                }
+                public void onStartTrackingTouch(SeekBar seekBar) {}
 
                 @Override
-                public void onStopTrackingTouch(SeekBar seekBar) {
-                } // Value updated in onProgressChanged
+                public void onStopTrackingTouch(SeekBar seekBar) {} // Value updated in onProgressChanged
             });
         }
     }
@@ -420,7 +478,7 @@ public class RecordResultActivity extends AppCompatActivity {
                     // Toast.makeText(this, "Lỗi: File âm thanh không còn tồn tại.", Toast.LENGTH_SHORT).show();
                 }
             } else {
-                // Toast.makeText(this, "Vui lòng nhập tiêu đề", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Vui lòng nhập tiêu đề", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -494,7 +552,7 @@ public class RecordResultActivity extends AppCompatActivity {
                     if (progressDialog != null && progressDialog.isShowing()) {
                         progressDialog.dismiss();
                     }
-                    //Toast.makeText(RecordResultActivity.this, "Đã tạo bài đăng thành công!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(RecordResultActivity.this, "Đã tạo bài đăng thành công!", Toast.LENGTH_SHORT).show();
                     finish(); // Close this activity
                 });
             }
@@ -960,7 +1018,7 @@ public class RecordResultActivity extends AppCompatActivity {
         }
         try {
             saveToRecordings(finalMixedAudioPath);
-            //Toast.makeText(this, "Đã lưu bản thu thành công!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Đã lưu bản thu thành công!", Toast.LENGTH_SHORT).show();
         } catch (IOException e) {
             Log.e(TAG, "Error saving final mixed file", e);
             //Toast.makeText(this, "Lỗi khi lưu file: " + e.getMessage(), Toast.LENGTH_LONG).show();
