@@ -21,6 +21,7 @@ import com.example.voca.R;
 import com.example.voca.bus.SongBUS;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.SongDTO;
+import com.example.voca.service.FetchVideoTitleTask;
 import com.example.voca.service.FileUploader;
 import com.example.voca.service.LoadImage;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -102,6 +103,7 @@ public class SongDetailsActivity extends AppCompatActivity {
                 } else {
                     youtubeIdLayout.setError(null);
                     new LoadImage(imageThumbnail).execute("http://img.youtube.com/vi/" + input + "/0.jpg");
+                    new FetchVideoTitleTask(SongDetailsActivity.this, editTitle).execute(input);
                 }
             }
         });
@@ -131,8 +133,8 @@ public class SongDetailsActivity extends AppCompatActivity {
             Toast.makeText(SongDetailsActivity.this, "Vui lòng điền Đường dẫn MP3", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (newYoutubeId.isEmpty()) {
-            Toast.makeText(SongDetailsActivity.this, "Vui lòng điền Youtube ID", Toast.LENGTH_SHORT).show();
+        if (newYoutubeId.length() != 11) {
+            Toast.makeText(SongDetailsActivity.this, "Youtube ID không hợp lệ", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -226,6 +228,7 @@ public class SongDetailsActivity extends AppCompatActivity {
         dialog.show();
 
         btnConfirm.setOnClickListener(v -> {
+            Toast.makeText(SongDetailsActivity.this, "Đang tải lên", Toast.LENGTH_SHORT).show();
             new FileUploader().run(this, audioUri, new FileUploader.OnUploadCompleteListener() {
                 @Override
                 public void onSuccess(String url) {

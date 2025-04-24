@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -24,9 +25,18 @@ import com.example.voca.bus.SongBUS;
 import com.example.voca.bus.UserBUS;
 import com.example.voca.dto.SongDTO;
 import com.example.voca.dto.UserDTO;
+import com.example.voca.service.FetchVideoTitleTask;
 import com.example.voca.service.FileUploader;
 import com.example.voca.service.LoadImage;
 import com.google.android.material.appbar.MaterialToolbar;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 public class SongAddActivity extends AppCompatActivity {
     private SongBUS songBus;
@@ -36,6 +46,7 @@ public class SongAddActivity extends AppCompatActivity {
     private String Mp3Path = "";
     private EditText mp3LinkEditText;
     private ImageView imageThumbnail;
+    private EditText titleEditText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +65,7 @@ public class SongAddActivity extends AppCompatActivity {
 
         mp3LinkEditText = findViewById(R.id.mp3_link_edittext);
         EditText youtubeIdEditText = findViewById(R.id.youtube_id_edittext);
-        EditText titleEditText = findViewById(R.id.title_edittext);
+        titleEditText = findViewById(R.id.title_edittext);
         imageThumbnail = findViewById(R.id.imageThumbnail);
 
         com.google.android.material.textfield.TextInputLayout youtubeIdLayout = findViewById(R.id.youtube_id_layout);
@@ -77,6 +88,7 @@ public class SongAddActivity extends AppCompatActivity {
                 } else {
                     youtubeIdLayout.setError(null);
                     new LoadImage(imageThumbnail).execute("http://img.youtube.com/vi/" + input + "/0.jpg");
+                    new FetchVideoTitleTask(SongAddActivity.this, titleEditText).execute(input);
                 }
             }
         });
@@ -91,13 +103,21 @@ public class SongAddActivity extends AppCompatActivity {
             String inputVideoId = youtubeIdEditText.getText().toString().trim();
             String inputTitleVideo = titleEditText.getText().toString().trim();
 
-            if (!inputMp3Link.isEmpty()) {
-                Mp3Path = inputMp3Link;
+            if (inputTitleVideo.isEmpty()) {
+                Toast.makeText(this, "Vui lòng điền Tiêu đề", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (inputMp3Link.isEmpty()) {
+                Toast.makeText(this, "Vui lòng điền Đường dẫn MP3", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (inputVideoId.length() != 11) {
+                Toast.makeText(this, "YouTube ID không hợp lệ", Toast.LENGTH_SHORT).show();
+                return;
             }
 
-            if (!inputVideoId.isEmpty()) {
-                videoId = inputVideoId;
-            }
+            Mp3Path = inputMp3Link;
+            videoId = inputVideoId;
             String thumbnailUrl = "http://img.youtube.com/vi/" + videoId + "/0.jpg";
 
             userBus.fetchUserById(userId, new UserBUS.OnUserFetchedListener() {
@@ -195,6 +215,7 @@ public class SongAddActivity extends AppCompatActivity {
         dialog.show();
 
         btnConfirm.setOnClickListener(v -> {
+            Toast.makeText(SongAddActivity.this, "Đang tải lên", Toast.LENGTH_SHORT).show();
             new FileUploader().run(this, audioUri, new FileUploader.OnUploadCompleteListener() {
                 @Override
                 public void onSuccess(String url) {

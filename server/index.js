@@ -214,8 +214,8 @@ app.post("/rooms", async (req, res) => {
     room = await Room.findById(room._id)
       .populate("created_by")
       .populate("members")
-      .populate("queue")
-      .populate("current_song");
+      .populate({ path: "queue", populate: { path: "uploaded_by" } })
+      .populate({path: "current_song", populate: { path: "uploaded_by" }});
     res.status(201).json(room);
     console.log("Room created:", room);
   } catch (err) {
@@ -243,13 +243,13 @@ app.get("/rooms/", async (req, res) => {
     ? await Room.findOne(filter)
         .populate("created_by")
         .populate("members")
-        .populate("queue")
-        .populate("current_song")
+        .populate({ path: "queue", populate: { path: "uploaded_by" } })
+        .populate({path: "current_song", populate: { path: "uploaded_by" }})
     : await Room.find(filter)
         .populate("created_by")
         .populate("members")
-        .populate("queue")
-        .populate("current_song");
+        .populate({ path: "queue", populate: { path: "uploaded_by" } })
+        .populate({path: "current_song", populate: { path: "uploaded_by" }});
   console.log("Rooms found:", room);
   room ? res.json(room) : res.status(404).json({ error: "Room not found" });
 });
@@ -258,8 +258,8 @@ app.get("/rooms/:id", async (req, res) => {
   const room = await Room.findById(req.params.id)
     .populate("created_by")
     .populate("members")
-    .populate("queue")
-    .populate("current_song");
+    .populate({ path: "queue", populate: { path: "uploaded_by" } })
+    .populate({path: "current_song", populate: { path: "uploaded_by" }});
   if (room) {
     console.log("Room found:", room);
     const call = client.video.call("audio_room", req.params.id);
@@ -317,7 +317,12 @@ app.delete("/rooms/:id", async (req, res) => {
 
 app.put('/rooms/:id', async (req, res) => {
     try {
-        const room = await Room.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const room = await Room.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('created_by').populate('members').populate({ path: 'queue', populate: { path: 'uploaded_by' } })
+            .populate("created_by")
+            .populate("members")
+            .populate({ path: "queue", populate: { path: "uploaded_by" } })
+            .populate({path: "current_song", populate: { path: "uploaded_by" }})
+            
         if (!room) return res.status(404).json({ error: 'Room not found' });
         console.log('Room updated:', room);
         res.json(room);

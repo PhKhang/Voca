@@ -2,10 +2,10 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/option_edit"
-        android:title="Sửa post"
+        android:title="Sửa tiêu đề"
         />
     <item
         android:id="@+id/option_delete"
-        android:title="Xóa post"
+        android:title="Xóa bài đăng"
         />
 </menu>

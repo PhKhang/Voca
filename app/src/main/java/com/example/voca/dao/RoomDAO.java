@@ -44,8 +44,8 @@ public class RoomDAO {
         call.enqueue(callback);
     }
 
-    public void updateRoom(String id, RoomDTO song, Callback<RoomDTO> callback) {
-        Call<RoomDTO> call = roomApi.updateRoom(id, song);
+    public void updateRoom(String id, RoomDTO room, Callback<RoomDTO> callback) {
+        Call<RoomDTO> call = roomApi.updateRoom(id, room);
         call.enqueue(callback);
     }
 

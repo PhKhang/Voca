@@ -8,6 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:gravity="top"
         android:paddingBottom="8dp"
         android:paddingTop="4dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -16,10 +17,11 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <androidx.cardview.widget.CardView
-            android:layout_width="70dp"
-            android:layout_height="70dp"
+            android:layout_width="55dp"
+            android:layout_height="55dp"
             app:cardCornerRadius="100dp"
             android:elevation="0dp"
+            android:layout_marginTop="8dp"
             android:layout_marginRight="10dp">
 
             <ImageView

@@ -36,8 +36,8 @@ public class NotificationFirebaseMessagingService extends FirebaseMessagingServi
             return;
         }
 
-        String title = remoteMessage.getNotification() != null ? remoteMessage.getNotification().getTitle() : "Thông báo";
-        String message = remoteMessage.getNotification() != null ? remoteMessage.getNotification().getBody() : "Bạn có thông báo mới";
+        String title = remoteMessage.getData().get("title") != null ? remoteMessage.getData().get("title") : "Thông báo";
+        String message = remoteMessage.getData().get("body") != null ? remoteMessage.getData().get("body") : "Bạn có thông báo mới";
         String notificationId = remoteMessage.getData().get("notification_id");
         Log.d("Noti id", "Notification ID: " + notificationId);
 
@@ -45,8 +45,9 @@ public class NotificationFirebaseMessagingService extends FirebaseMessagingServi
             android.app.NotificationChannel channel = new android.app.NotificationChannel(
                     CHANNEL_ID,
                     CHANNEL_NAME,
-                    NotificationManager.IMPORTANCE_DEFAULT
+                    NotificationManager.IMPORTANCE_HIGH
             );
+            channel.setShowBadge(true);
             NotificationManager manager = getSystemService(NotificationManager.class);
             manager.createNotificationChannel(channel);
         }
@@ -66,7 +67,7 @@ public class NotificationFirebaseMessagingService extends FirebaseMessagingServi
         markAsReadIntent.putExtra("notification_id", notificationId);
         PendingIntent markAsReadPendingIntent = PendingIntent.getBroadcast(
                 this,
-                notificationId != null ? notificationId.hashCode() : 0, // Sử dụng ID duy nhất
+                notificationId != null ? notificationId.hashCode() : 0,
                 markAsReadIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
         );
@@ -76,12 +77,11 @@ public class NotificationFirebaseMessagingService extends FirebaseMessagingServi
                 .setSmallIcon(R.drawable.notification_icon_white)
                 .setContentTitle(title)
                 .setContentText(message)
-                .setContentIntent(contentIntent) // Mở MainActivity khi nhấn và vào Noti Fragment
-                .addAction(R.drawable.ic_check_24dp, "Đánh dấu đã đọc", markAsReadPendingIntent) // Thêm action
+                .setContentIntent(contentIntent)
+                .addAction(R.drawable.ic_check_24dp, "Đánh dấu đã đọc", markAsReadPendingIntent)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH);
 
-        // Kiểm tra quyền POST_NOTIFICATIONS
         NotificationManagerCompat manager = NotificationManagerCompat.from(this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, "android.permission.POST_NOTIFICATIONS")

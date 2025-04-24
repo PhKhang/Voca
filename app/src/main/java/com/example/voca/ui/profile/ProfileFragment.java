@@ -245,7 +245,6 @@ public class ProfileFragment extends Fragment {
         });
 
         view.findViewById(R.id.signOutBtn).setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Đăng xuất", Toast.LENGTH_SHORT).show();
             FirebaseAuth mAuth = FirebaseAuth.getInstance();
             if (user == null) {
                 Toast.makeText(requireContext(), "Không có người dùng nào đăng nhập!", Toast.LENGTH_SHORT).show();
@@ -261,6 +260,12 @@ public class ProfileFragment extends Fragment {
                 }
             }
             mAuth.signOut();
+
+            // Xóa dữ liệu SharedPreferences
+            SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.clear();
+            editor.apply();
 
             Intent intent = new Intent(requireContext(), LoginActivity.class);
             startActivity(intent);

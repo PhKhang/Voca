@@ -51,6 +51,34 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Kiểm tra nếu đã lưu userId -> chuyển thẳng đến MainActivity hoặc AdminActivity
+        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        String savedUserId = prefs.getString("userId", null);
+
+        if (savedUserId != null) {
+            // Nếu đã có userId thì fetch lại thông tin để kiểm tra vai trò rồi chuyển hướng
+            userBUS.fetchUserById(savedUserId, new UserBUS.OnUserFetchedListener() {
+                @Override
+                public void onUserFetched(UserDTO user) {
+                    Intent intent;
+                    if (user.getRole().equals("user")) {
+                        intent = new Intent(LoginActivity.this, MainActivity.class);
+                    } else {
+                        intent = new Intent(LoginActivity.this, AdminActivity.class);
+                        intent.putExtra("username", user.getUsername());
+                    }
+                    startActivity(intent);
+                    finish();
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.e("AutoLogin", "Lỗi lấy user từ SharedPreferences: " + error);
+                }
+            });
+            return; // Không load giao diện login nữa
+        }
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.hide();

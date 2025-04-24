@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -18,8 +19,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.voca.R;
-import com.example.voca.bus.PostBUS;
-import com.example.voca.bus.SongBUS;
 import com.example.voca.dto.PostDTO;
 import com.example.voca.dto.SongDTO;
 import com.example.voca.databinding.FragmentHomeBinding;
@@ -29,8 +28,6 @@ import com.example.voca.ui.room.CreateRoomActivity;
 import com.google.firebase.FirebaseApp;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 public class HomeFragment extends Fragment implements FunctionAdapter.OnFunctionClickListener {
@@ -43,18 +40,16 @@ public class HomeFragment extends Fragment implements FunctionAdapter.OnFunction
     private List<PostDTO> postList;
     private SingAdapter singAdapter;
     private PostHomeAdapter postAdapter;
-    private SongBUS songBUS;
-    private PostBUS postBUS;
     private ListView listViewSing;
     private ListView listViewPost;
     private Context context;
     private ProgressDialog progressDialog;
+    private HomeViewModel homeViewModel;
     private static final String LOADING_MESSAGE = "Đang tải dữ liệu...";
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        HomeViewModel homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
         FirebaseApp.initializeApp(requireContext());
         binding = FragmentHomeBinding.inflate(inflater, container, false);
         context = getContext();
@@ -65,7 +60,6 @@ public class HomeFragment extends Fragment implements FunctionAdapter.OnFunction
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
         recyclerViewFunctions.setLayoutManager(layoutManager);
 
-
         functionList = new ArrayList<>();
         functionList.add(new FunctionItem("Hát solo", R.drawable.ic_karaoke_24dp, R.drawable.support_bar_background, R.id.action_homeFragment_to_singFragment));
         functionList.add(new FunctionItem("Hát chung", R.drawable.ic_room_karaoke_24dp, R.drawable.support_bar_background_2, CreateRoomActivity.class));
@@ -75,13 +69,18 @@ public class HomeFragment extends Fragment implements FunctionAdapter.OnFunction
 
         songList = new ArrayList<>();
         postList = new ArrayList<>();
-        songBUS = new SongBUS();
-        postBUS = new PostBUS();
 
         listViewSing = binding.listViewSings;
         listViewPost = binding.listViewPosts;
 
-        fetchSongsAndPosts();
+        singAdapter = new SingAdapter(context, postList, songList);
+        postAdapter = new PostHomeAdapter(context, postList);
+        listViewSing.setAdapter(singAdapter);
+        listViewPost.setAdapter(postAdapter);
+
+        homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
+        setupObservers();
+        homeViewModel.fetchData();
 
         listViewPost.setOnItemClickListener((parent, view, position, id) -> {
             PostDTO selectedPost = postList.get(position);
@@ -99,6 +98,38 @@ public class HomeFragment extends Fragment implements FunctionAdapter.OnFunction
 
         View root = binding.getRoot();
         return root;
+    }
+
+    private void setupObservers() {
+        showLoadingDialog();
+
+        homeViewModel.getSongsLiveData().observe(getViewLifecycleOwner(), songs -> {
+            songList = songs != null ? new ArrayList<>(songs) : new ArrayList<>();
+            singAdapter.updateData(postList, songList);
+            singAdapter.notifyDataSetChanged();
+            checkDataLoaded();
+        });
+
+        homeViewModel.getPostsLiveData().observe(getViewLifecycleOwner(), posts -> {
+            postList = posts != null ? new ArrayList<>(posts) : new ArrayList<>();
+            singAdapter.updateData(postList, songList);
+            postAdapter.updateData(postList);
+            singAdapter.notifyDataSetChanged();
+            postAdapter.notifyDataSetChanged();
+            checkDataLoaded();
+        });
+
+        homeViewModel.getErrorLiveData().observe(getViewLifecycleOwner(), error -> {
+            progressDialog.dismiss();
+            Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void checkDataLoaded() {
+        // Dismiss progress dialog only when both songs and posts are loaded
+        if (!songList.isEmpty() && !postList.isEmpty()) {
+            progressDialog.dismiss();
+        }
     }
 
     @Override
@@ -124,76 +155,10 @@ public class HomeFragment extends Fragment implements FunctionAdapter.OnFunction
         binding = null;
     }
 
-    private void fetchSongsAndPosts() {
-        showLoadingDialog();
-        songBUS.fetchSongs(new SongBUS.OnSongsFetchedListener() {
-            @Override
-            public void onSongsFetched(List<SongDTO> songs) {
-                if (songs != null) {
-                    Collections.sort(songs, new Comparator<SongDTO>() {
-                        @Override
-                        public int compare(SongDTO s1, SongDTO s2) {
-                            return Integer.compare(s2.getRecorded_people(), s1.getRecorded_people());
-                        }
-                    });
-                    if (songs.size() > 3) {
-                        songList = new ArrayList<>(songs.subList(0, 3));
-                    } else {
-                        songList = new ArrayList<>(songs);
-                    }
-                } else {
-                    songList = new ArrayList<>();
-                }
-
-                postBUS.fetchPosts(new PostBUS.OnPostsFetchedListener() {
-                    @Override
-                    public void onPostsFetched(List<PostDTO> posts) {
-                        postList = posts;
-                        if (context != null)
-                            singAdapter = new SingAdapter(context, postList, songList);
-                        listViewSing.setAdapter(singAdapter);
-
-                        if (posts != null) {
-                            Collections.sort(posts, new Comparator<PostDTO>() {
-                                @Override
-                                public int compare(PostDTO p1, PostDTO p2) {
-                                    return Integer.compare(p2.getLikes(), p1.getLikes());
-                                }
-                            });
-                            if (posts.size() > 3) {
-                                postList = new ArrayList<>(posts.subList(0, 3));
-                            } else {
-                                postList = new ArrayList<>(posts);
-                            }
-                        } else {
-                            postList = new ArrayList<>();
-                        }
-
-                        if (context != null)
-                            postAdapter = new PostHomeAdapter(context, postList);
-                        listViewPost.setAdapter(postAdapter);
-                        progressDialog.dismiss();
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        progressDialog.dismiss();
-                        Toast.makeText(requireContext(), "Error fetching posts: " + error, Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-
-            @Override
-            public void onError(String error) {
-                Toast.makeText(requireContext(), "Error fetching songs: " + error, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
     private void showLoadingDialog() {
         progressDialog = new ProgressDialog(requireContext());
         progressDialog.setMessage(LOADING_MESSAGE);
-        progressDialog.setCancelable(false); // Không cho phép người dùng tắt dialog bằng nút back
+        progressDialog.setCancelable(true);
         progressDialog.show();
     }
 }
