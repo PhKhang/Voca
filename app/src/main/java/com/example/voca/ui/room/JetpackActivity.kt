@@ -209,8 +209,8 @@ public fun Description(
     participants: List<ParticipantState>
 ) {
     Column {
-        Text("$title", fontSize = 30.sp)
-        Text("$description", fontSize = 20.sp, modifier = Modifier.padding(16.dp))
+//        Text("$title", fontSize = 30.sp)
+//        Text("$description", fontSize = 20.sp, modifier = Modifier.padding(16.dp))
         Text("${participants.size} participants", fontSize = 20.sp)
     }
 }
@@ -326,15 +326,15 @@ public fun Controls(
             onCallAction = { enableMicrophone(it.isEnabled) }
         )
 
-        Button(
-            onClick = {
-                scope.launch {
-                    if (backstage) call.goLive() else call.stopLive()
-                }
-            }
-        ) {
-            Text(text = if (backstage) "Go Live" else "End")
-        }
+//        Button(
+//            onClick = {
+//                scope.launch {
+//                    if (backstage) call.goLive() else call.stopLive()
+//                }
+//            }
+//        ) {
+//            Text(text = if (backstage) "Go Live" else "End")
+//        }
         Button(
             onClick = {
                 scope.launch {

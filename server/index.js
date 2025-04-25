@@ -295,10 +295,10 @@ app.post("/rooms/:id/join", async (req, res) => {
     custom: { title: "Hi", description: `yet another room ${roomId}` },
   });
 
-  // console.log("Joining room:", roomId, "for user:", userId);
-  // await call.updateCallMembers({
-  //     update_members: [{ user_id: userId, role: "admin" }],
-  // });
+  console.log("Joining room:", roomId, "for user:", userId);
+  await call.updateCallMembers({
+      update_members: [{ user_id: userId, role: "admin" }],
+  });
 
   console.log("Creating token");
   const userToken = client.generateUserToken({
@@ -307,7 +307,7 @@ app.post("/rooms/:id/join", async (req, res) => {
   });
 
   res.json({ user_token: userToken });
-  console.log("Still ok");
+  console.log("Ok");
 });
 
 app.delete("/rooms/:id", async (req, res) => {
