@@ -264,7 +264,7 @@ app.get("/rooms/:id", async (req, res) => {
     console.log("Room found:", room);
     const call = client.video.call("audio_room", req.params.id);
     const result = await call.getOrCreate({
-        data: { created_by_id: userId },
+        data: { created_by_id: "67dcbb64e3a627b10b5c9d52" },
       custom: { title: "Hi", description: `yet another room ${req.params.id}` },
     });
 
