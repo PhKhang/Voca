@@ -362,19 +362,19 @@ public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback
 
     @Override
     public List<SongDTO> getQueue() {
-        roomBUS.fetchRoomById(currentRoom.get_id(), new RoomBUS.OnRoomFetchedListener() {
-            @Override
-            public void onRoomFetched(RoomDTO room) {
-                currentRoom = room;
-                Log.d("Room", "Queue updated: " + currentRoom.getQueue().size());
-            }
-
-            @Override
-            public void onError(String error) {
-                Toast.makeText(KaraokeRoom.this, "Error fetching room: " + error, Toast.LENGTH_SHORT).show();
-                Log.e("Error", "Failed to fetch room: " + error);
-            }
-        });
+//        roomBUS.fetchRoomById(currentRoom.get_id(), new RoomBUS.OnRoomFetchedListener() {
+//            @Override
+//            public void onRoomFetched(RoomDTO room) {
+//                currentRoom = room;
+//                Log.d("Room", "Queue updated: " + currentRoom.getQueue().size());
+//            }
+//
+//            @Override
+//            public void onError(String error) {
+//                Toast.makeText(KaraokeRoom.this, "Error fetching room: " + error, Toast.LENGTH_SHORT).show();
+//                Log.e("Error", "Failed to fetch room: " + error);
+//            }
+//        });
         return currentRoom.getQueue();
     }
 
