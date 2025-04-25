@@ -16,7 +16,9 @@ import com.example.voca.R;
 import com.example.voca.bus.PostBUS;
 import com.example.voca.bus.SongBUS;
 import com.example.voca.bus.UserBUS;
+import com.example.voca.dao.RoomDAO;
 import com.example.voca.dto.PostDTO;
+import com.example.voca.dto.RoomDTO;
 import com.example.voca.dto.SongDTO;
 import com.example.voca.dto.UserDTO;
 import com.example.voca.ui.auth.LoginActivity;
@@ -24,6 +26,10 @@ import com.example.voca.ui.management.SongsManagementActivity;
 import com.example.voca.ui.management.UsersManagementActivity;
 
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class AdminActivity extends AppCompatActivity {
     private TextView userCount;
@@ -37,6 +43,7 @@ public class AdminActivity extends AppCompatActivity {
     private SongBUS songBUS;
     private UserBUS userBUS;
     private PostBUS postBUS;
+    private RoomDAO roomDAO;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +68,7 @@ public class AdminActivity extends AppCompatActivity {
         songBUS = new SongBUS();
         userBUS = new UserBUS();
         postBUS = new PostBUS();
+        roomDAO = new RoomDAO();
 
         Intent intent = getIntent();
         String username = intent.getStringExtra("username");
@@ -139,7 +147,24 @@ public class AdminActivity extends AppCompatActivity {
             }
         });
 
-        roomCount.setText("0");
+        roomDAO.getRooms(new Callback<List<RoomDTO>>() {
+            @Override
+            public void onResponse(Call<List<RoomDTO>> call, Response<List<RoomDTO>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    int totalRooms = response.body().size();
+                    roomCount.setText(String.valueOf(totalRooms));
+                } else {
+                    roomCount.setText("0");
+                    Toast.makeText(AdminActivity.this, "Failed to fetch rooms: " + response.message(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<RoomDTO>> call, Throwable t) {
+                roomCount.setText("0");
+                Toast.makeText(AdminActivity.this, "Error fetching rooms: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void setupCardClickListeners() {
