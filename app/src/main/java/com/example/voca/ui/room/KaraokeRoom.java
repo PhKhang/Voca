@@ -264,32 +264,35 @@ public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback
                         return;
                     }
                     currentRoom.setCurrent_song(currentRoom.getQueue().get(0));
-                    if (diffInSeconds >= 24 * 60 * 60) {
-                        currentRoom.setCurrent_song_start_time(String.valueOf(System.currentTimeMillis()));
-                        youTubePlayerInstance.loadVideo(currentRoom.getCurrent_song().getYoutube_id(), 0);
-                        roomBUS.updateRoom(currentRoom.get_id(), currentRoom, new RoomBUS.OnRoomUpdatedListener() {
-                            @Override
-                            public void onRoomUpdated(RoomDTO room) {
-                                Toast.makeText(KaraokeRoom.this, "Update play time successfully", Toast.LENGTH_SHORT).show();
-                                Log.d("Room", "Updated play time: ");
-                            }
-
-                            @Override
-                            public void onError(String error) {
-                                Toast.makeText(KaraokeRoom.this, "Error adding song: " + error, Toast.LENGTH_SHORT).show();
-                                Log.e("Error", "Failed to add song: " + error);
-                            }
-                        });
-                    }
-                    else {
-                        youTubePlayerInstance.loadVideo(currentRoom.getCurrent_song().getYoutube_id(), diffInSeconds);
-                    }
                 }
+                if (diffInSeconds >= 24 * 60 * 60) {
+                    currentRoom.setCurrent_song_start_time(String.valueOf(System.currentTimeMillis()));
+                    youTubePlayerInstance.loadVideo(currentRoom.getCurrent_song().getYoutube_id(), 0);
+                    Log.d("Room", "Play from the start");
+                    roomBUS.updateRoom(currentRoom.get_id(), currentRoom, new RoomBUS.OnRoomUpdatedListener() {
+                        @Override
+                        public void onRoomUpdated(RoomDTO room) {
+                            Toast.makeText(KaraokeRoom.this, "Update play time successfully", Toast.LENGTH_SHORT).show();
+                            Log.d("Room", "Updated play time: ");
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            Toast.makeText(KaraokeRoom.this, "Error adding song: " + error, Toast.LENGTH_SHORT).show();
+                            Log.e("Error", "Failed to add song: " + error);
+                        }
+                    });
+                } else {
+                    Log.d("Room", "Play at: " + diffInSeconds);
+                    youTubePlayerInstance.loadVideo(currentRoom.getCurrent_song().getYoutube_id(), diffInSeconds);
+                }
+                Log.d("Room", "Start playing");
                 if (isPlaying)
                     youTubePlayerInstance.pause();
                 else
                     youTubePlayerInstance.play();
             } else {
+                Log.d("Room", "YouTube player instance is null");
                 Toast.makeText(this, "Player not ready", Toast.LENGTH_SHORT).show();
             }
 

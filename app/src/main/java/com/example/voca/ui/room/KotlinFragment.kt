@@ -95,7 +95,8 @@ class KotlinFragment : Fragment() {
         val body =
             RequestBody.create(mediaType, "{\n  \"user_id\": \"$userId\"\n}")
         val request = Request.Builder()
-            .url("http://10.0.2.2:3000/rooms/" + "EBAC2A" + "/join")
+//            .url("http://10.0.2.2:3000/rooms/" + "EBAC2A" + "/join")
+            .url("https://voca-spda.onrender.com/rooms/" + "EBAC2A" + "/join")
             .post(body)
             .addHeader("content-type", "application/json")
             .build()
@@ -123,7 +124,7 @@ class KotlinFragment : Fragment() {
         // Optional safety check
 
         val apiKey = "x6wubjfby45d"
-        val callId = "idk-this-room"
+        val callId = "EBAC2A"
 
 //        val userId: String =
 //            getSharedPreferences("UserPrefs", Context.MODE_PRIVATE).getString("userId", null)
@@ -203,7 +204,7 @@ class KotlinFragment : Fragment() {
 
                                     val user = User(
                                         id = userId ?: "",
-                                        name = "Tutorial",
+                                        name = "user",
                                         role = "admin",
                                     )
 
@@ -227,7 +228,7 @@ class KotlinFragment : Fragment() {
                                     }
                                 }
                             }) {
-                                Text(userToken.value)
+                                Text("Join call")
                             }
                         }
                         item {
@@ -237,21 +238,7 @@ class KotlinFragment : Fragment() {
                             ) {
                                 Column {
                                     if (connection.value != RealtimeConnection.Connected) {
-                                        Text("Loading", fontSize = 30.sp)
-                                        Button(onClick = {
-                                            viewLifecycleOwner.lifecycleScope.launch {
-                                                val result = _call.value?.join()
-                                                result?.onError {
-                                                    Toast.makeText(
-                                                        requireContext(),
-                                                        it.message,
-                                                        Toast.LENGTH_LONG
-                                                    ).show()
-                                                }
-                                            }
-                                        }) {
-                                            Text("Join")
-                                        }
+                                        Text("Tap the button to join voice call", fontSize = 30.sp)
                                     } else {
                                         _call.value?.let { AudioRoom(call = it) }
                                     }
@@ -259,6 +246,7 @@ class KotlinFragment : Fragment() {
                             }
                         }
 
+                        item { Text("Danh sách chờ") }
                         item {
                             SongList(queueList,
                                 onSingClick = { song ->
@@ -279,6 +267,7 @@ class KotlinFragment : Fragment() {
                                 })
                         }
 
+                        item { Text("Danh sách bài hát") }
                         item {
                             SongList(
                                 songList,
