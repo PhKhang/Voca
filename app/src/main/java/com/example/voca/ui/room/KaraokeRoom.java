@@ -130,6 +130,20 @@ public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback
             if (currentIndex != -1 && currentIndex < currentRoom.getQueue().size() - 1) {
                 currentRoom.setCurrent_song(currentRoom.getQueue().get(currentIndex + 1));
                 myRef.child(roomId).child("current").setValue(currentRoom.getQueue().get(currentIndex + 1).getYoutube_id());
+                currentRoom.setCurrent_song_start_time(String.valueOf(System.currentTimeMillis()));
+                roomBUS.updateRoom(currentRoom.get_id(), currentRoom, new RoomBUS.OnRoomUpdatedListener() {
+                    @Override
+                    public void onRoomUpdated(RoomDTO room) {
+                        Toast.makeText(KaraokeRoom.this, "Update play time successfully", Toast.LENGTH_SHORT).show();
+                        Log.d("Room", "Updated play time: ");
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Toast.makeText(KaraokeRoom.this, "Error adding song: " + error, Toast.LENGTH_SHORT).show();
+                        Log.e("Error", "Failed to add song: " + error);
+                    }
+                });
                 Log.d("Room", "Next song ID: " + currentRoom.getQueue().get(currentIndex + 1).getYoutube_id());
 //                youTubePlayerInstance.cueVideo(currentRoom.getCurrent_song().getYoutube_id(), 0);
 //                youTubePlayerInstance.play();
@@ -160,6 +174,20 @@ public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback
             if (currentIndex > 0) {
                 currentRoom.setCurrent_song(currentRoom.getQueue().get(currentIndex - 1));
                 myRef.child(roomId).child("current").setValue(currentRoom.getQueue().get(currentIndex - 1).getYoutube_id());
+                currentRoom.setCurrent_song_start_time(String.valueOf(System.currentTimeMillis()));
+                roomBUS.updateRoom(currentRoom.get_id(), currentRoom, new RoomBUS.OnRoomUpdatedListener() {
+                    @Override
+                    public void onRoomUpdated(RoomDTO room) {
+                        Toast.makeText(KaraokeRoom.this, "Update play time successfully", Toast.LENGTH_SHORT).show();
+                        Log.d("Room", "Updated play time: ");
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Toast.makeText(KaraokeRoom.this, "Error adding song: " + error, Toast.LENGTH_SHORT).show();
+                        Log.e("Error", "Failed to add song: " + error);
+                    }
+                });
                 Log.d("Room", "Next song ID: " + currentRoom.getQueue().get(currentIndex - 1).getYoutube_id());
 //                youTubePlayerInstance.cueVideo(currentRoom.getCurrent_song().getYoutube_id(), 0);
 //                youTubePlayerInstance.play();
@@ -334,6 +362,19 @@ public class KaraokeRoom extends AppCompatActivity implements SongUpdateCallback
 
     @Override
     public List<SongDTO> getQueue() {
+        roomBUS.fetchRoomById(currentRoom.get_id(), new RoomBUS.OnRoomFetchedListener() {
+            @Override
+            public void onRoomFetched(RoomDTO room) {
+                currentRoom = room;
+                Log.d("Room", "Queue updated: " + currentRoom.getQueue().size());
+            }
+
+            @Override
+            public void onError(String error) {
+                Toast.makeText(KaraokeRoom.this, "Error fetching room: " + error, Toast.LENGTH_SHORT).show();
+                Log.e("Error", "Failed to fetch room: " + error);
+            }
+        });
         return currentRoom.getQueue();
     }
 
